@@ -38,7 +38,7 @@ var _style_locked: StyleBoxFlat
 func setup(erva_key: String) -> void:
 	key = erva_key
 	var def: Dictionary = MetaProgression.UPGRADE_DEFS[key]
-	cost = int(def.get("fragment_cost", 0))
+	cost = MetaProgression.upgrade_cost(key)
 
 	custom_minimum_size = Vector2(0, CARD_HEIGHT)
 	# Clique/toque apenas: sem foco de teclado, pra não sequestrar as setas (ui_left/right/up/

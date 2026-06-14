@@ -74,17 +74,24 @@
       border-bottom: 1px solid var(--line); padding-bottom: 8px;
       font-family: "PressStart2P", monospace;
     }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
     .card {
       background: var(--panel); border: 1px solid var(--line); padding: 14px;
     }
     .card .nome { font-size: 13px; color: var(--ink); font-weight: bold; margin-bottom: 3px; }
     .card .meta-row { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
     .card .meta-row .tipo { color: var(--ember); }
-    .fields { display: flex; gap: 10px; }
+    .fields { display: flex; gap: 10px; margin-bottom: 10px; }
     .fields .f { flex: 1; }
     .fields label { margin: 0 0 3px; }
     .fields input { padding: 6px 7px; font-size: 13px; }
+    .preview {
+      font-size: 11px; color: var(--green); background: rgba(79,174,84,.08);
+      border: 1px solid rgba(79,174,84,.2); padding: 6px 8px; margin-top: 2px;
+      letter-spacing: .5px;
+    }
+    .preview span { color: var(--ink); opacity: .7; }
+    .hint { font-size: 10px; color: var(--muted); margin: 3px 0 0; font-style: italic; }
 
     .bar {
       position: sticky; bottom: 0; background: rgba(5,5,5,.95); border-top: 1px solid var(--line);
@@ -145,6 +152,7 @@
 
     // Ervas do cachimbo: ordem canônica e defaults de UPGRADE_DEFS.
     // fragment_cost e value são editáveis; o resto é só exibição.
+    // value = incremento POR ERVA (não acumulado). Ex: forca tier 1-4 = +1 dano cada.
     const UPGRADES = [
       // Trilha Fúria (dano)
       { key:"forca",   nome:"Folha-Brasa",       trilha:"Fúria",  fase:1, attr:"Dano", fragment_cost:5,  value:1 },
@@ -161,6 +169,34 @@
       { key:"saude_5", nome:"Rachadura-Viva",      trilha:"Cura",   fase:5, attr:"HP",   fragment_cost:42, value:4 },
       { key:"saude_6", nome:"Pele-de-Defunto",     trilha:"Cura",   fase:6, attr:"HP",   fragment_cost:58, value:5 },
     ];
+
+    // BASE_DAMAGE = 1, CAIPORA_MAX_HEALTH = 2 (espelham Constants.gd)
+    const BASE_DAMAGE = 1;
+    const BASE_HP = 2;
+    const FURIA_KEYS = ["forca","forca_2","forca_3","forca_4","forca_5","forca_6"];
+    const CURA_KEYS  = ["saude","saude_2","saude_3","saude_4","saude_5","saude_6"];
+
+    // Computa o efeito acumulado na trilha até esta erva (inclusive), dado os valores atuais dos inputs.
+    function effectPreview(key, currentValues) {
+      const u = UPGRADES.find(x => x.key === key);
+      if (!u) return "";
+      const isFuria = u.trilha === "Fúria";
+      const keys = isFuria ? FURIA_KEYS : CURA_KEYS;
+      const base  = isFuria ? BASE_DAMAGE : BASE_HP;
+      let cumul = 0;
+      for (const k of keys) {
+        const entry = UPGRADES.find(x => x.key === k);
+        const cv = currentValues[k];
+        const val = cv != null ? Number(cv.value) || 0 : entry.value;
+        cumul += val;
+        if (k === key) break;
+      }
+      const total = base + cumul;
+      const inc   = currentValues[key] != null ? Number(currentValues[key].value) || 0 : u.value;
+      return isFuria
+        ? `+${inc} dano/hit → total ${total} dano`
+        : `+${inc} HP → total ${total} HP`;
+    }
 
     let sessionHash = null;
 
@@ -200,12 +236,34 @@
       localStorage.removeItem(LS_KEY); location.reload();
     });
 
+    // currentValues: { key -> { fragment_cost, value } } — estado vivo dos inputs
+    let currentValues = {};
+
+    function updateAllPreviews() {
+      for (const u of UPGRADES) {
+        const el = document.getElementById("preview_" + u.key);
+        if (el) el.textContent = effectPreview(u.key, currentValues);
+      }
+    }
+
     // ---- cards ----
     function render(values) {
+      currentValues = {};
+      for (const u of UPGRADES) {
+        const sv = values[u.key] || {};
+        currentValues[u.key] = {
+          fragment_cost: sv.fragment_cost != null ? sv.fragment_cost : u.fragment_cost,
+          value: sv.value != null ? sv.value : u.value,
+        };
+      }
+
       const trilhas = {};
       for (const u of UPGRADES) (trilhas[u.trilha] = trilhas[u.trilha] || []).push(u);
       const host = document.getElementById("trilhas");
       host.innerHTML = "";
+
+      const attrHint = { "Fúria": "incremento de dano por hit (não é o total — é o +N desta erva)", "Cura": "incremento de HP máximo (não é o total — é o +N desta erva)" };
+
       for (const trilha of ["Fúria", "Cura"]) {
         if (!trilhas[trilha]) continue;
         const h = document.createElement("h2");
@@ -215,22 +273,40 @@
         const grid = document.createElement("div");
         grid.className = "grid";
         for (const u of trilhas[trilha]) {
-          const sv = values[u.key] || {};
-          const vcost = sv.fragment_cost != null ? sv.fragment_cost : u.fragment_cost;
-          const vval  = sv.value         != null ? sv.value         : u.value;
+          const cv = currentValues[u.key];
           const card = document.createElement("div");
           card.className = "card";
           card.innerHTML =
             '<div class="nome">' + u.nome + '</div>' +
             '<div class="meta-row">fase ' + u.fase + ' · <span class="tipo">' + u.trilha + '</span></div>' +
             '<div class="fields">' +
-              '<div class="f"><label>Custo (frags)</label><input type="number" min="1" step="1" data-key="' + u.key + '" data-field="fragment_cost" value="' + vcost + '"></div>' +
-              '<div class="f"><label>' + u.attr + '</label><input type="number" min="1" step="1" data-key="' + u.key + '" data-field="value" value="' + vval + '"></div>' +
-            '</div>';
+              '<div class="f">' +
+                '<label>Custo (frags)</label>' +
+                '<input type="number" min="1" step="1" data-key="' + u.key + '" data-field="fragment_cost" value="' + cv.fragment_cost + '">' +
+                '<div class="hint">fragmentos que o jogador paga</div>' +
+              '</div>' +
+              '<div class="f">' +
+                '<label>+' + u.attr + ' por erva</label>' +
+                '<input type="number" min="1" step="1" data-key="' + u.key + '" data-field="value" value="' + cv.value + '">' +
+                '<div class="hint">' + attrHint[trilha] + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="preview" id="preview_' + u.key + '">' + effectPreview(u.key, currentValues) + '</div>';
           grid.appendChild(card);
         }
         host.appendChild(grid);
       }
+
+      // live preview ao editar qualquer input
+      host.addEventListener("input", (e) => {
+        const el = e.target;
+        if (!el.dataset.key) return;
+        const k = el.dataset.key, f = el.dataset.field;
+        if (!currentValues[k]) currentValues[k] = {};
+        currentValues[k][f] = Number(el.value) || 0;
+        updateAllPreviews();
+        document.getElementById("save").disabled = false;
+      });
     }
 
     async function loadUpgrades() {

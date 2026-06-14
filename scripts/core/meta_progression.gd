@@ -209,7 +209,7 @@ func next_pending_key(keys: Array) -> String:
 	return ""
 
 ## Custo de fragmentos do aprimoramento. Override remoto (painel admin) tem prioridade.
-func _upgrade_cost(key: String) -> int:
+func upgrade_cost(key: String) -> int:
 	if RemoteUpgrades.has_override(key):
 		return RemoteUpgrades.cost_override(key)
 	return int(UPGRADE_DEFS[key].get("fragment_cost", 0))
@@ -301,7 +301,7 @@ func purchase_upgrade(key: String) -> bool:
 	var req: String = def.get("requires", "")
 	if req != "" and get_upgrade_level(req) < 1:
 		return false
-	var cost: int = _upgrade_cost(key)
+	var cost: int = upgrade_cost(key)
 	var level := get_upgrade_level(key)
 	if level >= int(def["max_level"]) or fragments < cost:
 		return false
