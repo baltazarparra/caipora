@@ -38,16 +38,19 @@ func _fit_portrait() -> void:
 	_hint.custom_minimum_size.x = maxw
 
 ## Tela-alvo ao dispensar (puro, sem efeitos colaterais — testável destacado da árvore).
-## Derrota → MENU PRINCIPAL (a caçada acabou); vitória terminal → acampamento.
+## Derrota → MENU PRINCIPAL (a caçada acabou); vitória → INITIALS (entrada no PODIO).
 func _dismiss_target() -> SignalBus.Screen:
 	return SignalBus.Screen.INITIALS if won else SignalBus.Screen.MAIN_MENU
 
 ## Dica de saída coerente com o destino e a plataforma (web/toque não têm barra de espaço).
 func _hint_text() -> String:
-	var destino := "acampamento" if won else "menu"
+	if won:
+		if OS.has_feature("web") or DisplayServer.is_touchscreen_available():
+			return "Toque para inserir suas iniciais"
+		return "Espaço para inserir suas iniciais"
 	if OS.has_feature("web") or DisplayServer.is_touchscreen_available():
-		return "Toque para voltar ao %s" % destino
-	return "Espaço para voltar ao %s" % destino
+		return "Toque para voltar ao menu"
+	return "Espaço para voltar ao menu"
 
 # Usa _input (não _unhandled_input): o Background/CenterContainer cobrem a tela inteira com
 # mouse_filter=STOP por padrão, engolindo o toque na fase de GUI. No mobile, sem barra de
