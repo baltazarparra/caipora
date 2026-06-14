@@ -39,11 +39,11 @@
       }
     }
 
-    var toggle = document.getElementById('lang-toggle');
-    if (toggle && _dict['lang.toggle'] !== undefined) {
-      toggle.textContent = _dict['lang.toggle'];
-      toggle.setAttribute('aria-label', _current === 'en' ? 'Mudar para Português' : 'Switch to English');
-      toggle.setAttribute('lang', _current === 'en' ? 'pt-BR' : 'en-US');
+    var btnPt = document.getElementById('lang-btn-pt');
+    var btnEn = document.getElementById('lang-btn-en');
+    if (btnPt && btnEn) {
+      btnPt.classList.toggle('lang-btn--active', _current === 'pt');
+      btnEn.classList.toggle('lang-btn--active', _current === 'en');
     }
   }
 
@@ -72,12 +72,7 @@
       _fetch('en', _apply);
     } else {
       _current = 'pt';
-      _fetch('pt', function () {
-        var toggle = document.getElementById('lang-toggle');
-        if (toggle && _dict['lang.toggle'] !== undefined) {
-          toggle.textContent = _dict['lang.toggle'];
-        }
-      });
+      _apply();
     }
   }
 

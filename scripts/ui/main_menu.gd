@@ -222,8 +222,8 @@ func _setup_lang_toggle() -> void:
 	_lang_row.add_theme_constant_override("separation", 8)
 	$Center/VBox.add_child(_lang_row)
 
-	_btn_pt = _make_flag_btn("PT")
-	_btn_en = _make_flag_btn("EN")
+	_btn_pt = _make_flag_btn("Brasileiro")
+	_btn_en = _make_flag_btn("English")
 	_lang_row.add_child(_btn_pt)
 	_lang_row.add_child(_btn_en)
 
@@ -240,7 +240,7 @@ func _make_flag_btn(label: String) -> Button:
 	if font:
 		btn.add_theme_font_override("font", font)
 	btn.add_theme_font_size_override("font_size", 10)
-	btn.custom_minimum_size = Vector2(48, 28)
+	btn.custom_minimum_size = Vector2(0, 28)
 	btn.focus_entered.connect(AudioDirector.play_ui_hover)
 	btn.mouse_entered.connect(AudioDirector.play_ui_hover)
 	return btn

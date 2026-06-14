@@ -37,7 +37,11 @@
         <a href="#mecanicas" class="nav-link" data-i18n="nav.mechanics">Mecânicas</a>
         <a href="podio.html" class="nav-link">Pódio</a>
         <a href="play/" class="btn btn-primary" data-i18n="nav.play">Jogar</a>
-        <button id="lang-toggle" class="lang-toggle" lang="en-US" aria-label="Switch to English" onclick="CaiporaI18n.setLang(CaiporaI18n.current()==='pt'?'en':'pt')">🇺🇸</button>
+        <div class="lang-selector" role="group" aria-label="Language / Idioma">
+          <button id="lang-btn-pt" class="lang-btn lang-btn--active" onclick="CaiporaI18n.setLang('pt')">Brasileiro</button>
+          <span class="lang-sep" aria-hidden="true">|</span>
+          <button id="lang-btn-en" class="lang-btn" onclick="CaiporaI18n.setLang('en')">English</button>
+        </div>
       </nav>
     </div>
   </header>
