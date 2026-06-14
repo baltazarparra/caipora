@@ -70,6 +70,13 @@ static func bonus_damage_for(enemy_id: StringName, phase: int) -> float:
 	var entry: Dictionary = STATS.get(enemy_id, {})
 	return float(entry.get("bonus_damage", 0.0)) + phase_damage_bonus(phase)
 
+## Drop de fragmentos do inimigo. Override remoto tem prioridade; -1.0 = usar
+## fallback de Constants (COMMON_FRAGMENT_REWARD ou BOSS_FRAGMENT_BOUNTY).
+static func fragment_drop_for(enemy_id: StringName, phase: int) -> float:
+	if RemoteConfig.has_fragment_drop_override(enemy_id, phase):
+		return RemoteConfig.fragment_drop_override(enemy_id, phase)
+	return -1.0
+
 ## Delta de dano da fase, somado ao golpe. Fases sem entrada = 0.
 static func phase_damage_bonus(phase: int) -> float:
 	return float(PHASE_DAMAGE_BONUS.get(phase, 0.0))

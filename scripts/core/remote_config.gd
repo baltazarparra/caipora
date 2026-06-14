@@ -86,6 +86,13 @@ func hp_override(enemy_id: StringName, phase: int) -> int:
 func damage_override(enemy_id: StringName, phase: int) -> float:
 	return float(_overrides["%s@%d" % [enemy_id, phase]]["damage"])
 
+func has_fragment_drop_override(enemy_id: StringName, phase: int) -> bool:
+	var key := "%s@%d" % [enemy_id, phase]
+	return _overrides.has(key) and _overrides[key].has("fragment_drop")
+
+func fragment_drop_override(enemy_id: StringName, phase: int) -> float:
+	return float(_overrides["%s@%d" % [enemy_id, phase]]["fragment_drop"])
+
 # ─── Seam de teste (sem rede) ──────────────────────
 func _set_overrides_for_test(d: Dictionary) -> void:
 	_overrides = _sanitize(d)
@@ -97,10 +104,15 @@ func _sanitize(raw: Dictionary) -> Dictionary:
 	for k in raw:
 		var v: Variant = raw[k]
 		if v is Dictionary and v.has("hp"):
-			out[String(k)] = {
+			var entry: Dictionary = {
 				"hp": int(v["hp"]),
 				"damage": float(v.get("damage", 0.0)),
 			}
+			if v.has("fragment_drop"):
+				var fd := float(v["fragment_drop"])
+				if fd >= 0.0:
+					entry["fragment_drop"] = fd
+			out[String(k)] = entry
 	return out
 
 func _save_cache() -> void:
