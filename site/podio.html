@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Caipora — Pódio</title>
+  <link rel="icon" type="image/png" href="assets/sprites/brand_mark.png">
+  <style>
+    @font-face {
+      font-family: "PressStart2P";
+      src: url("assets/fonts/PressStart2P.ttf") format("truetype");
+      font-display: swap;
+    }
+    :root {
+      --bg: #050505;
+      --panel: #0e0d0d;
+      --line: #2a1414;
+      --blood: #b41818;
+      --ember: #e8731f;
+      --ink: #d8cfca;
+      --muted: #7e7470;
+      --green: #4fae54;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Courier New", monospace; line-height: 1.4;
+      background-image: radial-gradient(circle at 50% -10%, #1a0808 0%, #050505 60%);
+      min-height: 100vh;
+    }
+    h1, h2, .pix { font-family: "PressStart2P", monospace; }
+    a { color: var(--ember); }
+    header {
+      padding: 22px 18px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 15px; margin: 0; color: var(--blood); letter-spacing: 1px; }
+    header nav { display: flex; gap: 12px; }
+    header nav a { font-size: 11px; color: var(--muted); text-decoration: none; }
+    header nav a:hover { color: var(--ember); }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 28px 18px; }
+
+    /* ---- título do pódio ---- */
+    .podio-header {
+      text-align: center; margin-bottom: 32px;
+    }
+    .podio-header h2 {
+      font-size: 18px; color: var(--ember); margin: 0 0 8px;
+      letter-spacing: 2px;
+    }
+    .podio-header p {
+      font-size: 11px; color: var(--muted); margin: 0;
+    }
+
+    /* ---- tabela ---- */
+    .rank-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .rank-table th {
+      font-family: "PressStart2P", monospace;
+      font-size: 9px; color: var(--muted);
+      text-align: left; padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      letter-spacing: 1px;
+    }
+    .rank-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    .rank-table tbody tr:hover { background: rgba(232,115,31,.04); }
+
+    /* destaque do 1º lugar */
+    .rank-table tbody tr.first td { color: var(--ember); }
+    .rank-table tbody tr.first .initials-cell {
+      font-family: "PressStart2P", monospace;
+      font-size: 14px;
+    }
+
+    .rank-num  { width: 48px; color: var(--muted); font-size: 11px; }
+    .initials-cell {
+      font-family: "PressStart2P", monospace;
+      font-size: 13px; letter-spacing: 3px;
+      color: var(--ink);
+    }
+    .time-cell  { font-family: "PressStart2P", monospace; font-size: 12px; }
+    .date-cell  { color: var(--muted); font-size: 11px; }
+
+    /* ---- estado vazio / carregando ---- */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      color: var(--muted); font-size: 11px;
+      border: 1px solid var(--line);
+    }
+    .empty-state .pix { font-size: 13px; color: var(--blood); margin-bottom: 12px; display: block; }
+
+    /* ---- rodapé ---- */
+    .footer {
+      text-align: center; margin-top: 36px;
+      font-size: 10px; color: var(--muted);
+      border-top: 1px solid var(--line); padding-top: 16px;
+    }
+    #refresh-msg { color: var(--muted); }
+    #refresh-msg.ok { color: var(--green); }
+
+    @media (max-width: 480px) {
+      .date-cell { display: none; }
+      .rank-table th.th-date { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚔ CAIPORA</h1>
+  <nav>
+    <a href="podio.html">pódio</a>
+    <a href="admin.html">inimigos</a>
+    <a href="upgrades.html">aprimoramentos</a>
+    <a href="sequences.html">sequências</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="podio-header">
+    <h2>PÓDIO DA FLORESTA</h2>
+    <p>Runs completas — ordenadas pelo menor tempo</p>
+  </div>
+
+  <div id="board"></div>
+
+  <div class="footer">
+    <span id="refresh-msg">atualizando a cada 30s</span>
+  </div>
+</div>
+
+<script>
+  const ENDPOINT = "https://mlykeulezzfwljriytuf.supabase.co/functions/v1/caipora-api";
+  const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1seWtldWxlenpmd2xqcml5dHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTIzMTksImV4cCI6MjA5NTgyODMxOX0.i9jQGbtQrxbcyR4M-XNZpwPYwJ_GcxrP-VE4Gniamqg";
+
+  const api = async (action, extra = {}) => {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + ANON_KEY,
+        "apikey": ANON_KEY,
+      },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    return res.json();
+  };
+
+  const fmtTime = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return m + ":" + s;
+  };
+
+  const fmtDate = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  };
+
+  const board = document.getElementById("board");
+  const refreshMsg = document.getElementById("refresh-msg");
+
+  const render = (podio) => {
+    if (!podio || podio.length === 0) {
+      board.innerHTML = `
+        <div class="empty-state">
+          <span class="pix">— SEM REGISTROS —</span>
+          Nenhuma run foi concluída ainda.<br>Complete o jogo para aparecer aqui.
+        </div>`;
+      return;
+    }
+
+    const rows = podio.map((entry) => {
+      const isFirst = entry.rank === 1;
+      return `<tr class="${isFirst ? "first" : ""}">
+        <td class="rank-num">${isFirst ? "👑" : "#" + entry.rank}</td>
+        <td class="initials-cell">${entry.initials}</td>
+        <td class="time-cell">${fmtTime(entry.time_secs)}</td>
+        <td class="date-cell">${fmtDate(entry.created_at)}</td>
+      </tr>`;
+    }).join("");
+
+    board.innerHTML = `
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>INICIAIS</th>
+            <th>TEMPO</th>
+            <th class="th-date">DATA</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  };
+
+  const load = async () => {
+    try {
+      const data = await api("get_podio");
+      render(data.podio ?? []);
+      refreshMsg.textContent = "atualizado • " + new Date().toLocaleTimeString("pt-BR");
+      refreshMsg.className = "ok";
+      setTimeout(() => { refreshMsg.textContent = "atualizando a cada 30s"; refreshMsg.className = ""; }, 3000);
+    } catch (e) {
+      refreshMsg.textContent = "erro ao carregar — tentando novamente...";
+    }
+  };
+
+  load();
+  setInterval(load, 30000);
+</script>
+</body>
+</html>

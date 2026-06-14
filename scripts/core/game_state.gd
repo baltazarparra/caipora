@@ -25,6 +25,11 @@ var caipora_current_hp: float = Constants.CAIPORA_MAX_HEALTH
 # Determinístico por fase: a volta da arena regenera o MESMO mapa (mix run_seed+fase).
 var run_seed: int = 0
 
+# Cronômetro da run: gravado em start_run(), diferença calculada em end_run(won=true).
+# Disponível para InitialsScreen ler após o fim da run. Unidade: segundos inteiros.
+var run_start_time: float = 0.0
+var run_elapsed_seconds: int = 0
+
 # ─── Exploration State ─────────────────────────────
 var defeated_enemy_ids: Array[String] = []
 var active_map_enemy_id: String = ""
@@ -56,6 +61,7 @@ func start_run() -> void:
 	map_enemy_positions.clear()
 	pending_exploration = SignalBus.Screen.EXPLORATION
 	run_seed = randi()
+	run_start_time = Time.get_unix_time_from_system()
 	caipora_max_hp = Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus()
 	caipora_current_hp = caipora_max_hp
 
@@ -85,6 +91,7 @@ func end_run(won: bool) -> void:
 	run_active = false
 	MetaProgression.total_runs += 1
 	if won:
+		run_elapsed_seconds = int(Time.get_unix_time_from_system() - run_start_time)
 		MetaProgression.total_wins += 1
 		if MetaProgression.phase_reached < 6:
 			MetaProgression.phase_reached = 6
@@ -150,4 +157,6 @@ func _scene_path_for(new_screen: SignalBus.Screen) -> String:
 			return "res://scenes/ui/final_choice_screen.tscn"
 		SignalBus.Screen.ENDING_SACRIFICE:
 			return "res://scenes/ui/ending_sacrifice_screen.tscn"
+		SignalBus.Screen.INITIALS:
+			return "res://scenes/ui/initials_screen.tscn"
 	return ""
