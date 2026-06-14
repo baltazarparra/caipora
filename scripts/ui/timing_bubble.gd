@@ -21,28 +21,32 @@ const PHASE_IDLE: int = 1
 ## Flash verde-cristal ao ENTRAR na janela perfeita ("o cristal carregou").
 const FLASH_S: float = 0.12
 
-# ─── Glifo direcional (seta pixel-art 12×12, apontando para CIMA) ──────────
+# ─── Glifo direcional — Garra Tribal 16×16 (mesmo de CombatArrowButton) ────
 # K = outline preto  O = juba clara  D = juba escura  . = transparente
-# Exibido a ARROW_CELL px por célula → 60×60 px (vs 35 px dos PNGs anteriores).
+# Exibido a ARROW_CELL px por célula → ~60×60 px totais.
 # Rotação por _key_hint usa o mesmo padrão do CombatArrowButton:
 #   up    → (c, r)          right → (GRID-1-r, c)
 #   down  → (GRID-1-c, GRID-1-r)  left → (r, GRID-1-c)
 const ARROW_GLYPH: PackedStringArray = [
-	"............",   # 0
-	".....KK.....",   # 1 — ponta 2 px
-	"....KOOK....",   # 2
-	"...KOOODK...",   # 3
-	"..KOOOOODK..",   # 4
-	".KOOOOOOODK.",   # 5
-	"KOOOOOOOOODK",   # 6 — ombros totais
-	"KK.KOOODK.KK",   # 7 — entalhe tribal (arrowhead → shaft)
-	"...KOOODK...",   # 8 — shaft
-	"...KOOODK...",   # 9
-	"...KOOODK...",   # 10
-	"...KKKKKK...",   # 11 — base fechada
+	"................",   # 0
+	".......KK.......",   # 1 — ponta 2 px
+	"......KOOK......",   # 2
+	"....KKOOOOKK....",   # 3
+	"...KKOOOOOOKK...",   # 4
+	"..KKOOODDOOOKK..",   # 5
+	".KKOOODDDDOOOKK.",   # 6
+	"KKOOODDKKDDOOOKK",   # 7 — ombros totais
+	"KKKK.KOOODK.KKKK",   # 8 — entalhe tribal (arrowhead → shaft)
+	".....KOOODK.....",   # 9 — shaft
+	".....KOOODK.....",   # 10
+	".....KOOODK.....",   # 11
+	".....KOOODK.....",   # 12
+	".....KDDDDK.....",   # 13 — base com sombra
+	".....KKKKKK.....",   # 14 — base fechada
+	"................",   # 15
 ]
-const ARROW_GRID: int = 12
-const ARROW_CELL: float = 5.0   # px por célula → 60 px total
+const ARROW_GRID: int = 16
+const ARROW_CELL: float = 3.75   # px por célula → 60 px total (16 × 3.75)
 const ARROW_NUDGE_DIST: float = 4.0   # px de "toque" na direção durante a janela
 
 # ─── State ─────────────────────────────────────────

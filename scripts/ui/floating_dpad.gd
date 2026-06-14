@@ -39,14 +39,28 @@ const POP_DURATION: float = 0.09
 const RELEASE_FADE_DURATION: float = 0.14
 const REST_FADE_DURATION: float = 0.3
 
-# load() em runtime (não preload): este script é compilado no boot junto com o
-# autoload ControlsHud; um preload de asset ainda não importado quebraria o parse.
-const _ARROW_TEXTURES: Dictionary = {
-	"ui_up": "res://assets/sprites/dpad_up.png",
-	"ui_left": "res://assets/sprites/dpad_left.png",
-	"ui_down": "res://assets/sprites/dpad_down.png",
-	"ui_right": "res://assets/sprites/dpad_right.png",
-}
+# Garra Tribal — mesmo glifo canônico de CombatArrowButton.
+# K = outline preto  O = juba clara  D = juba escura  . = transparente
+const ARROW_GLYPH: PackedStringArray = [
+	"................",   # 0
+	".......KK.......",   # 1 — ponta 2 px
+	"......KOOK......",   # 2
+	"....KKOOOOKK....",   # 3
+	"...KKOOOOOOKK...",   # 4
+	"..KKOOODDOOOKK..",   # 5
+	".KKOOODDDDOOOKK.",   # 6
+	"KKOOODDKKDDOOOKK",   # 7 — ombros totais
+	"KKKK.KOOODK.KKKK",   # 8 — entalhe tribal (arrowhead → shaft)
+	".....KOOODK.....",   # 9 — shaft
+	".....KOOODK.....",   # 10
+	".....KOOODK.....",   # 11
+	".....KOOODK.....",   # 12
+	".....KDDDDK.....",   # 13 — base com sombra
+	".....KKKKKK.....",   # 14 — base fechada
+	"................",   # 15
+]
+const ARROW_GLYPH_SIZE: int = 16
+
 const _ARROW_DIRECTIONS: Dictionary = {
 	"ui_up": Vector2.UP,
 	"ui_left": Vector2.LEFT,
@@ -63,23 +77,18 @@ var _clamp_rect: Rect2 = Rect2()
 var _knob_offset: Vector2 = Vector2.ZERO
 var _active_action: String = ""
 var _touch_active: bool = false
-var _arrows: Dictionary = {}
 var _fade_tween: Tween = null
+
+# Highlight de seta: uma única direção ativa por vez (toque único).
+var _highlight_amount: float = 0.0
+var _highlight_action: String = ""
+var _highlight_tween: Tween = null
 
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	modulate.a = 0.0
-	for action: String in _ARROW_TEXTURES:
-		var arrow := TextureRect.new()
-		arrow.texture = load(_ARROW_TEXTURES[action]) as Texture2D
-		arrow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		arrow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		arrow.modulate.a = ARROW_ALPHA_IDLE
-		add_child(arrow)
-		_arrows[action] = arrow
 	_fade_to(ALPHA_REST, REST_FADE_DURATION)
 
 
@@ -91,7 +100,6 @@ func configure(radius: float, rest_center: Vector2, clamp_rect: Rect2) -> void:
 	_dead_zone = maxf(radius * DEAD_ZONE_FRACTION, DEAD_ZONE_MIN)
 	_rest_center = rest_center
 	_clamp_rect = clamp_rect
-	_layout_arrows()
 	if not _touch_active:
 		position = rest_center
 	queue_redraw()
@@ -186,24 +194,18 @@ func _set_active_action(new_action: String) -> void:
 
 
 func _highlight(action: String, active: bool) -> void:
-	var arrow: TextureRect = _arrows.get(action)
-	if arrow == null:
-		return
-	var tween := create_tween().set_parallel(true)
-	var target := Vector2.ONE * (ARROW_ACTIVE_SCALE if active else 1.0)
-	tween.tween_property(arrow, "scale", target, HIGHLIGHT_DURATION)
-	tween.tween_property(arrow, "modulate:a", 1.0 if active else ARROW_ALPHA_IDLE, HIGHLIGHT_DURATION)
-
-
-func _layout_arrows() -> void:
-	var side := _radius * ARROW_SIZE_FRACTION
-	var dist := _radius * ARROW_DISTANCE_FRACTION
-	for action: String in _arrows:
-		var arrow: TextureRect = _arrows[action]
-		arrow.size = Vector2(side, side)
-		arrow.pivot_offset = arrow.size * 0.5
-		var dir: Vector2 = _ARROW_DIRECTIONS[action]
-		arrow.position = dir * dist - arrow.size * 0.5
+	_highlight_action = action if active else ""
+	if _highlight_tween != null and _highlight_tween.is_valid():
+		_highlight_tween.kill()
+	_highlight_tween = create_tween()
+	_highlight_tween.tween_method(
+		func(v: float) -> void:
+			_highlight_amount = v
+			queue_redraw(),
+		_highlight_amount,
+		1.0 if active else 0.0,
+		HIGHLIGHT_DURATION
+	)
 
 
 func _clamp_center(point: Vector2) -> Vector2:
@@ -241,3 +243,40 @@ func _draw() -> void:
 	var knob_r := _radius * KNOB_RADIUS_FRACTION
 	draw_circle(_knob_offset, knob_r, Color(knob_color, 0.85))
 	draw_arc(_knob_offset, knob_r, 0.0, TAU, 24, Color(0.0, 0.0, 0.0, 0.5), 1.5, true)
+	# Setas Garra Tribal — mesmo glifo 16×16 do D-pad de combate.
+	var dist := _radius * ARROW_DISTANCE_FRACTION
+	var base_cell := _radius * ARROW_SIZE_FRACTION / float(ARROW_GLYPH_SIZE)
+	for action: String in _ARROW_DIRECTIONS:
+		var is_active := action == _highlight_action
+		var cell: float = base_cell * lerp(1.0, ARROW_ACTIVE_SCALE, _highlight_amount if is_active else 0.0)
+		var alpha: float = lerp(ARROW_ALPHA_IDLE, 1.0, _highlight_amount if is_active else 0.0)
+		var center: Vector2 = _ARROW_DIRECTIONS[action] * dist
+		_draw_arrow_glyph(action, center, cell, alpha)
+
+
+func _draw_arrow_glyph(action: String, center: Vector2, cell_size: float, alpha: float) -> void:
+	var half := ARROW_GLYPH_SIZE * cell_size * 0.5
+	var origin := center - Vector2(half, half)
+	var cs := Vector2.ONE * (cell_size + 0.5)
+	var bright := Color(Constants.COLOR_JUBA.r, Constants.COLOR_JUBA.g, Constants.COLOR_JUBA.b, alpha)
+	var dark   := Color(Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g, Constants.COLOR_JUBA_DARK.b, alpha * 0.7)
+	var outline := Color(0.0, 0.0, 0.0, alpha)
+	var g := ARROW_GLYPH_SIZE - 1
+	for r: int in ARROW_GLYPH_SIZE:
+		var row: String = ARROW_GLYPH[r]
+		for c: int in ARROW_GLYPH_SIZE:
+			var ch: String = row[c]
+			if ch == ".":
+				continue
+			var col: Color
+			match ch:
+				"O": col = bright
+				"D": col = dark
+				_:   col = outline
+			var cell_pos: Vector2
+			match action:
+				"ui_right": cell_pos = Vector2(float(g - r), float(c))
+				"ui_down":  cell_pos = Vector2(float(g - c), float(g - r))
+				"ui_left":  cell_pos = Vector2(float(r),     float(g - c))
+				_:          cell_pos = Vector2(float(c),     float(r))
+			draw_rect(Rect2(origin + cell_pos * cell_size, cs), col, true)
