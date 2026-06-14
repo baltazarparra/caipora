@@ -60,3 +60,42 @@ func test_p1_tactile_assets_exist():
 	for sound_name in ["herb_pickup", "pipe_smoke", "ui_hover"]:
 		assert_true(_sfx.play_named(sound_name),
 			"%s deve existir com geração procedural" % sound_name)
+
+# ─── Áudio v4 Etapa 1: a escada de impacto do combate ──
+func test_combat_outcome_assets_exist():
+	# Os dois sons novos da escada (errou / crítico) com primário + _2/_3.
+	for sound_name in ["combat_miss", "hit_heavy"]:
+		assert_true(_sfx.play_named(sound_name),
+			"%s deve existir com geração procedural" % sound_name)
+		var list: Array = _sfx._variants.get("res://assets/audio/sfx/%s.wav" % sound_name, [])
+		assert_eq(list.size(), 3, "%s deve ter primário + _2/_3" % sound_name)
+
+func test_play_outcome_routes_every_result():
+	# O dispatch declara o resultado; o vocabulário sonoro vive no SfxSystem. Aqui
+	# provamos que os 5 resultados tocam sem erro (com os assets presentes).
+	_sfx.dodge_sound = load("res://assets/audio/sfx/dodge.wav")
+	_sfx.timing_perfect_sound = load("res://assets/audio/sfx/timing_perfect.wav")
+	_sfx.ui_click_sound = load("res://assets/audio/sfx/ui_click.wav")
+	for outcome in [SfxSystem.Outcome.MISS, SfxSystem.Outcome.HIT,
+			SfxSystem.Outcome.CRIT, SfxSystem.Outcome.DODGE, SfxSystem.Outcome.HURT]:
+		_sfx.play_outcome(outcome)
+	var players := 0
+	for child in _sfx.get_children():
+		if child is AudioStreamPlayer:
+			players += 1
+	assert_gt(players, 0, "play_outcome deve ter criado players de SFX")
+
+func test_play_outcome_miss_falls_back_when_asset_missing():
+	# Se combat_miss não existir, o MISS cai no ui_click (sem quebrar) — o drop-in
+	# do asset apenas substitui o fallback.
+	var bare := SfxSystem.new()
+	bare.ui_click_sound = load("res://assets/audio/sfx/ui_click.wav")
+	add_child_autofree(bare)
+	# Não registramos combat_miss propositalmente; força o ramo de fallback.
+	bare._named["combat_miss"] = null
+	bare.play_outcome(SfxSystem.Outcome.MISS)
+	var played := false
+	for child in bare.get_children():
+		if child is AudioStreamPlayer:
+			played = true
+	assert_true(played, "MISS sem combat_miss deve tocar o fallback ui_click")

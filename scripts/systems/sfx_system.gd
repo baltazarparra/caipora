@@ -9,6 +9,12 @@ extends Node
 ## elas a cada play, com leve jitter de pitch/volume. A API play() é a mesma — o
 ## arena_manager continua chamando _sfx.play(_sfx.hit_sound, vol) sem saber das variantes.
 
+# ─── Outcome (escada de impacto do combate) ────────
+## Resultado de uma troca de golpes. O arena_manager só DECLARA o resultado; o
+## vocabulário sonoro (quais SFX, em que volume, com ou sem duck) vive aqui, num
+## lugar só — assim o "errou" nunca volta a soar como o clique de menu.
+enum Outcome { MISS, HIT, CRIT, DODGE, HURT }
+
 # ─── Constants ─────────────────────────────────────
 const SFX_BUS: String = "SFX"
 const SFX_DIR: String = "res://assets/audio/sfx"
@@ -85,6 +91,35 @@ func play_named(sound_name: String, volume_db: float = 0.0) -> bool:
 		return false
 	play(primary, volume_db)
 	return true
+
+## Toca a resposta sonora completa (SFX + duck) de um resultado de combate. Os sons
+## novos (combat_miss/hit_heavy) chegam por play_named — sem @export novo, sem mexer
+## nos .tscn de arena. Cada ramo tem fallback ao comportamento anterior, então o
+## roteamento funciona mesmo antes dos assets existirem (drop-in depois).
+const PERFECT_LAYER_DB: float = -4.0  ## timing_perfect empilhado por cima do impacto
+const MISS_FALLBACK_DB: float = -6.0  ## fallback do "errou" enquanto não há combat_miss
+func play_outcome(outcome: Outcome) -> void:
+	match outcome:
+		Outcome.MISS:
+			# O "furou a janela": som próprio, seco e negativo — NUNCA o clique de menu.
+			if not play_named("combat_miss"):
+				play(ui_click_sound, MISS_FALLBACK_DB)
+		Outcome.HIT:
+			play(hit_sound)
+		Outcome.CRIT:
+			# Crítico = topo da escada: impacto pesado + recompensa + o mundo cala.
+			if not play_named("hit_heavy"):
+				play(hit_sound)
+			play(timing_perfect_sound, PERFECT_LAYER_DB)
+			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+		Outcome.DODGE:
+			play(dodge_sound)
+			play(timing_perfect_sound, PERFECT_LAYER_DB)
+			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+		Outcome.HURT:
+			# A guardiã sangra: voz própria; hit_sound é o impacto NO inimigo.
+			if not play_named("hurt_caipora"):
+				play(hit_sound)
 
 # ─── Private helpers ───────────────────────────────
 ## Round-robin entre as variantes do som; se não houver registro, devolve o próprio.

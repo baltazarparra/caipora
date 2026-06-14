@@ -392,14 +392,14 @@ func _on_double_first_hit() -> void:
 	var damage := _caipora.execute_attack(false)
 	var is_killing_blow := damage >= _enemy.health.current_health
 	if is_killing_blow:
-		_sfx.play(_sfx.hit_sound)
+		_sfx.play_outcome(SfxSystem.Outcome.HIT)
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_animator.strike(_caipora)
 		await _play_killing_blow_zoom()
 	_enemy.take_damage(damage)
 	if is_killing_blow:
 		return
-	_sfx.play(_sfx.hit_sound)
+	_sfx.play_outcome(SfxSystem.Outcome.HIT)
 	_feedback.trigger_screenshake(13.0, 0.3)
 	_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 	_feedback.trigger_hit_stop(3)
@@ -423,9 +423,7 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		var damage := _caipora.execute_attack(false)
 		var is_killing_blow := damage >= _enemy.health.current_health
 		if is_killing_blow:
-			_sfx.play(_sfx.timing_perfect_sound, -4.0)
-			_sfx.play(_sfx.hit_sound)
-			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+			_sfx.play_outcome(SfxSystem.Outcome.CRIT)
 			_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
 			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
@@ -433,9 +431,7 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
-		_sfx.play(_sfx.timing_perfect_sound, -4.0)
-		_sfx.play(_sfx.hit_sound)
-		AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+		_sfx.play_outcome(SfxSystem.Outcome.CRIT)
 		_feedback.trigger_screenshake(22.0, 0.5)
 		_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
@@ -446,7 +442,7 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_timing_bubble_b.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble_b.position)
 		_feedback.trigger_screenshake(6.0, 0.18)
-		_sfx.play(_sfx.ui_click_sound, -6.0)
+		_sfx.play_outcome(SfxSystem.Outcome.MISS)
 		_animator.settle(_caipora)
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
@@ -461,9 +457,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		var damage := _caipora.execute_attack(true)
 		var is_killing_blow := damage >= _enemy.health.current_health
 		if is_killing_blow:
-			_sfx.play(_sfx.timing_perfect_sound, -4.0)
-			_sfx.play(_sfx.hit_sound)
-			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+			_sfx.play_outcome(SfxSystem.Outcome.CRIT)
 			_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
@@ -471,9 +465,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
-		_sfx.play(_sfx.timing_perfect_sound, -4.0)
-		_sfx.play(_sfx.hit_sound)
-		AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+		_sfx.play_outcome(SfxSystem.Outcome.CRIT)
 		_feedback.trigger_screenshake(26.0, 0.55)
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
@@ -485,7 +477,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.trigger_screenshake(6.0, 0.18)
-		_sfx.play(_sfx.ui_click_sound, -6.0)
+		_sfx.play_outcome(SfxSystem.Outcome.MISS)
 		_animator.settle(_caipora)
 		_feedback.spawn_result_label(&"errou", _timing_bubble.position + Vector2(0, -55))
 		_feedback.track_perfect(false)
@@ -556,9 +548,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
 		_caipora.dodge_performed.emit()
-		_sfx.play(_sfx.dodge_sound)
-		_sfx.play(_sfx.timing_perfect_sound, -4.0)
-		AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+		_sfx.play_outcome(SfxSystem.Outcome.DODGE)
 		_feedback.trigger_screenshake(22.0, 0.5)
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_PARTICLE_DODGE)
 		_feedback.spawn_dodge_particles(_caipora.position)
@@ -582,8 +572,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 			damage = maxf(damage + Constants.PHASE5_ENEMY_DAMAGE_BONUS, 1.0)
 		_caipora.take_damage(damage)
 		# A guardiã sangrando tem voz própria — hit_sound é o impacto NO inimigo.
-		if not _sfx.play_named("hurt_caipora"):
-			_sfx.play(_sfx.hit_sound)
+		_sfx.play_outcome(SfxSystem.Outcome.HURT)
 		_feedback.trigger_screenshake(14.0, 0.35)
 		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.spawn_blood_particles(_caipora.position)

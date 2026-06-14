@@ -679,6 +679,38 @@ def dpad_tap_wav():
     return _normalize(_mix(body, [s * 0.6 for s in knock]), 0.5)
 
 
+def combat_miss_wav():
+    # ERROU a janela de timing: whiff seco e ABAFADO, caindo de tom — o golpe que
+    # passa raspando, sem carne. Negativo e visceral (NUNCA o blip de menu): ar com
+    # peso (ruído LP) + um nó grave que despenca. Lê de ouvido como "furou".
+    n = int(SAMPLE_RATE * 0.16)
+    air = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        # tom despencando: a tensão do golpe que não conecta.
+        freq = 300.0 * (1.0 - 0.6 * (i / n))
+        phase = (t * freq) % 1.0
+        saw = 2.0 * phase - 1.0
+        e = _env(i, n, 0.004, 0.65)
+        air.append((0.25 * saw + 0.75 * _noise()) * e * 0.5)
+    air = biquad(air, "lp", 1400.0 * _jit(0.12), q=0.9)
+    thud = alfaia(0.10, base=70.0, punch=0.5)  # corpo surdo, sem estalo
+    return _normalize(bitcrush(_mix(air, [s * 0.5 for s in thud]), bits=7), 0.55)
+
+
+def hit_heavy_wav():
+    # CRÍTICO: o impacto do hit, porém MAIOR — alfaia mais grave e longa, estalo de
+    # caixa mais brilhante e um clangor de gongue por cima (o "brilho" do crítico).
+    # Acima do hit normal na escada de impacto: o ouvido lê "este foi pesado".
+    body = _mix(
+        alfaia(0.26, base=52.0, punch=1.0),
+        caixa(0.11, bright=1.3),
+        [s * 0.5 for s in gongue(0.14, freq=480.0)],
+    )
+    body = biquad(body, "lowshelf", 120.0, gain_db=4.0)
+    return _normalize(biquad(body, "highshelf", 4200.0, gain_db=2.0), 0.97)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -698,6 +730,8 @@ GENERATORS = {
     # única por passada e cada gerador consome o stream — inserir no meio mudaria
     # os bytes de todos os SFX seguintes.
     "dpad_tap": dpad_tap_wav,
+    "combat_miss": combat_miss_wav,
+    "hit_heavy": hit_heavy_wav,
 }
 
 
