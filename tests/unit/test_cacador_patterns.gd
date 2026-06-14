@@ -10,11 +10,12 @@ func test_cacador_is_a_criatura() -> void:
 	assert_true(_cacador is Criatura, "Cacador herda de Criatura")
 
 func test_cacador_has_correct_health() -> void:
-	# Comuns têm HP uniforme por banda de fase (5 nas fases 1-2); a cena usa o default
-	# da banda inicial e o ArenaManager sobrepõe por fase (8 nas fases 3-4).
-	assert_eq(_cacador.health.max_health, Constants.COMMON_HEALTH_EARLY)
-	assert_eq(Constants.COMMON_HEALTH_EARLY, 5)
-	assert_eq(Constants.COMMON_HEALTH_LATE, 8)
+	# Comuns têm HP uniforme por banda de fase (5 nas fases 1-2, 8 nas 3-5);
+	# o ArenaManager aplica EnemyStats por fase no spawn (a cena não conta).
+	assert_eq(EnemyStats.max_hp_for(&"cacador", 1), 5, "fases 1-2 → 5")
+	assert_eq(EnemyStats.max_hp_for(&"cacador", 3), 8, "fases 3-5 → 8")
+	assert_eq(EnemyStats.COMMON_HP_EARLY, 5)
+	assert_eq(EnemyStats.COMMON_HP_LATE, 8)
 
 func test_special_pattern_fields() -> void:
 	# Tier 2 PINGPONG ↓↑ — redesenhado de Tier 4 para ser coerente com Fase 1

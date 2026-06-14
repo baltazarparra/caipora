@@ -9,7 +9,7 @@ func test_mula_is_a_boss_with_phase1_stats() -> void:
 	add_child_autofree(mula)
 	assert_true(mula is Boss, "Mula herda do Boss base")
 	assert_true(mula is Criatura, "Mula é uma Criatura")
-	assert_eq(mula.health.max_health, Constants.BOSS_MAX_HEALTH)
+	assert_eq(EnemyStats.max_hp_for(&"mula", 1), 12, "HP do boss P1")
 	assert_eq(mula.base_attack_damage, 1)
 	assert_eq(mula.attack_pattern.strike_count, 3)
 

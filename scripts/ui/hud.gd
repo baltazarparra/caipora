@@ -55,7 +55,7 @@ func _ready() -> void:
 		_enemy_bar = HealthBar.new()
 		_root.add_child(_enemy_bar)
 		# Setup inicial; o spawn do inimigo reemite o max real (5/8/boss) e reajusta.
-		_setup_enemy_bar(float(Constants.COMMON_HEALTH_EARLY), false)
+		_setup_enemy_bar(float(EnemyStats.COMMON_HP_EARLY), false)
 
 	_layout()
 	get_viewport().size_changed.connect(_layout)

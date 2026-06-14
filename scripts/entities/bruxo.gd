@@ -3,7 +3,7 @@ extends Cacador
 
 ## Monstro comum: o bruxo dos machados (antigo boss-caçador, agora recuperado como
 ## inimigo de fase). Herda o MOVESET do Caçador (mesmos padrões/telegraph), mas é
-## mais forte: mais vida (cena) e +1 de dano por golpe (extra_hit_damage na cena).
+## mais forte: +1 de dano por golpe (EnemyStats.STATS["bruxo"].bonus_damage).
 ## Troca as brasas de tocha do Caçador pela aura sombria do feiticeiro amaldiçoado.
 
 # Override do "spawn de partículas" do Caçador: em vez das brasas de tocha, o Bruxo

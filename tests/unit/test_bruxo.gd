@@ -9,8 +9,8 @@ func test_bruxo_is_a_cacador_with_stronger_stats() -> void:
 	add_child_autofree(bruxo)
 	assert_true(bruxo is Cacador, "Bruxo herda o moveset do Caçador")
 	assert_true(bruxo is Criatura, "Bruxo é uma Criatura")
-	assert_eq(bruxo.health.max_health, Constants.COMMON_HEALTH_EARLY, "HP uniforme dos comuns (5)")
-	assert_almost_eq(bruxo.extra_hit_damage, 1.0, 0.001, "+1 de dano por golpe")
+	assert_eq(EnemyStats.max_hp_for(&"bruxo", 1), 5, "HP uniforme dos comuns (5)")
+	assert_almost_eq(EnemyStats.bonus_damage_for(&"bruxo", 1), 1.0, 0.001, "+1 fixo, fase 1 sem delta")
 	assert_eq(bruxo.base_attack_damage, 1)
 
 func test_bruxo_uses_cacador_attack_patterns() -> void:

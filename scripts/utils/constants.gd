@@ -100,22 +100,12 @@ const DAMAGE_COUNTER_MULTIPLIER := 1.0
 # ─── Health ────────────────────────────────────────
 const FIRE_TILE_DAMAGE := 2
 
-# Comuns (não-boss) têm HP UNIFORME por banda de fase: 5 nas fases 1-2, 8 nas 3-5.
+# HP/dano de INIMIGO (comuns e bosses) e o bônus de dano por fase vivem na fonte
+# única EnemyStats (scripts/utils/enemy_stats.gd). NÃO duplique aqui.
 # O dano da Caipora não escala por fase: ele vem da trilha Fúria/CHAMA. A fase
 # endurece inimigos, janelas e padrões; upgrades são a fonte legível de poder.
 # Ver docs/PRD-economia-v2.md §7.
 const CAIPORA_MAX_HEALTH := 2
-const COMMON_HEALTH_EARLY := 5    # comuns das fases 1-2
-const COMMON_HEALTH_LATE := 8     # comuns das fases 3-5
-const BOSS_MAX_HEALTH := 12       # boss P1 (Mula sem Cabeça)
-const BOITATA_MAX_HEALTH := 22    # boss P2
-const CURUPIRA_MAX_HEALTH := 30   # boss P3
-const SACI_MAX_HEALTH := 36       # boss P4
-const JESUITA_MAX_HEALTH := 44    # boss final P5 (Jesuíta Bandeirante Catequizador)
-
-## HP uniforme do comum (não-boss) para a fase dada (5 nas fases 1-2, 8 nas 3-4).
-static func common_health_for_phase(phase: int) -> int:
-	return COMMON_HEALTH_LATE if phase >= 3 else COMMON_HEALTH_EARLY
 
 ## Dano-base de CADA golpe da Caipora. Fase não soma dano; Fúria/CHAMA somam por cima.
 static func caipora_base_damage_for_phase(_phase: int) -> int:
@@ -271,28 +261,22 @@ const UI_PADDING_V := 12  # padding vertical interno
 
 # ─── Fase 2 ────────────────────────────────────────
 # Toda janela de ação (ataque e defesa) encurta 0.1s — a floresta fica mais
-# impiedosa. Cada golpe de inimigo também bate +1 (PHASE2_ENEMY_DAMAGE_BONUS).
+# impiedosa. O bônus de dano de inimigo por fase vive em EnemyStats.PHASE_DAMAGE_BONUS.
 const PHASE2_TIMING_REDUCTION := 0.1
-const PHASE2_ENEMY_DAMAGE_BONUS := 1.0
 
 # ─── Fase 3 ────────────────────────────────────────
 const PHASE3_TIMING_REDUCTION := 0.15
 
 # ─── Fase 4 ────────────────────────────────────────
 # A casa arde. A janela de ação encurta ainda mais que a Fase 3 (0.15 + 0.15 =
-# 0.30 "mais rápido") e cada golpe de inimigo bate +1 (PHASE4_ENEMY_DAMAGE_BONUS).
+# 0.30 "mais rápido"). O bônus de dano de inimigo por fase vive em EnemyStats.
 const PHASE4_TIMING_REDUCTION := 0.30
-const PHASE4_ENEMY_DAMAGE_BONUS := 1.0
 
 # ─── Fase 5 (A Igreja na Mata) ─────────────────────
 # A fase FINAL. Rebalanceada em 2026-06: a janela de ação encurta o MESMO que a
-# Fase 4 (0.30, travado no piso de 0.2s em _phase_window) e cada golpe de inimigo
-# bate -1 (PHASE5_ENEMY_DAMAGE_BONUS negativo: -2 por golpe vs o +1 anterior,
-# com piso de 1 no dano final em arena_manager — golpe que acerta sempre sangra).
-# Vale igualmente para os 4 chefes-monstro convertidos e para o Jesuíta —
-# "o mesmo comportamento".
+# Fase 4 (0.30, travado no piso de 0.2s em _phase_window). O bônus de dano de
+# inimigo da Fase 5 (-1, com piso em arena_manager) vive em EnemyStats.
 const PHASE5_TIMING_REDUCTION := 0.30
-const PHASE5_ENEMY_DAMAGE_BONUS := -1.0
 
 # ─── Physics Layers ────────────────────────────────
 const LAYER_PLAYER := 1

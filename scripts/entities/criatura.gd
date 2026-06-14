@@ -8,8 +8,6 @@ extends CombatActor
 @export var attack_pattern: AttackPattern
 @export var double_block_pattern: AttackPattern
 @export var sprite_scale: float = 2.0
-## Dano extra somado a cada golpe (inimigos mais fortes, ex.: Bruxo). 0 = padrão.
-@export var extra_hit_damage: float = 0.0
 
 const DOUBLE_BLOCK_CHANCE: float = 0.35
 
