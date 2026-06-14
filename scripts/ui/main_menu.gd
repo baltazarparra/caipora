@@ -222,8 +222,8 @@ func _setup_lang_toggle() -> void:
 	_lang_row.add_theme_constant_override("separation", 8)
 	$Center/VBox.add_child(_lang_row)
 
-	_btn_pt = _make_flag_btn("🇧🇷")
-	_btn_en = _make_flag_btn("🇺🇸")
+	_btn_pt = _make_flag_btn("PT")
+	_btn_en = _make_flag_btn("EN")
 	_lang_row.add_child(_btn_pt)
 	_lang_row.add_child(_btn_en)
 
@@ -237,11 +237,14 @@ func _setup_lang_toggle() -> void:
 	_refresh_lang_flags()
 	Lang.language_changed.connect(func(_l: StringName) -> void: _refresh_lang_flags())
 
-func _make_flag_btn(flag: String) -> Button:
+func _make_flag_btn(label: String) -> Button:
 	var btn := Button.new()
-	btn.text = flag
-	btn.add_theme_font_size_override("font_size", 28)
-	btn.flat = true
+	btn.text = label
+	var font := load("res://assets/fonts/PressStart2P.ttf") as Font
+	if font:
+		btn.add_theme_font_override("font", font)
+	btn.add_theme_font_size_override("font_size", 10)
+	btn.custom_minimum_size = Vector2(48, 28)
 	btn.focus_entered.connect(AudioDirector.play_ui_hover)
 	btn.mouse_entered.connect(AudioDirector.play_ui_hover)
 	return btn
@@ -250,8 +253,21 @@ func _refresh_lang_flags() -> void:
 	if not is_instance_valid(_btn_pt):
 		return
 	var is_pt := Lang.current() == Lang.LANG_PT
-	_btn_pt.modulate.a = 1.0 if is_pt else 0.35
-	_btn_en.modulate.a = 1.0 if not is_pt else 0.35
+	_apply_flag_style(_btn_pt, is_pt)
+	_apply_flag_style(_btn_en, not is_pt)
+
+func _apply_flag_style(btn: Button, active: bool) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Constants.COLOR_BLOOD if active else Color(0.08, 0.05, 0.05, 1.0)
+	normal.set_border_width_all(1)
+	normal.border_color = Constants.COLOR_BLOOD
+	btn.add_theme_stylebox_override("normal", normal)
+	var hover := StyleBoxFlat.new()
+	hover.bg_color = Constants.COLOR_BLOOD.lightened(0.15)
+	hover.set_border_width_all(1)
+	hover.border_color = Constants.COLOR_BLOOD
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_color_override("font_color", Constants.COLOR_ARENA_BG if active else Color(0.6, 0.4, 0.4, 1.0))
 
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")
