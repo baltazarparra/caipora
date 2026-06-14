@@ -28,6 +28,7 @@ var _logo: TextureRect
 var _lang_row: HBoxContainer
 var _btn_pt: Button
 var _btn_en: Button
+var _podio_link: LinkButton
 
 func _ready() -> void:
 	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
@@ -206,7 +207,8 @@ func _on_quit_pressed() -> void:
 func _setup_podio_link() -> void:
 	var podio := LinkButton.new()
 	podio.name = "PodioLink"
-	podio.text = "pódio"
+	podio.text = Lang.t(&"menu.podio")
+	_podio_link = podio
 	podio.add_theme_font_size_override("font_size", 14)
 	podio.size_flags_horizontal = Control.SIZE_FILL
 	$Center/VBox.add_child(podio)
@@ -256,6 +258,8 @@ func _on_select_en() -> void:
 func _on_language_changed(_lang: StringName) -> void:
 	_start_button.text = Lang.t(&"menu.start")
 	_quit_button.text = Lang.t(&"menu.quit")
+	if is_instance_valid(_podio_link):
+		_podio_link.text = Lang.t(&"menu.podio")
 	_refresh_lang_flags()
 
 func _refresh_lang_flags() -> void:

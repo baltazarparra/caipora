@@ -73,9 +73,10 @@ const STRINGS: Dictionary = {
 	&"menu.start":              "Start",
 	&"menu.quit":               "Quit",
 	&"menu.update":             "⟳  New balance patch — Update",
+	&"menu.podio":              "Leaderboard",
 
 	# Initials Screen
-	&"initials.title":          "PODIO",
+	&"initials.title":          "PODIUM",
 	&"initials.sub":            "ENTER YOUR INITIALS",
 	&"initials.confirm":        "CONFIRM",
 	&"initials.skip":           "SKIP",

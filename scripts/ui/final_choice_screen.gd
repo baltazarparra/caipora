@@ -14,9 +14,6 @@ extends CanvasLayer
 ## estático vive em BackdropLayer (uma gravação, redraw só quando a poça cresce
 ## ou o viewport muda). Funciona em retrato E paisagem (gotcha 10).
 
-const QUESTION_TEXT := "Poupar ele?"
-const BTN_SPARE_TEXT := "SIM"
-const BTN_KILL_TEXT := "NÃO"
 
 # Pacing da cena (segundos).
 const FADE_IN_DURATION := 1.8
@@ -329,7 +326,7 @@ func _start_cinematics() -> void:
 	# A pergunta, letra a letra; os botões nascem depois dela.
 	var q := create_tween()
 	q.tween_interval(QUESTION_DELAY)
-	q.tween_method(_set_question_chars, 0.0, float(QUESTION_TEXT.length()), TYPE_DURATION)
+	q.tween_method(_set_question_chars, 0.0, float(Lang.t(&"choice.question").length()), TYPE_DURATION)
 	q.tween_property(_buttons_box, "modulate:a", 1.0, BUTTONS_FADE)
 	q.tween_callback(_enable_buttons)
 

@@ -372,12 +372,6 @@ const RITE_FADE_TIME: float = 0.7
 const RITE_HOLD_TIME: float = 1.6
 const RITE_SKIP_GRACE_MS: int = 400
 const RITE_BURST_AMOUNT: int = 14
-const RITE_LINES := {
-	1: "a mula descansa. o fogo dela é teu agora.",
-	2: "a luz do boitatá ronda a clareira. nada atravessa.",
-	3: "o parente mais antigo vigia. a mata volta a crescer.",
-	4: "o vento entrou no acampamento. o saci fuma em silêncio.",
-}
 
 var _rite_queue: Array[int] = []
 var _rite_phase: int = 0

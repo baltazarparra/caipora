@@ -16,8 +16,6 @@ signal purchased(key: String)
 signal denied(key: String)
 
 const HINT_COLOR := Color(0.55, 0.55, 0.58, 1.0)
-const TITLE_FURIA := "FÚRIA · dano"
-const TITLE_CURA := "CURA · vida"
 const COLUMN_SEP := 48         # separação entre as trilhas lado a lado (paisagem)
 const PORTRAIT_TRACK_SEP := 16 # separação entre as trilhas empilhadas (retrato)
 const CARD_WIDTH_MAX := 330    # teto da largura de coluna em paisagem
@@ -44,8 +42,10 @@ var _tray_box: StyleBoxFlat
 # Largura corrente dos cards/colunas (recalculada por orientação em _relayout).
 var _card_w: float = float(CARD_WIDTH_MAX)
 
-# Colunas por trilha: { "furia"/"cura": { "vbox": VBox, "cards": Array[HubCard] } }.
+# Colunas por trilha: { "furia"/"cura": { "vbox": VBox, "heading": Label, "cards": Array[HubCard] } }.
 var _columns: Dictionary = {}
+var _furia_heading: Label
+var _cura_heading: Label
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -71,6 +71,7 @@ func _build() -> void:
 	_relayout()
 	get_viewport().size_changed.connect(_apply_safe_margins)
 	get_viewport().size_changed.connect(_relayout)
+	Lang.language_changed.connect(_refresh_text)
 	refresh()
 
 # Cabeçalho: [ fragmentos + bônus à esquerda ] ··· [ Opções à direita ].
@@ -136,6 +137,8 @@ func _build_cards() -> void:
 
 	_columns["furia"] = _build_column(_tracks, Lang.t(&"hub.track.furia"), MetaProgression.FURIA_KEYS)
 	_columns["cura"] = _build_column(_tracks, Lang.t(&"hub.track.cura"), MetaProgression.CURA_KEYS)
+	_furia_heading = _columns["furia"]["heading"]
+	_cura_heading  = _columns["cura"]["heading"]
 
 # Uma trilha: título + os cards disponíveis (ou um status do que vem a seguir).
 func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictionary:
@@ -153,7 +156,7 @@ func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictiona
 	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(heading)
 
-	var column := { "vbox": vbox, "cards": [] as Array }
+	var column := { "vbox": vbox, "heading": heading, "cards": [] as Array }
 	var avail := MetaProgression.available_keys(keys)
 	if avail.is_empty():
 		_add_status(column, keys)
@@ -240,6 +243,14 @@ func refresh() -> void:
 	for line: String in _columns:
 		for card: HubCard in _columns[line]["cards"]:
 			card.set_affordable(MetaProgression.fragments >= card.cost)
+
+func _refresh_text(_lang: StringName = Lang.current()) -> void:
+	_options_button.text = Lang.t(&"hub.options.btn")
+	if is_instance_valid(_furia_heading):
+		_furia_heading.text = Lang.t(&"hub.track.furia")
+	if is_instance_valid(_cura_heading):
+		_cura_heading.text = Lang.t(&"hub.track.cura")
+	refresh()
 
 # Número flutuante "−custo" subindo do card (screen-space, sobre o _root).
 func _spawn_floating_cost(card: HubCard) -> void:

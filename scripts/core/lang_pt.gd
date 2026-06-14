@@ -72,6 +72,7 @@ const STRINGS: Dictionary = {
 	&"menu.start":              "Iniciar",
 	&"menu.quit":               "Sair",
 	&"menu.update":             "⟳  Novo balanceamento — Atualizar",
+	&"menu.podio":              "Pódio",
 
 	# Initials Screen
 	&"initials.title":          "PODIO",
