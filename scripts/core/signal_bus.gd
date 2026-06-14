@@ -38,6 +38,11 @@ signal defense_result_perfect()
 ## Janela expirou sem input correto, ou input veio no timing errado.
 signal defense_result_miss()
 
+# ─── Balanceamento remoto (RemoteConfig) ──────────
+## Há balanceamento de inimigo novo no servidor (version mais nova que a aplicada).
+## O menu mostra o banner "Atualizar"; aplicar troca os overrides ativos.
+signal remote_config_update_available(version: int)
+
 # ─── Bolsa de fragmentos (corpse run) ──────────────
 # Emitidos pelo MetaProgression; o AudioDirector (persistente) toca os one-shots —
 # a cena que derruba a bolsa morre na transição para GAME_OVER e cortaria o som.

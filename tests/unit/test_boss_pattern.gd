@@ -11,7 +11,7 @@ func test_boss_is_a_criatura_with_boss_stats():
     var boss = preload("res://scenes/arena/boss.tscn").instantiate()
     add_child_autofree(boss)
     assert_true(boss is Criatura, "Boss herda de Criatura")
-    assert_eq(boss.health.max_health, Constants.BOSS_MAX_HEALTH)
+    assert_eq(EnemyStats.max_hp_for(&"mula", 1), 12, "HP do boss base (P1)")
     assert_eq(boss.base_attack_damage, 1)
     assert_eq(boss.attack_pattern.strike_count, 3)
 

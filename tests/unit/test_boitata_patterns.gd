@@ -10,8 +10,7 @@ func test_boitata_is_a_boss() -> void:
 	assert_true(_boitata is Boss, "Boitata herda de Boss")
 
 func test_boitata_has_correct_health() -> void:
-	assert_eq(_boitata.health.max_health, Constants.BOITATA_MAX_HEALTH)
-	assert_eq(Constants.BOITATA_MAX_HEALTH, 22)
+	assert_eq(EnemyStats.max_hp_for(&"boitata", 2), 22, "HP do boss P2")
 
 func test_white_special_pattern_fields() -> void:
 	var p := preload("res://resources/attack_patterns/boitata_white_special_pattern.tres")

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Caipora — Balanceamento de Inimigos</title>
+  <link rel="icon" type="image/png" href="assets/sprites/brand_mark.png">
+  <style>
+    @font-face {
+      font-family: "PressStart2P";
+      src: url("assets/fonts/PressStart2P.ttf") format("truetype");
+      font-display: swap;
+    }
+    :root {
+      --bg: #050505;
+      --panel: #0e0d0d;
+      --line: #2a1414;
+      --blood: #b41818;
+      --ember: #e8731f;
+      --ink: #d8cfca;
+      --muted: #7e7470;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Courier New", monospace; line-height: 1.4;
+      background-image: radial-gradient(circle at 50% -10%, #1a0808 0%, #050505 60%);
+      min-height: 100vh;
+    }
+    h1, h2, .pix { font-family: "PressStart2P", monospace; }
+    a { color: var(--ember); }
+    header {
+      padding: 22px 18px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 15px; margin: 0; color: var(--blood); letter-spacing: 1px; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+
+    /* ---- login ---- */
+    #login {
+      position: fixed; inset: 0; background: rgba(5,5,5,.96);
+      display: flex; align-items: center; justify-content: center; z-index: 50;
+    }
+    #login .box {
+      width: min(360px, 92vw); background: var(--panel);
+      border: 1px solid var(--line); padding: 26px;
+    }
+    #login h2 { font-size: 12px; color: var(--blood); margin: 0 0 18px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin: 14px 0 5px; text-transform: uppercase; letter-spacing: 1px; }
+    input[type=text], input[type=password], input[type=number] {
+      width: 100%; background: #000; color: var(--ink);
+      border: 1px solid var(--line); padding: 9px 10px; font-family: inherit; font-size: 14px;
+    }
+    input:focus { outline: none; border-color: var(--ember); }
+    .chk { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 12px; }
+    button {
+      font-family: "PressStart2P", monospace; font-size: 10px; cursor: pointer;
+      background: var(--blood); color: #fff; border: none; padding: 12px 14px; letter-spacing: 1px;
+    }
+    button:hover { background: var(--ember); }
+    button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    button.ghost:hover { color: var(--ink); border-color: var(--ember); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .err { color: var(--blood); font-size: 12px; margin-top: 12px; min-height: 16px; }
+
+    /* ---- phases + cards ---- */
+    .phase-title { font-size: 12px; color: var(--ember); margin: 28px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .card { background: var(--panel); border: 1px solid var(--line); padding: 12px; display: flex; gap: 12px; }
+    .card .art {
+      width: 56px; height: 56px; flex: 0 0 56px; background: #000; border: 1px solid var(--line);
+      image-rendering: pixelated; object-fit: contain;
+    }
+    .card .meta { flex: 1; min-width: 0; }
+    .card .nome { font-size: 13px; color: var(--ink); font-weight: bold; }
+    .card .papel { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .fields { display: flex; gap: 8px; margin-top: 8px; }
+    .fields .f { flex: 1; }
+    .fields label { margin: 0 0 3px; }
+    .fields input { padding: 6px 7px; font-size: 13px; }
+
+    .bar {
+      position: sticky; bottom: 0; background: rgba(5,5,5,.95); border-top: 1px solid var(--line);
+      padding: 14px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 24px;
+    }
+    .status { font-size: 12px; color: var(--muted); }
+    .status.ok { color: #4fae54; }
+    .status.bad { color: var(--blood); }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="login">
+    <div class="box">
+      <h2>ACESSO — BALANCEAMENTO</h2>
+      <form id="loginForm">
+        <label for="user">Usuário</label>
+        <input type="text" id="user" autocomplete="username" autocapitalize="none" spellcheck="false">
+        <label for="pass">Senha</label>
+        <input type="password" id="pass" autocomplete="current-password">
+        <div class="chk">
+          <input type="checkbox" id="remember" checked>
+          <label for="remember" style="margin:0;text-transform:none;letter-spacing:0;">Salvar sessão (encriptada) neste aparelho</label>
+        </div>
+        <div class="err" id="loginErr"></div>
+        <button type="submit" style="width:100%;margin-top:6px;">ENTRAR</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="app" class="hide">
+    <header>
+      <h1>⚔ CAIPORA — HP & DANO DOS INIMIGOS</h1>
+      <button class="ghost" id="logout">SAIR</button>
+    </header>
+    <div class="wrap">
+      <p class="status" id="loadStatus">Carregando…</p>
+      <div id="phases"></div>
+    </div>
+    <div class="bar">
+      <button id="save" disabled>SALVAR E PUBLICAR</button>
+      <span class="status" id="saveStatus"></span>
+      <span class="status" style="margin-left:auto;" id="versionTag"></span>
+    </div>
+  </div>
+
+  <script>
+    const ENDPOINT = "https://mlykeulezzfwljriytuf.supabase.co/functions/v1/caipora-api";
+    const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1seWtldWxlenpmd2xqcml5dHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTIzMTksImV4cCI6MjA5NTgyODMxOX0.i9jQGbtQrxbcyR4M-XNZpwPYwJ_GcxrP-VE4Gniamqg";
+    const ADMIN_USER = "baltz";
+    const LS_KEY = "caipora_admin_hash";
+
+    // Roster fixo: rótulo + sprite + ordenação. Os VALORES vêm do servidor (get_enemy_stats);
+    // se uma chave faltar, cai no default abaixo. Sprite do comum usa o genérico boss_idle.
+    const ROSTER = [
+      { key:"cacador@1", nome:"Caçador",            fase:1, papel:"comum",    sprite:"boss_idle",   hp:5,  damage:0 },
+      { key:"mula@1",    nome:"Mula sem Cabeça",    fase:1, papel:"boss",     sprite:"mula_idle",   hp:12, damage:0 },
+      { key:"bruxo@2",   nome:"Bruxo dos Machados", fase:2, papel:"comum",    sprite:"boss_idle",   hp:5,  damage:2 },
+      { key:"cacador@2", nome:"Caçador",            fase:2, papel:"comum",    sprite:"boss_idle",   hp:5,  damage:1 },
+      { key:"boitata@2", nome:"Boitatá",            fase:2, papel:"boss",     sprite:"boitata_idle",hp:22, damage:1 },
+      { key:"bruxo@3",   nome:"Bruxo dos Machados", fase:3, papel:"comum",    sprite:"boss_idle",   hp:8,  damage:1 },
+      { key:"cacador@3", nome:"Caçador",            fase:3, papel:"comum",    sprite:"boss_idle",   hp:8,  damage:0 },
+      { key:"assombracao@3", nome:"Assombração",    fase:3, papel:"comum",    sprite:"boss_idle",   hp:8,  damage:0 },
+      { key:"curupira@3",nome:"Curupira",           fase:3, papel:"boss",     sprite:"curupira_idle",hp:30,damage:0 },
+      { key:"cacador@4", nome:"Caçador",            fase:4, papel:"comum",    sprite:"boss_idle",   hp:8,  damage:1 },
+      { key:"bruxo@4",   nome:"Bruxo dos Machados", fase:4, papel:"comum",    sprite:"boss_idle",   hp:8,  damage:2 },
+      { key:"saci@4",    nome:"Saci",               fase:4, papel:"boss",     sprite:"saci_idle",   hp:36, damage:1 },
+      { key:"mula@5",    nome:"Mula sem Cabeça",    fase:5, papel:"miniboss", sprite:"mula_idle",   hp:12, damage:-1 },
+      { key:"boitata@5", nome:"Boitatá",            fase:5, papel:"miniboss", sprite:"boitata_idle",hp:22, damage:-1 },
+      { key:"curupira@5",nome:"Curupira",           fase:5, papel:"miniboss", sprite:"curupira_idle",hp:30,damage:-1 },
+      { key:"saci@5",    nome:"Saci",               fase:5, papel:"miniboss", sprite:"saci_idle",   hp:36, damage:-1 },
+      { key:"jesuita@5", nome:"Jesuíta Bandeirante",fase:5, papel:"boss",     sprite:"jesuita_idle",hp:44, damage:-1 },
+    ];
+
+    let sessionHash = null;
+
+    async function sha256hex(s) {
+      const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+      return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function api(action, extra) {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + ANON, "apikey": ANON },
+        body: JSON.stringify(Object.assign({ action }, extra || {})),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    // ---- login ----
+    function showApp() {
+      document.getElementById("login").classList.add("hide");
+      document.getElementById("app").classList.remove("hide");
+      loadStats();
+    }
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("loginErr");
+      err.textContent = "";
+      const user = document.getElementById("user").value.trim();
+      const pass = document.getElementById("pass").value;
+      if (user !== ADMIN_USER) { err.textContent = "Usuário ou senha inválidos."; return; }
+      sessionHash = await sha256hex(pass);
+      if (document.getElementById("remember").checked) localStorage.setItem(LS_KEY, sessionHash);
+      showApp();
+    });
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem(LS_KEY); location.reload();
+    });
+
+    // ---- cards ----
+    function render(values) {
+      const phases = {};
+      for (const r of ROSTER) (phases[r.fase] = phases[r.fase] || []).push(r);
+      const host = document.getElementById("phases");
+      host.innerHTML = "";
+      for (const fase of Object.keys(phases).sort()) {
+        const h = document.createElement("h2");
+        h.className = "phase-title";
+        h.textContent = "FASE " + fase;
+        host.appendChild(h);
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        for (const r of phases[fase]) {
+          const v = values[r.key] || { hp: r.hp, damage: r.damage };
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML =
+            '<img class="art" alt="" src="assets/sprites/' + r.sprite + '.png" onerror="this.src=\'assets/sprites/boss_idle.png\'">' +
+            '<div class="meta">' +
+              '<div class="nome">' + r.nome + '</div>' +
+              '<div class="papel">' + r.papel + ' · fase ' + r.fase + '</div>' +
+              '<div class="fields">' +
+                '<div class="f"><label>HP</label><input type="number" min="1" step="1" data-key="' + r.key + '" data-field="hp" value="' + v.hp + '"></div>' +
+                '<div class="f"><label>Dano</label><input type="number" step="1" data-key="' + r.key + '" data-field="damage" value="' + v.damage + '"></div>' +
+              '</div>' +
+            '</div>';
+          grid.appendChild(card);
+        }
+        host.appendChild(grid);
+      }
+    }
+
+    async function loadStats() {
+      const status = document.getElementById("loadStatus");
+      const r = await api("get_enemy_stats");
+      if (!r.ok) { status.textContent = "Falha ao carregar (" + r.status + ")."; status.className = "status bad"; return; }
+      render(r.data.data || {});
+      status.classList.add("hide");
+      document.getElementById("versionTag").textContent = "versão atual: " + (r.data.version ?? "?");
+      document.getElementById("save").disabled = false;
+    }
+
+    function collect() {
+      const data = {};
+      document.querySelectorAll("input[data-key]").forEach((el) => {
+        const k = el.dataset.key;
+        data[k] = data[k] || {};
+        data[k][el.dataset.field] = el.value.trim() === "" ? NaN : Number(el.value);
+      });
+      return data;
+    }
+
+    document.getElementById("save").addEventListener("click", async () => {
+      const st = document.getElementById("saveStatus");
+      const btn = document.getElementById("save");
+      const data = collect();
+      // guard: grid vazia (carregamento falhou) — nunca publicar dados vazios.
+      if (Object.keys(data).length === 0) {
+        st.textContent = "Nenhum dado carregado — recarregue a página."; st.className = "status bad"; return;
+      }
+      // validação client-side: HP >= 1, dano numérico finito e não-vazio.
+      for (const k in data) {
+        if (!(data[k].hp >= 1)) { st.textContent = "HP inválido em " + k + " (mínimo 1)."; st.className = "status bad"; return; }
+        if (!Number.isFinite(data[k].damage)) { st.textContent = "Dano inválido em " + k + " (campo vazio ou não-numérico)."; st.className = "status bad"; return; }
+      }
+      btn.disabled = true; st.textContent = "Salvando…"; st.className = "status";
+      try {
+        const r = await api("set_enemy_stats", { admin_pass_hash: sessionHash, data });
+        btn.disabled = false;
+        if (r.status === 401) {
+          st.textContent = "Senha incorreta — faça login de novo."; st.className = "status bad";
+          localStorage.removeItem(LS_KEY); return;
+        }
+        if (!r.ok) { st.textContent = "Erro: " + (r.data.error || r.status); st.className = "status bad"; return; }
+        st.textContent = "Publicado! Os jogadores verão o banner de atualização no próximo boot."; st.className = "status ok";
+        document.getElementById("versionTag").textContent = "versão atual: " + r.data.version;
+      } catch (_err) {
+        btn.disabled = false;
+        st.textContent = "Erro de rede — verifique a conexão e tente de novo."; st.className = "status bad";
+      }
+    });
+
+    // sessão salva?
+    (function boot() {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) { sessionHash = saved; showApp(); }
+    })();
+  </script>
+</body>
+</html>

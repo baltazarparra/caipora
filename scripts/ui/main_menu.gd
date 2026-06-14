@@ -34,6 +34,7 @@ func _ready() -> void:
 	_setup_fade()
 	_setup_logo()
 	_setup_version_label()
+	_setup_update_banner()
 	_relayout_buttons()
 	get_viewport().size_changed.connect(_relayout_buttons)
 	# Foco inicial ANTES de ligar o hover: abrir o menu não dá tick, navegar dá.
@@ -56,6 +57,31 @@ func _setup_version_label() -> void:
 	label.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	label.position -= Vector2(12, 10)
 	add_child(label)
+
+## Banner de balanceamento novo (RemoteConfig). Aparece no topo quando o servidor tem
+## valores de inimigo mais novos que os aplicados; clicar aplica e (no web) recarrega.
+## Trata a corrida: se o fetch já chegou antes deste _ready, o pending já está pronto.
+var _update_banner: Button
+func _setup_update_banner() -> void:
+	SignalBus.remote_config_update_available.connect(_on_update_available)
+	if RemoteConfig.has_pending():
+		_show_update_banner()
+
+func _on_update_available(_version: int) -> void:
+	_show_update_banner()
+
+func _show_update_banner() -> void:
+	if is_instance_valid(_update_banner):
+		return
+	_update_banner = Button.new()
+	_update_banner.text = "⟳  Novo balanceamento — Atualizar"
+	_update_banner.add_theme_font_size_override("font_size", 14)
+	_update_banner.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_update_banner.focus_mode = Control.FOCUS_NONE
+	_update_banner.pressed.connect(func() -> void:
+		AudioDirector.play_ui_hover()
+		RemoteConfig.apply_pending())
+	add_child(_update_banner)
 
 ## Versão a exibir: o carimbo automático do build (scripts/core/build_info.gd, alpha-X.Y.Z
 ## com Z = contagem de commits do git, gerado em `make export` — gitignored) quando

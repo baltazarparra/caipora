@@ -28,8 +28,7 @@ func test_jesuita_inherits_saci_and_boss() -> void:
 	assert_true(_jesuita is Boss, "Jesuíta é um Boss")
 
 func test_jesuita_health_is_44() -> void:
-	assert_eq(_jesuita.health.max_health, Constants.JESUITA_MAX_HEALTH)
-	assert_eq(Constants.JESUITA_MAX_HEALTH, 44)
+	assert_eq(EnemyStats.max_hp_for(&"jesuita", 5), 44, "HP do boss final")
 
 func test_get_attack_pattern_always_valid() -> void:
 	for _i in 50:

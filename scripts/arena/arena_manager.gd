@@ -41,6 +41,7 @@ const VICTORY_OUTRO_HOLD: float = 1.8
 
 var _caipora: CombatActor
 var _enemy: Criatura
+var _enemy_id: StringName = &""
 var _timing_system: TimingSystem
 var _timing_bubble: Node2D
 var _timing_bubble_b: Node2D
@@ -281,11 +282,9 @@ func _apply_furia_visual() -> void:
 	FuriaVisual.attach_to(animated_sprite)
 
 func _spawn_enemy() -> void:
-	# Consome o flag volátil ANTES de qualquer early-return, para nunca vazar estado
-	# para o próximo combate. Comuns (não-boss) têm HP uniforme por banda de fase;
-	# bosses mantêm o HP da cena. Exceção (Fase 5): os chefes-monstro convertidos são
-	# roteados como comuns mas mantêm o HP de chefe da própria cena (keeps_own_hp).
-	var keeps_own_hp := GameState.active_combat_keeps_own_hp
+	# Consome o flag volátil para nunca vazar estado para o próximo combate. O HP de
+	# TODO inimigo vem agora da fonte única EnemyStats (boss = fixo, comum = banda de
+	# fase, miniboss = fixo via tabela) — a cena .tscn não é mais consultada.
 	GameState.active_combat_keeps_own_hp = false
 	var scene := enemy_scene
 	if GameState.next_enemy_scene != null:
@@ -297,10 +296,10 @@ func _spawn_enemy() -> void:
 	_enemy = scene.instantiate()
 	_enemy.position = ArenaFraming.enemy_pos(get_viewport().get_visible_rect().size)
 	add_child(_enemy)
-	if not GameState.active_combat_is_boss and not keeps_own_hp:
-		var hp: int = Constants.common_health_for_phase(GameState.active_phase)
-		_enemy.health.max_health = hp
-		_enemy.health.current_health = float(hp)
+	_enemy_id = EnemyStats.id_for(_enemy)
+	var hp: int = EnemyStats.max_hp_for(_enemy_id, GameState.active_phase)
+	_enemy.health.max_health = hp
+	_enemy.health.current_health = float(hp)
 	_active_enemy_pattern = _enemy.attack_pattern
 	_enemy.health.died.connect(_on_actor_died.bind(_enemy))
 	_enemy.health.health_changed.connect(_on_enemy_health_changed)
@@ -559,17 +558,12 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
-		# Inimigos mais fortes (ex.: Bruxo) batem um tanto a mais por golpe.
-		damage += _enemy.extra_hit_damage
-		# Fase 2/4: cada golpe de inimigo bate 1 a mais — a floresta é mais hostil.
-		# Fase 5: bônus NEGATIVO (rebalance 2026-06), com piso de 1 — golpe que
-		# acerta sempre sangra (vale para os 4 chefes-monstro E para o Jesuíta).
-		if GameState.active_phase == 2:
-			damage += Constants.PHASE2_ENEMY_DAMAGE_BONUS
-		elif GameState.active_phase == 4:
-			damage += Constants.PHASE4_ENEMY_DAMAGE_BONUS
-		elif GameState.active_phase == 5:
-			damage = maxf(damage + Constants.PHASE5_ENEMY_DAMAGE_BONUS, 1.0)
+		# Dano do inimigo: EnemyStats (com override remoto do painel admin por inimigo×fase).
+		# bonus_damage_for já soma o fixo da criatura + o delta de fase. Fase 5: piso
+		# DAMAGE_FLOOR pós-soma — golpe que acerta sempre sangra.
+		damage += EnemyStats.bonus_damage_for(_enemy_id, GameState.active_phase)
+		if GameState.active_phase == 5:
+			damage = maxf(damage, EnemyStats.DAMAGE_FLOOR)
 		_caipora.take_damage(damage)
 		# A guardiã sangrando tem voz própria — hit_sound é o impacto NO inimigo.
 		_sfx.play_outcome(SfxSystem.Outcome.HURT)

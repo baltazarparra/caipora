@@ -14,7 +14,6 @@ size = Vector2(96, 128)
 script = ExtResource("1_script")
 base_attack_damage = 1
 sprite_scale = 1.2
-extra_hit_damage = 1.0
 attack_pattern = ExtResource("5_pattern")
 double_block_pattern = ExtResource("6_double")
 

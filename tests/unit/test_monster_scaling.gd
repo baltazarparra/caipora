@@ -5,11 +5,11 @@ extends GutTest
 #  - Cada golpe da Caipora parte de 1 em toda fase; upgrades/CHAMA somam por cima.
 
 func test_common_health_uniform_per_phase_band() -> void:
-	assert_eq(Constants.common_health_for_phase(1), 5, "fase 1 → 5")
-	assert_eq(Constants.common_health_for_phase(2), 5, "fase 2 → 5")
-	assert_eq(Constants.common_health_for_phase(3), 8, "fase 3 → 8")
-	assert_eq(Constants.common_health_for_phase(4), 8, "fase 4 → 8")
-	assert_eq(Constants.common_health_for_phase(5), 8, "fase 5 → 8")
+	assert_eq(EnemyStats.common_hp_for_phase(1), 5, "fase 1 → 5")
+	assert_eq(EnemyStats.common_hp_for_phase(2), 5, "fase 2 → 5")
+	assert_eq(EnemyStats.common_hp_for_phase(3), 8, "fase 3 → 8")
+	assert_eq(EnemyStats.common_hp_for_phase(4), 8, "fase 4 → 8")
+	assert_eq(EnemyStats.common_hp_for_phase(5), 8, "fase 5 → 8")
 
 func test_caipora_damage_does_not_scale_with_phase() -> void:
 	assert_eq(Constants.caipora_base_damage_for_phase(1), 1, "1 de dano por golpe na P1")
