@@ -208,12 +208,25 @@ func next_pending_key(keys: Array) -> String:
 			return key
 	return ""
 
+## Custo de fragmentos do aprimoramento. Override remoto (painel admin) tem prioridade.
+func _upgrade_cost(key: String) -> int:
+	if RemoteUpgrades.has_override(key):
+		return RemoteUpgrades.cost_override(key)
+	return int(UPGRADE_DEFS[key].get("fragment_cost", 0))
+
+## Valor do atributo (dmg ou hp). Override remoto tem prioridade.
+func _upgrade_attr(key: String) -> int:
+	if RemoteUpgrades.has_override(key):
+		return RemoteUpgrades.attr_override(key)
+	var def: Dictionary = UPGRADE_DEFS[key]
+	return int(def.get("dmg", def.get("hp", 0)))
+
 func get_damage_bonus() -> int:
 	# Soma o "dmg" de cada erva de Fúria comprada (fonte numérica única). Tiers 1-4 somam
 	# +1 cada; tiers 5-6 somam +2 cada (teto +8 → dano 9). A CHAMA soma +CHAMA_DAMAGE_BONUS.
 	var bonus := 0
 	for key in FURIA_KEYS:
-		bonus += get_upgrade_level(key) * int(UPGRADE_DEFS[key].get("dmg", 0))
+		bonus += get_upgrade_level(key) * _upgrade_attr(key)
 	if has_chama:
 		bonus += CHAMA_DAMAGE_BONUS
 	return bonus
@@ -244,7 +257,7 @@ func get_health_bonus() -> int:
 	# crescentes 2/3/3/4/4/5 (teto +21 → HP máx. 23).
 	var bonus := 0
 	for key in CURA_KEYS:
-		bonus += get_upgrade_level(key) * int(UPGRADE_DEFS[key].get("hp", 0))
+		bonus += get_upgrade_level(key) * _upgrade_attr(key)
 	return bonus
 
 ## Texto de efeito DERIVADO da matemática (não há string solta a desincronizar — KI-006).
@@ -256,18 +269,18 @@ func effect_text(key: String) -> String:
 	var def: Dictionary = UPGRADE_DEFS[key]
 	var line: String = String(def.get("line", ""))
 	if line == "furia":
-		var inc: int = int(def.get("dmg", 0))
-		var total := BASE_DAMAGE + _cumulative(FURIA_KEYS, key, "dmg")
+		var inc: int = _upgrade_attr(key)
+		var total := BASE_DAMAGE + _cumulative(FURIA_KEYS, key)
 		return "Dano +%d/hit (total %d)" % [inc, total]
-	var inc_hp: int = int(def.get("hp", 0))
-	var total_hp := Constants.CAIPORA_MAX_HEALTH + _cumulative(CURA_KEYS, key, "hp")
+	var inc_hp: int = _upgrade_attr(key)
+	var total_hp := Constants.CAIPORA_MAX_HEALTH + _cumulative(CURA_KEYS, key)
 	return "+%d HP (total %d)" % [inc_hp, total_hp]
 
-## Soma o campo `field` de todas as ervas de `order` até `key` (inclusive).
-func _cumulative(order: Array[String], key: String, field: String) -> int:
+## Soma o atributo de todas as ervas de `order` até `key` (inclusive).
+func _cumulative(order: Array[String], key: String) -> int:
 	var sum := 0
 	for k in order:
-		sum += int(UPGRADE_DEFS[k].get(field, 0))
+		sum += _upgrade_attr(k)
 		if k == key:
 			break
 	return sum
@@ -288,7 +301,7 @@ func purchase_upgrade(key: String) -> bool:
 	var req: String = def.get("requires", "")
 	if req != "" and get_upgrade_level(req) < 1:
 		return false
-	var cost: int = int(def.get("fragment_cost", 0))
+	var cost: int = _upgrade_cost(key)
 	var level := get_upgrade_level(key)
 	if level >= int(def["max_level"]) or fragments < cost:
 		return false

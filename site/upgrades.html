@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Caipora — Balanceamento de Inimigos</title>
+  <title>Caipora — Aprimoramentos do Cachimbo</title>
   <link rel="icon" type="image/png" href="assets/sprites/brand_mark.png">
   <style>
     @font-face {
@@ -20,6 +20,7 @@
       --ember: #e8731f;
       --ink: #d8cfca;
       --muted: #7e7470;
+      --green: #4fae54;
     }
     * { box-sizing: border-box; }
     body {
@@ -35,6 +36,9 @@
       display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     }
     header h1 { font-size: 15px; margin: 0; color: var(--blood); letter-spacing: 1px; }
+    header nav { display: flex; gap: 12px; }
+    header nav a { font-size: 11px; color: var(--muted); text-decoration: none; }
+    header nav a:hover { color: var(--ember); }
     .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
 
     /* ---- login ---- */
@@ -64,18 +68,20 @@
     button:disabled { opacity: .5; cursor: not-allowed; }
     .err { color: var(--blood); font-size: 12px; margin-top: 12px; min-height: 16px; }
 
-    /* ---- phases + cards ---- */
-    .phase-title { font-size: 12px; color: var(--ember); margin: 28px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-    .card { background: var(--panel); border: 1px solid var(--line); padding: 12px; display: flex; gap: 12px; }
-    .card .art {
-      width: 56px; height: 56px; flex: 0 0 56px; background: #000; border: 1px solid var(--line);
-      image-rendering: pixelated; object-fit: contain;
+    /* ---- trilhas ---- */
+    .trilha-title {
+      font-size: 12px; color: var(--ember); margin: 28px 0 12px;
+      border-bottom: 1px solid var(--line); padding-bottom: 8px;
+      font-family: "PressStart2P", monospace;
     }
-    .card .meta { flex: 1; min-width: 0; }
-    .card .nome { font-size: 13px; color: var(--ink); font-weight: bold; }
-    .card .papel { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-    .fields { display: flex; gap: 8px; margin-top: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); padding: 14px;
+    }
+    .card .nome { font-size: 13px; color: var(--ink); font-weight: bold; margin-bottom: 3px; }
+    .card .meta-row { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .card .meta-row .tipo { color: var(--ember); }
+    .fields { display: flex; gap: 10px; }
     .fields .f { flex: 1; }
     .fields label { margin: 0 0 3px; }
     .fields input { padding: 6px 7px; font-size: 13px; }
@@ -85,7 +91,7 @@
       padding: 14px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 24px;
     }
     .status { font-size: 12px; color: var(--muted); }
-    .status.ok { color: #4fae54; }
+    .status.ok { color: var(--green); }
     .status.bad { color: var(--blood); }
     .hide { display: none !important; }
   </style>
@@ -94,7 +100,7 @@
   <!-- LOGIN -->
   <div id="login">
     <div class="box">
-      <h2>ACESSO — BALANCEAMENTO</h2>
+      <h2>ACESSO — APRIMORAMENTOS</h2>
       <form id="loginForm">
         <label for="user">Usuário</label>
         <input type="text" id="user" autocomplete="username" autocapitalize="none" spellcheck="false">
@@ -113,12 +119,16 @@
   <!-- PAINEL -->
   <div id="app" class="hide">
     <header>
-      <h1>⚔ CAIPORA — HP, DANO & DROP DOS INIMIGOS</h1>
+      <h1>⚗ CAIPORA — APRIMORAMENTOS DO CACHIMBO</h1>
+      <nav>
+        <a href="admin.html">Inimigos</a>
+        <a href="sequences.html">Sequências</a>
+      </nav>
       <button class="ghost" id="logout">SAIR</button>
     </header>
     <div class="wrap">
       <p class="status" id="loadStatus">Carregando…</p>
-      <div id="phases"></div>
+      <div id="trilhas"></div>
     </div>
     <div class="bar">
       <button id="save" disabled>SALVAR E PUBLICAR</button>
@@ -133,26 +143,23 @@
     const ADMIN_USER = "baltz";
     const LS_KEY = "caipora_admin_hash";
 
-    // Roster fixo: rótulo + sprite + ordenação. Os VALORES vêm do servidor (get_enemy_stats);
-    // se uma chave faltar, cai no default abaixo. Sprite do comum usa o genérico boss_idle.
-    const ROSTER = [
-      { key:"cacador@1",    nome:"Caçador",            fase:1, papel:"comum",    sprite:"boss_idle",    hp:5,  damage:0,  fragment_drop:1  },
-      { key:"mula@1",       nome:"Mula sem Cabeça",    fase:1, papel:"boss",     sprite:"mula_idle",    hp:12, damage:0,  fragment_drop:3  },
-      { key:"bruxo@2",      nome:"Bruxo dos Machados", fase:2, papel:"comum",    sprite:"boss_idle",    hp:5,  damage:2,  fragment_drop:2  },
-      { key:"cacador@2",    nome:"Caçador",            fase:2, papel:"comum",    sprite:"boss_idle",    hp:5,  damage:1,  fragment_drop:2  },
-      { key:"boitata@2",    nome:"Boitatá",            fase:2, papel:"boss",     sprite:"boitata_idle", hp:22, damage:1,  fragment_drop:5  },
-      { key:"bruxo@3",      nome:"Bruxo dos Machados", fase:3, papel:"comum",    sprite:"boss_idle",    hp:8,  damage:1,  fragment_drop:3  },
-      { key:"cacador@3",    nome:"Caçador",            fase:3, papel:"comum",    sprite:"boss_idle",    hp:8,  damage:0,  fragment_drop:3  },
-      { key:"assombracao@3",nome:"Assombração",        fase:3, papel:"comum",    sprite:"boss_idle",    hp:8,  damage:0,  fragment_drop:3  },
-      { key:"curupira@3",   nome:"Curupira",           fase:3, papel:"boss",     sprite:"curupira_idle",hp:30, damage:0,  fragment_drop:8  },
-      { key:"cacador@4",    nome:"Caçador",            fase:4, papel:"comum",    sprite:"boss_idle",    hp:8,  damage:1,  fragment_drop:4  },
-      { key:"bruxo@4",      nome:"Bruxo dos Machados", fase:4, papel:"comum",    sprite:"boss_idle",    hp:8,  damage:2,  fragment_drop:4  },
-      { key:"saci@4",       nome:"Saci",               fase:4, papel:"boss",     sprite:"saci_idle",    hp:36, damage:1,  fragment_drop:12 },
-      { key:"mula@5",       nome:"Mula sem Cabeça",    fase:5, papel:"miniboss", sprite:"mula_idle",    hp:12, damage:-1, fragment_drop:20 },
-      { key:"boitata@5",    nome:"Boitatá",            fase:5, papel:"miniboss", sprite:"boitata_idle", hp:22, damage:-1, fragment_drop:20 },
-      { key:"curupira@5",   nome:"Curupira",           fase:5, papel:"miniboss", sprite:"curupira_idle",hp:30, damage:-1, fragment_drop:20 },
-      { key:"saci@5",       nome:"Saci",               fase:5, papel:"miniboss", sprite:"saci_idle",    hp:36, damage:-1, fragment_drop:20 },
-      { key:"jesuita@5",    nome:"Jesuíta Bandeirante",fase:5, papel:"boss",     sprite:"jesuita_idle", hp:44, damage:-1, fragment_drop:20 },
+    // Ervas do cachimbo: ordem canônica e defaults de UPGRADE_DEFS.
+    // fragment_cost e value são editáveis; o resto é só exibição.
+    const UPGRADES = [
+      // Trilha Fúria (dano)
+      { key:"forca",   nome:"Folha-Brasa",       trilha:"Fúria",  fase:1, attr:"Dano", fragment_cost:5,  value:1 },
+      { key:"forca_2", nome:"Cinza-Viva",         trilha:"Fúria",  fase:2, attr:"Dano", fragment_cost:10, value:1 },
+      { key:"forca_3", nome:"Raiz-de-Ira",        trilha:"Fúria",  fase:3, attr:"Dano", fragment_cost:16, value:1 },
+      { key:"forca_4", nome:"Breu-Ancestral",      trilha:"Fúria",  fase:4, attr:"Dano", fragment_cost:24, value:1 },
+      { key:"forca_5", nome:"Osso-Quebrado",       trilha:"Fúria",  fase:5, attr:"Dano", fragment_cost:36, value:2 },
+      { key:"forca_6", nome:"Chaga-da-Mata",       trilha:"Fúria",  fase:6, attr:"Dano", fragment_cost:50, value:2 },
+      // Trilha Cura (HP)
+      { key:"saude",   nome:"Seiva-Mãe",           trilha:"Cura",   fase:1, attr:"HP",   fragment_cost:6,  value:2 },
+      { key:"saude_2", nome:"Casca-Boa",           trilha:"Cura",   fase:2, attr:"HP",   fragment_cost:12, value:3 },
+      { key:"saude_3", nome:"Folha-de-Sangue",     trilha:"Cura",   fase:3, attr:"HP",   fragment_cost:20, value:3 },
+      { key:"saude_4", nome:"Coração-de-Cerne",    trilha:"Cura",   fase:4, attr:"HP",   fragment_cost:30, value:4 },
+      { key:"saude_5", nome:"Rachadura-Viva",      trilha:"Cura",   fase:5, attr:"HP",   fragment_cost:42, value:4 },
+      { key:"saude_6", nome:"Pele-de-Defunto",     trilha:"Cura",   fase:6, attr:"HP",   fragment_cost:58, value:5 },
     ];
 
     let sessionHash = null;
@@ -176,7 +183,7 @@
     function showApp() {
       document.getElementById("login").classList.add("hide");
       document.getElementById("app").classList.remove("hide");
-      loadStats();
+      loadUpgrades();
     }
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -195,34 +202,30 @@
 
     // ---- cards ----
     function render(values) {
-      const phases = {};
-      for (const r of ROSTER) (phases[r.fase] = phases[r.fase] || []).push(r);
-      const host = document.getElementById("phases");
+      const trilhas = {};
+      for (const u of UPGRADES) (trilhas[u.trilha] = trilhas[u.trilha] || []).push(u);
+      const host = document.getElementById("trilhas");
       host.innerHTML = "";
-      for (const fase of Object.keys(phases).sort()) {
+      for (const trilha of ["Fúria", "Cura"]) {
+        if (!trilhas[trilha]) continue;
         const h = document.createElement("h2");
-        h.className = "phase-title";
-        h.textContent = "FASE " + fase;
+        h.className = "trilha-title";
+        h.textContent = "TRILHA — " + trilha.toUpperCase();
         host.appendChild(h);
         const grid = document.createElement("div");
         grid.className = "grid";
-        for (const r of phases[fase]) {
-          const sv = values[r.key] || {};
-          const vhp  = sv.hp         != null ? sv.hp         : r.hp;
-          const vdmg = sv.damage      != null ? sv.damage     : r.damage;
-          const vfd  = sv.fragment_drop != null ? sv.fragment_drop : r.fragment_drop;
+        for (const u of trilhas[trilha]) {
+          const sv = values[u.key] || {};
+          const vcost = sv.fragment_cost != null ? sv.fragment_cost : u.fragment_cost;
+          const vval  = sv.value         != null ? sv.value         : u.value;
           const card = document.createElement("div");
           card.className = "card";
           card.innerHTML =
-            '<img class="art" alt="" src="assets/sprites/' + r.sprite + '.png" onerror="this.src=\'assets/sprites/boss_idle.png\'">' +
-            '<div class="meta">' +
-              '<div class="nome">' + r.nome + '</div>' +
-              '<div class="papel">' + r.papel + ' · fase ' + r.fase + '</div>' +
-              '<div class="fields">' +
-                '<div class="f"><label>HP</label><input type="number" min="1" step="1" data-key="' + r.key + '" data-field="hp" value="' + vhp + '"></div>' +
-                '<div class="f"><label>Dano</label><input type="number" step="1" data-key="' + r.key + '" data-field="damage" value="' + vdmg + '"></div>' +
-                '<div class="f"><label>Drop</label><input type="number" min="0" step="1" data-key="' + r.key + '" data-field="fragment_drop" value="' + vfd + '"></div>' +
-              '</div>' +
+            '<div class="nome">' + u.nome + '</div>' +
+            '<div class="meta-row">fase ' + u.fase + ' · <span class="tipo">' + u.trilha + '</span></div>' +
+            '<div class="fields">' +
+              '<div class="f"><label>Custo (frags)</label><input type="number" min="1" step="1" data-key="' + u.key + '" data-field="fragment_cost" value="' + vcost + '"></div>' +
+              '<div class="f"><label>' + u.attr + '</label><input type="number" min="1" step="1" data-key="' + u.key + '" data-field="value" value="' + vval + '"></div>' +
             '</div>';
           grid.appendChild(card);
         }
@@ -230,9 +233,9 @@
       }
     }
 
-    async function loadStats() {
+    async function loadUpgrades() {
       const status = document.getElementById("loadStatus");
-      const r = await api("get_enemy_stats");
+      const r = await api("get_upgrades");
       if (!r.ok) { status.textContent = "Falha ao carregar (" + r.status + ")."; status.className = "status bad"; return; }
       render(r.data.data || {});
       status.classList.add("hide");
@@ -254,19 +257,16 @@
       const st = document.getElementById("saveStatus");
       const btn = document.getElementById("save");
       const data = collect();
-      // guard: grid vazia (carregamento falhou) — nunca publicar dados vazios.
       if (Object.keys(data).length === 0) {
         st.textContent = "Nenhum dado carregado — recarregue a página."; st.className = "status bad"; return;
       }
-      // validação client-side: HP >= 1, dano numérico finito, drop >= 0.
       for (const k in data) {
-        if (!(data[k].hp >= 1)) { st.textContent = "HP inválido em " + k + " (mínimo 1)."; st.className = "status bad"; return; }
-        if (!Number.isFinite(data[k].damage)) { st.textContent = "Dano inválido em " + k + " (campo vazio ou não-numérico)."; st.className = "status bad"; return; }
-        if (!Number.isFinite(data[k].fragment_drop) || data[k].fragment_drop < 0) { st.textContent = "Drop inválido em " + k + " (deve ser >= 0)."; st.className = "status bad"; return; }
+        if (!(data[k].fragment_cost >= 1)) { st.textContent = "Custo inválido em " + k + " (mínimo 1)."; st.className = "status bad"; return; }
+        if (!(data[k].value >= 1)) { st.textContent = "Valor inválido em " + k + " (mínimo 1)."; st.className = "status bad"; return; }
       }
       btn.disabled = true; st.textContent = "Salvando…"; st.className = "status";
       try {
-        const r = await api("set_enemy_stats", { admin_pass_hash: sessionHash, data });
+        const r = await api("set_upgrades", { admin_pass_hash: sessionHash, data });
         btn.disabled = false;
         if (r.status === 401) {
           st.textContent = "Senha incorreta — faça login de novo."; st.className = "status bad";

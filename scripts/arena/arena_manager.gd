@@ -660,7 +660,8 @@ func _on_actor_died(actor: CombatActor) -> void:
 			_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
 			_caipora.health.heal(Constants.BOSS_KILL_HEAL)
 			# Boss bounty: bolada de fragmentos que financia as ervas caras (antes boss = 0).
-			MetaProgression.add_fragments(float(Constants.BOSS_FRAGMENT_BOUNTY.get(GameState.active_phase, 0)))
+			var _drop_boss := EnemyStats.fragment_drop_for(EnemyStats.id_for(_enemy), GameState.active_phase)
+			MetaProgression.add_fragments(_drop_boss if _drop_boss >= 0.0 else float(Constants.BOSS_FRAGMENT_BOUNTY.get(GameState.active_phase, 0)))
 			# Santuário dos Encantados: o golpe final LIBERTA o espírito do guardião (P1–P4).
 			# Ele sai da fase para sempre e passa a viver em paz no acampamento; o Jesuíta
 			# (P5) não é encantado — free_boss o ignora.
@@ -672,7 +673,8 @@ func _on_actor_died(actor: CombatActor) -> void:
 			# A cada 10 monstros (após a espada/forca_3) há um sorteio de CHAMA; se ganhar,
 			# a recompensa é a CHAMA no lugar do fragmento desta morte.
 			if not MetaProgression.register_kill_for_chama():
-				MetaProgression.add_fragments(float(Constants.COMMON_FRAGMENT_REWARD.get(GameState.active_phase, 1)))
+				var _drop_common := EnemyStats.fragment_drop_for(EnemyStats.id_for(_enemy), GameState.active_phase)
+				MetaProgression.add_fragments(_drop_common if _drop_common >= 0.0 else float(Constants.COMMON_FRAGMENT_REWARD.get(GameState.active_phase, 1)))
 		if GameState.active_combat_is_boss and GameState.active_phase == 2:
 			if MetaProgression.phase_reached < 3:
 				MetaProgression.phase_reached = 3
