@@ -25,7 +25,9 @@ const MENU_MAX_WIDTH_FRACTION := 0.30
 
 var _fade: ColorRect
 var _logo: TextureRect
-var _lang_button: Button
+var _lang_row: HBoxContainer
+var _btn_pt: Button
+var _btn_en: Button
 
 func _ready() -> void:
 	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
@@ -168,10 +170,8 @@ func _relayout_buttons() -> void:
 			button.custom_minimum_size.x = vp.x * MENU_MAX_WIDTH_FRACTION
 	var link: LinkButton = $Center/VBox/GithubLink
 	link.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
-	if is_instance_valid(_lang_button):
-		_lang_button.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
-		if not portrait:
-			_lang_button.custom_minimum_size.x = vp.x * MENU_MAX_WIDTH_FRACTION
+	if is_instance_valid(_lang_row):
+		_lang_row.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
 
 ## Os olhos no "O" piscam em intervalos irregulares — a mata olha de volta.
 func _schedule_blink() -> void:
@@ -214,27 +214,44 @@ func _setup_podio_link() -> void:
 	podio.focus_entered.connect(AudioDirector.play_ui_hover)
 	podio.mouse_entered.connect(AudioDirector.play_ui_hover)
 
-## Botão de idioma no rodapé do menu — cicla PT ↔ EN com um clique.
+## Duas bandeiras lado a lado: clica na bandeira do idioma desejado.
+## A bandeira do idioma ativo fica destacada (opacidade plena), a inativa fica esmaecida.
 func _setup_lang_toggle() -> void:
-	_lang_button = Button.new()
-	_lang_button.text = _lang_label()
-	_lang_button.add_theme_font_size_override("font_size", 14)
-	_lang_button.size_flags_horizontal = Control.SIZE_FILL
-	$Center/VBox.add_child(_lang_button)
-	_lang_button.pressed.connect(_on_lang_toggle_pressed)
-	_lang_button.focus_entered.connect(AudioDirector.play_ui_hover)
-	_lang_button.mouse_entered.connect(AudioDirector.play_ui_hover)
-	Lang.language_changed.connect(func(_l: StringName) -> void:
-		if is_instance_valid(_lang_button):
-			_lang_button.text = _lang_label())
+	_lang_row = HBoxContainer.new()
+	_lang_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_lang_row.add_theme_constant_override("separation", 8)
+	$Center/VBox.add_child(_lang_row)
 
-func _lang_label() -> String:
-	return "🇧🇷 Português" if Lang.current() == Lang.LANG_EN else "🇺🇸 English"
+	_btn_pt = _make_flag_btn("🇧🇷")
+	_btn_en = _make_flag_btn("🇺🇸")
+	_lang_row.add_child(_btn_pt)
+	_lang_row.add_child(_btn_en)
 
-func _on_lang_toggle_pressed() -> void:
-	AudioDirector.play_ui_hover()
-	var next := Lang.LANG_EN if Lang.current() == Lang.LANG_PT else Lang.LANG_PT
-	Lang.set_language(next)
+	_btn_pt.pressed.connect(func() -> void:
+		AudioDirector.play_ui_hover()
+		Lang.set_language(Lang.LANG_PT))
+	_btn_en.pressed.connect(func() -> void:
+		AudioDirector.play_ui_hover()
+		Lang.set_language(Lang.LANG_EN))
+
+	_refresh_lang_flags()
+	Lang.language_changed.connect(func(_l: StringName) -> void: _refresh_lang_flags())
+
+func _make_flag_btn(flag: String) -> Button:
+	var btn := Button.new()
+	btn.text = flag
+	btn.add_theme_font_size_override("font_size", 28)
+	btn.flat = true
+	btn.focus_entered.connect(AudioDirector.play_ui_hover)
+	btn.mouse_entered.connect(AudioDirector.play_ui_hover)
+	return btn
+
+func _refresh_lang_flags() -> void:
+	if not is_instance_valid(_btn_pt):
+		return
+	var is_pt := Lang.current() == Lang.LANG_PT
+	_btn_pt.modulate.a = 1.0 if is_pt else 0.35
+	_btn_en.modulate.a = 1.0 if not is_pt else 0.35
 
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")
