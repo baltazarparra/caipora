@@ -121,7 +121,7 @@
       <div id="phases"></div>
     </div>
     <div class="bar">
-      <button id="save">SALVAR E PUBLICAR</button>
+      <button id="save" disabled>SALVAR E PUBLICAR</button>
       <span class="status" id="saveStatus"></span>
       <span class="status" style="margin-left:auto;" id="versionTag"></span>
     </div>
@@ -233,6 +233,7 @@
       render(r.data.data || {});
       status.classList.add("hide");
       document.getElementById("versionTag").textContent = "versão atual: " + (r.data.version ?? "?");
+      document.getElementById("save").disabled = false;
     }
 
     function collect() {
@@ -240,7 +241,7 @@
       document.querySelectorAll("input[data-key]").forEach((el) => {
         const k = el.dataset.key;
         data[k] = data[k] || {};
-        data[k][el.dataset.field] = Number(el.value);
+        data[k][el.dataset.field] = el.value.trim() === "" ? NaN : Number(el.value);
       });
       return data;
     }
@@ -249,21 +250,30 @@
       const st = document.getElementById("saveStatus");
       const btn = document.getElementById("save");
       const data = collect();
-      // validação client-side: HP >= 1, dano numérico finito.
+      // guard: grid vazia (carregamento falhou) — nunca publicar dados vazios.
+      if (Object.keys(data).length === 0) {
+        st.textContent = "Nenhum dado carregado — recarregue a página."; st.className = "status bad"; return;
+      }
+      // validação client-side: HP >= 1, dano numérico finito e não-vazio.
       for (const k in data) {
         if (!(data[k].hp >= 1)) { st.textContent = "HP inválido em " + k + " (mínimo 1)."; st.className = "status bad"; return; }
-        if (!Number.isFinite(data[k].damage)) { st.textContent = "Dano inválido em " + k + "."; st.className = "status bad"; return; }
+        if (!Number.isFinite(data[k].damage)) { st.textContent = "Dano inválido em " + k + " (campo vazio ou não-numérico)."; st.className = "status bad"; return; }
       }
       btn.disabled = true; st.textContent = "Salvando…"; st.className = "status";
-      const r = await api("set_enemy_stats", { admin_pass_hash: sessionHash, data });
-      btn.disabled = false;
-      if (r.status === 401) {
-        st.textContent = "Senha incorreta — faça login de novo."; st.className = "status bad";
-        localStorage.removeItem(LS_KEY); return;
+      try {
+        const r = await api("set_enemy_stats", { admin_pass_hash: sessionHash, data });
+        btn.disabled = false;
+        if (r.status === 401) {
+          st.textContent = "Senha incorreta — faça login de novo."; st.className = "status bad";
+          localStorage.removeItem(LS_KEY); return;
+        }
+        if (!r.ok) { st.textContent = "Erro: " + (r.data.error || r.status); st.className = "status bad"; return; }
+        st.textContent = "Publicado! Os jogadores verão o banner de atualização no próximo boot."; st.className = "status ok";
+        document.getElementById("versionTag").textContent = "versão atual: " + r.data.version;
+      } catch (_err) {
+        btn.disabled = false;
+        st.textContent = "Erro de rede — verifique a conexão e tente de novo."; st.className = "status bad";
       }
-      if (!r.ok) { st.textContent = "Erro: " + (r.data.error || r.status); st.className = "status bad"; return; }
-      st.textContent = "Publicado! Os jogadores verão o banner de atualização no próximo boot."; st.className = "status ok";
-      document.getElementById("versionTag").textContent = "versão atual: " + r.data.version;
     });
 
     // sessão salva?
