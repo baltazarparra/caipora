@@ -27,8 +27,13 @@ const BUBBLE_HEAD_GAP: float = 46.0
 const DPAD_BUBBLE_PADDING: float = 12.0
 const COMBAT_LOADER_LAYER: int = 30
 const COMBAT_LOADER_FADE: float = 0.12
-const COMBAT_LOADER_PREPARE_HOLD: float = 0.42
-const COMBAT_LOADER_FIGHT_HOLD: float = 0.34
+const COMBAT_LOADER_FLASH_IN: float = 0.06
+const COMBAT_LOADER_FLASH_OUT: float = 0.10
+const COMBAT_LOADER_SYLLABLE_HOLD: float = 0.28
+const COMBAT_LOADER_FINAL_HOLD: float = 0.50
+const VICTORY_OUTRO_FADE: float = 0.15
+const VICTORY_OUTRO_TEXT_FADE: float = 0.20
+const VICTORY_OUTRO_HOLD: float = 1.8
 
 @onready var _camera: Camera2D = $Camera2D
 # D-pad é um autoload persistente (TouchControls), não mais um nó por cena.
@@ -98,6 +103,12 @@ func _run_combat_loader() -> void:
 	loader.layer = COMBAT_LOADER_LAYER
 	add_child(loader)
 
+	var flash := ColorRect.new()
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.color = Color(1.0, 1.0, 1.0, 0.0)
+	flash.mouse_filter = Control.MOUSE_FILTER_STOP
+	loader.add_child(flash)
+
 	var fade := ColorRect.new()
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fade.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -110,27 +121,36 @@ func _run_combat_loader() -> void:
 	label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", Constants.FONT_LG)
+	label.add_theme_font_size_override("font_size", Constants.FONT_TITLE)
 	label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	label.text = "PREPARE-SE"
+	label.text = ""
 	label.modulate.a = 0.0
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade.add_child(label)
 
 	var tween := create_tween()
+	tween.tween_property(flash, "color:a", 1.0, COMBAT_LOADER_FLASH_IN)
+	tween.tween_property(flash, "color:a", 0.0, COMBAT_LOADER_FLASH_OUT)
 	tween.tween_property(fade, "color:a", 0.94, COMBAT_LOADER_FADE)
 	# Pausa efeitos de background assim que a tela cobre — libera CPU/GPU antes
 	# da primeira janela de timing (o lag de entrada do Fase 2 no iPad mini).
 	tween.tween_callback(_cull_visual_backdrop)
-	tween.tween_property(label, "modulate:a", 1.0, COMBAT_LOADER_FADE)
-	tween.tween_interval(COMBAT_LOADER_PREPARE_HOLD)
-	tween.tween_property(label, "modulate:a", 0.0, COMBAT_LOADER_FADE)
 	tween.tween_callback(func() -> void:
-		label.text = "PELEJAR"
-		label.add_theme_font_size_override("font_size", Constants.FONT_TITLE)
+		label.text = "Pe"
+		label.modulate.a = 1.0
+		AudioDirector.play_syllable_beat(0)
 	)
-	tween.tween_property(label, "modulate:a", 1.0, COMBAT_LOADER_FADE)
-	tween.tween_interval(COMBAT_LOADER_FIGHT_HOLD)
+	tween.tween_interval(COMBAT_LOADER_SYLLABLE_HOLD)
+	tween.tween_callback(func() -> void:
+		label.text = "Pele"
+		AudioDirector.play_syllable_beat(1)
+	)
+	tween.tween_interval(COMBAT_LOADER_SYLLABLE_HOLD)
+	tween.tween_callback(func() -> void:
+		label.text = "Pelejar"
+		AudioDirector.play_syllable_beat(2)
+	)
+	tween.tween_interval(COMBAT_LOADER_FINAL_HOLD)
 	tween.tween_property(label, "modulate:a", 0.0, COMBAT_LOADER_FADE)
 	tween.tween_property(fade, "color:a", 0.0, COMBAT_LOADER_FADE)
 	await tween.finished
@@ -139,6 +159,44 @@ func _run_combat_loader() -> void:
 		loader.queue_free()
 	if not _combat_over and _both_alive():
 		_start_caipora_turn()
+
+
+func _run_victory_outro() -> void:
+	AudioDirector.play_combat_victory()
+
+	var layer := CanvasLayer.new()
+	layer.layer = COMBAT_LOADER_LAYER
+	add_child(layer)
+
+	var fade := ColorRect.new()
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	var bg := Constants.COLOR_ARENA_BG
+	bg.a = 0.0
+	fade.color = bg
+	layer.add_child(fade)
+
+	var label := Label.new()
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", Constants.FONT_MD)
+	label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	label.text = "assim seguimos..."
+	label.modulate.a = 0.0
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade.add_child(label)
+
+	var tween := create_tween()
+	tween.tween_property(fade, "color:a", 0.85, VICTORY_OUTRO_FADE)
+	tween.tween_property(label, "modulate:a", 1.0, VICTORY_OUTRO_TEXT_FADE)
+	tween.tween_interval(VICTORY_OUTRO_HOLD)
+	tween.tween_property(label, "modulate:a", 0.0, VICTORY_OUTRO_TEXT_FADE)
+	tween.tween_property(fade, "color:a", 0.0, VICTORY_OUTRO_FADE)
+	await tween.finished
+
+	if is_instance_valid(layer):
+		layer.queue_free()
 
 func _update_camera_fit() -> void:
 	# Zoom "contain": encaixa o retângulo de ação da orientação atual sem cortar
@@ -623,7 +681,10 @@ func _on_actor_died(actor: CombatActor) -> void:
 	# Watchdog: rede de segurança que garante a transição caso o caminho normal abaixo
 	# seja preemptado por algum motivo. _do_screen_change é idempotente, então o primeiro
 	# a disparar vence. (NÃO cobre engine-halt — ver plano.)
-	get_tree().create_timer(1.5, true).timeout.connect(_do_screen_change.bind(next_screen, caipora_won))
+	# 4.0s: outro de vitória (~2.5s) + 0.6s wait + margem de segurança.
+	get_tree().create_timer(4.0, true).timeout.connect(_do_screen_change.bind(next_screen, caipora_won))
+	if caipora_won:
+		await _run_victory_outro()
 	await get_tree().create_timer(0.6).timeout
 	_do_screen_change(next_screen, caipora_won)
 

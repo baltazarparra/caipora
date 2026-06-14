@@ -447,6 +447,35 @@ func play_dpad_tap() -> void:
 	add_child(player)
 	player.play()
 
+## Beat percussivo por sílaba no loader de combate (Pe → Pele → Pelejar).
+## Pitch escala 0.8 → 1.0 → 1.3 para tensão crescente. Reutiliza dpad_tap.wav.
+func play_syllable_beat(index: int) -> void:
+	if not _audio_unlocked:
+		return
+	const PITCHES: Array[float] = [0.8, 1.0, 1.3]
+	var pitch := PITCHES[clampi(index, 0, PITCHES.size() - 1)]
+	var path := SFX_DIR + "dpad_tap.wav"
+	if not ResourceLoader.exists(path):
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = load(path)
+	player.bus = BUS_SFX
+	player.volume_db = 3.0
+	player.pitch_scale = pitch
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
+
+
+## Fanfarra de vitória de combate: toca sting_victory com duck no mix.
+## Chamada da arena em _run_victory_outro — não aguarda WIN screen.
+func play_combat_victory() -> void:
+	if not _audio_unlocked:
+		return
+	duck()
+	_play_stinger(STING_VICTORY)
+
+
 ## Player transiente (default bus SFX — audível mesmo com música desligada;
 ## eventos da mata usam o bus Ambience). Asset ausente é no-op (graceful).
 func _play_oneshot_sfx(path: String, volume_db: float = 0.0, bus: String = BUS_SFX) -> void:
