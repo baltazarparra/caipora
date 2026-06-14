@@ -59,6 +59,7 @@ var _screen_changed: bool = false
 var _animator: ActorAnimator
 var _backdrop: ArenaBackdrop
 var _doom_fire: DoomFire
+var _killing_blow_zoom_base: float = 0.0
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -197,6 +198,15 @@ func _run_victory_outro() -> void:
 
 	if is_instance_valid(layer):
 		layer.queue_free()
+
+func _play_killing_blow_zoom() -> void:
+	_killing_blow_zoom_base = _camera.zoom.x
+	var target_zoom := minf(_killing_blow_zoom_base * 1.5, 2.0)
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.tween_property(_camera, "zoom", Vector2(target_zoom, target_zoom), 0.18)
+	await tween.finished
 
 func _update_camera_fit() -> void:
 	# Zoom "contain": encaixa o retângulo de ação da orientação atual sem cortar
@@ -380,7 +390,15 @@ func _on_double_first_hit() -> void:
 	_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
 	_timing_bubble.burst_success()
 	var damage := _caipora.execute_attack(false)
+	var is_killing_blow := damage >= _enemy.health.current_health
+	if is_killing_blow:
+		_sfx.play(_sfx.hit_sound)
+		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
+		_animator.strike(_caipora)
+		await _play_killing_blow_zoom()
 	_enemy.take_damage(damage)
+	if is_killing_blow:
+		return
 	_sfx.play(_sfx.hit_sound)
 	_feedback.trigger_screenshake(13.0, 0.3)
 	_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
@@ -403,7 +421,18 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble_b.burst_success()
 		var damage := _caipora.execute_attack(false)
+		var is_killing_blow := damage >= _enemy.health.current_health
+		if is_killing_blow:
+			_sfx.play(_sfx.timing_perfect_sound, -4.0)
+			_sfx.play(_sfx.hit_sound)
+			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+			_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
+			_feedback.spawn_critical_particles(_enemy.position)
+			_animator.strike(_caipora)
+			await _play_killing_blow_zoom()
 		_enemy.take_damage(damage)
+		if is_killing_blow:
+			return
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
 		AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
@@ -430,7 +459,18 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
 		var damage := _caipora.execute_attack(true)
+		var is_killing_blow := damage >= _enemy.health.current_health
+		if is_killing_blow:
+			_sfx.play(_sfx.timing_perfect_sound, -4.0)
+			_sfx.play(_sfx.hit_sound)
+			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+			_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
+			_feedback.spawn_critical_particles(_enemy.position)
+			_animator.strike(_caipora)
+			await _play_killing_blow_zoom()
 		_enemy.take_damage(damage)
+		if is_killing_blow:
+			return
 		_sfx.play(_sfx.timing_perfect_sound, -4.0)
 		_sfx.play(_sfx.hit_sound)
 		AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
@@ -672,6 +712,15 @@ func _on_actor_died(actor: CombatActor) -> void:
 		# de novo antes custa tudo (drop_fragment_bag sobrescreve a bolsa anterior).
 		MetaProgression.drop_fragment_bag(GameState.active_phase, GameState.player_map_pos)
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
+	if caipora_won and _killing_blow_zoom_base > 0.0:
+		Engine.time_scale = 0.25
+		await get_tree().create_timer(1.4, true, false, true).timeout
+		Engine.time_scale = 1.0
+		var zoom_tween := create_tween()
+		zoom_tween.set_ease(Tween.EASE_IN_OUT)
+		zoom_tween.set_trans(Tween.TRANS_SINE)
+		zoom_tween.tween_property(_camera, "zoom",
+			Vector2(_killing_blow_zoom_base, _killing_blow_zoom_base), 0.25)
 	_sfx.play(_sfx.death_sound)
 	_feedback.spawn_death_particles(actor.position)
 	_feedback.trigger_screenshake(26.0, 0.7)
@@ -706,6 +755,7 @@ func _teardown_combat() -> void:
 		_caipora.animated_sprite.speed_scale = 1.0
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.animated_sprite.speed_scale = 1.0
+	Engine.time_scale = 1.0
 
 func _disconnect_timing(callable: Callable) -> void:
 	if _timing_system.timing_result.is_connected(callable):
