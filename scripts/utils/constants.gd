@@ -72,6 +72,21 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 	window += TOUCH_TIMING_WINDOW_BONUS
 	return window
 
+# ─── Cortejo dos Encantados (corrente de carga) ────
+# Terceiro tipo de ataque da Caipora: segurar ↑ por CORTEJO_HOLD_SEC solta um
+# golpe; encadeia-se em N elos, um por chefe LIBERTADO (MetaProgression.freed_bosses,
+# teto CORTEJO_MAX_LINKS). Errar um elo NÃO interrompe a corrente — só perde o dano
+# daquele elo. Ver docs/CONCEITO-corrente-encantados.md.
+# A carga NÃO encurta por fase (diferente das janelas de tap): é uma promessa
+# tátil estável ("segurei e soltei no cheio"); a dificuldade vem de encadear N elos.
+const CORTEJO_CHANCE: float = 0.30          # roll no turno da Caipora (espelha o duplo)
+const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
+const CORTEJO_HOLD_SEC: float = 0.8         # tempo de carga por elo
+const CORTEJO_RELEASE_GRACE: float = 0.18   # janela de overcharge no topo (segurar demais perde o elo)
+const CORTEJO_LINK_TIMEOUT: float = 1.6     # elo perdido se não concluir a carga a tempo
+const CORTEJO_LINK_GAP: float = 0.22        # beat entre elos
+const CORTEJO_LINK_HITS: int = 2            # hits de dano por elo acertado
+
 # ─── Audio ─────────────────────────────────────────
 # Passo bem abaixo dos SFX de combate: presença tátil, nunca spam. O asset é
 # normalizado pelo fiscal (check_audio); o "baixo" vive no play, não no arquivo.
