@@ -222,8 +222,8 @@ func _setup_lang_toggle() -> void:
 	_lang_row.add_theme_constant_override("separation", 8)
 	$Center/VBox.add_child(_lang_row)
 
-	_btn_pt = _make_flag_btn("Brasileiro")
-	_btn_en = _make_flag_btn("English")
+	_btn_pt = _make_flag_btn("res://assets/sprites/flag_br.png")
+	_btn_en = _make_flag_btn("res://assets/sprites/flag_us.png")
 	_lang_row.add_child(_btn_pt)
 	_lang_row.add_child(_btn_en)
 
@@ -233,14 +233,14 @@ func _setup_lang_toggle() -> void:
 	_refresh_lang_flags()
 	Lang.language_changed.connect(_on_language_changed)
 
-func _make_flag_btn(label: String) -> Button:
+func _make_flag_btn(texture_path: String) -> Button:
 	var btn := Button.new()
-	btn.text = label
-	var font := load("res://assets/fonts/PressStart2P.ttf") as Font
-	if font:
-		btn.add_theme_font_override("font", font)
-	btn.add_theme_font_size_override("font_size", 10)
-	btn.custom_minimum_size = Vector2(0, 28)
+	var tex := load(texture_path) as Texture2D
+	if tex:
+		btn.icon = tex
+		btn.expand_icon = true
+	btn.text = ""
+	btn.custom_minimum_size = Vector2(48, 32)
 	btn.focus_entered.connect(AudioDirector.play_ui_hover)
 	btn.mouse_entered.connect(AudioDirector.play_ui_hover)
 	return btn
@@ -266,17 +266,19 @@ func _refresh_lang_flags() -> void:
 	_apply_flag_style(_btn_en, not is_pt)
 
 func _apply_flag_style(btn: Button, active: bool) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Constants.COLOR_BLOOD if active else Color(0.08, 0.05, 0.05, 1.0)
-	normal.set_border_width_all(1)
-	normal.border_color = Constants.COLOR_BLOOD
-	btn.add_theme_stylebox_override("normal", normal)
-	var hover := StyleBoxFlat.new()
-	hover.bg_color = Constants.COLOR_BLOOD.lightened(0.15)
-	hover.set_border_width_all(1)
-	hover.border_color = Constants.COLOR_BLOOD
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_color_override("font_color", Constants.COLOR_ARENA_BG if active else Color(0.6, 0.4, 0.4, 1.0))
+	btn.modulate.a = 1.0 if active else 0.4
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0, 0, 0, 0)
+	s.set_border_width_all(active_border(active))
+	s.border_color = Constants.COLOR_BLOOD
+	s.set_corner_radius_all(2)
+	btn.add_theme_stylebox_override("normal", s)
+	var h := s.duplicate() as StyleBoxFlat
+	h.set_border_width_all(1)
+	btn.add_theme_stylebox_override("hover", h)
+
+func active_border(active: bool) -> int:
+	return 1 if active else 0
 
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")
