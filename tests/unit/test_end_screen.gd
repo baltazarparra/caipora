@@ -17,9 +17,9 @@ func test_game_over_goes_to_main_menu() -> void:
 	assert_eq(_make(false)._dismiss_target(), SignalBus.Screen.MAIN_MENU,
 		"derrota volta ao menu, não ao acampamento")
 
-func test_win_keeps_camp() -> void:
-	assert_eq(_make(true)._dismiss_target(), SignalBus.Screen.HUB,
-		"vitória terminal mantém o acampamento")
+func test_win_goes_to_initials() -> void:
+	assert_eq(_make(true)._dismiss_target(), SignalBus.Screen.INITIALS,
+		"vitória vai para tela de iniciais do PODIO antes do acampamento")
 
 func test_game_over_never_routes_to_hub() -> void:
 	assert_ne(_make(false)._dismiss_target(), SignalBus.Screen.HUB,

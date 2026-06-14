@@ -40,7 +40,7 @@ func _fit_portrait() -> void:
 ## Tela-alvo ao dispensar (puro, sem efeitos colaterais — testável destacado da árvore).
 ## Derrota → MENU PRINCIPAL (a caçada acabou); vitória terminal → acampamento.
 func _dismiss_target() -> SignalBus.Screen:
-	return SignalBus.Screen.HUB if won else SignalBus.Screen.MAIN_MENU
+	return SignalBus.Screen.INITIALS if won else SignalBus.Screen.MAIN_MENU
 
 ## Dica de saída coerente com o destino e a plataforma (web/toque não têm barra de espaço).
 func _hint_text() -> String:
