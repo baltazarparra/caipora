@@ -33,6 +33,7 @@ func _ready() -> void:
 	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
 	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
+	_setup_podio_link()
 	_setup_fade()
 	_setup_logo()
 	_setup_version_label()
@@ -194,5 +195,21 @@ func _begin_run() -> void:
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
+## Injeta o link do PODIO via código (após GithubLink) para evitar editar o .tscn
+## com scripts que referenciam autoloads — gotcha #7 de AGENTS.md.
+func _setup_podio_link() -> void:
+	var podio := LinkButton.new()
+	podio.name = "PodioLink"
+	podio.text = "pódio"
+	podio.add_theme_font_size_override("font_size", 14)
+	podio.size_flags_horizontal = Control.SIZE_FILL
+	$Center/VBox.add_child(podio)
+	podio.pressed.connect(_on_podio_pressed)
+	podio.focus_entered.connect(AudioDirector.play_ui_hover)
+	podio.mouse_entered.connect(AudioDirector.play_ui_hover)
+
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")
+
+func _on_podio_pressed() -> void:
+	OS.shell_open("../podio.html")
