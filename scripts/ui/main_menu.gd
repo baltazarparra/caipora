@@ -25,6 +25,7 @@ const MENU_MAX_WIDTH_FRACTION := 0.30
 
 var _fade: ColorRect
 var _logo: TextureRect
+var _lang_button: Button
 
 func _ready() -> void:
 	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
@@ -38,6 +39,7 @@ func _ready() -> void:
 	_setup_logo()
 	_setup_version_label()
 	_setup_update_banner()
+	_setup_lang_toggle()
 	_relayout_buttons()
 	get_viewport().size_changed.connect(_relayout_buttons)
 	# Foco inicial ANTES de ligar o hover: abrir o menu não dá tick, navegar dá.
@@ -166,6 +168,10 @@ func _relayout_buttons() -> void:
 			button.custom_minimum_size.x = vp.x * MENU_MAX_WIDTH_FRACTION
 	var link: LinkButton = $Center/VBox/GithubLink
 	link.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
+	if is_instance_valid(_lang_button):
+		_lang_button.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
+		if not portrait:
+			_lang_button.custom_minimum_size.x = vp.x * MENU_MAX_WIDTH_FRACTION
 
 ## Os olhos no "O" piscam em intervalos irregulares — a mata olha de volta.
 func _schedule_blink() -> void:
@@ -207,6 +213,28 @@ func _setup_podio_link() -> void:
 	podio.pressed.connect(_on_podio_pressed)
 	podio.focus_entered.connect(AudioDirector.play_ui_hover)
 	podio.mouse_entered.connect(AudioDirector.play_ui_hover)
+
+## Botão de idioma no rodapé do menu — cicla PT ↔ EN com um clique.
+func _setup_lang_toggle() -> void:
+	_lang_button = Button.new()
+	_lang_button.text = _lang_label()
+	_lang_button.add_theme_font_size_override("font_size", 14)
+	_lang_button.size_flags_horizontal = Control.SIZE_FILL
+	$Center/VBox.add_child(_lang_button)
+	_lang_button.pressed.connect(_on_lang_toggle_pressed)
+	_lang_button.focus_entered.connect(AudioDirector.play_ui_hover)
+	_lang_button.mouse_entered.connect(AudioDirector.play_ui_hover)
+	Lang.language_changed.connect(func(_l: StringName) -> void:
+		if is_instance_valid(_lang_button):
+			_lang_button.text = _lang_label())
+
+func _lang_label() -> String:
+	return "🇧🇷 Português" if Lang.current() == Lang.LANG_EN else "🇺🇸 English"
+
+func _on_lang_toggle_pressed() -> void:
+	AudioDirector.play_ui_hover()
+	var next := Lang.LANG_EN if Lang.current() == Lang.LANG_PT else Lang.LANG_PT
+	Lang.set_language(next)
 
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")
