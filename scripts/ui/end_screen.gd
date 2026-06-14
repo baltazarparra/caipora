@@ -21,6 +21,7 @@ var _handled: bool = false
 
 func _ready() -> void:
 	GameState.end_run(won)
+	_title.text = Lang.t(&"win.title") if won else Lang.t(&"gameover.title")
 	_hint.text = _hint_text()
 	_fit_portrait()
 	get_viewport().size_changed.connect(_fit_portrait)
@@ -44,13 +45,10 @@ func _dismiss_target() -> SignalBus.Screen:
 
 ## Dica de saída coerente com o destino e a plataforma (web/toque não têm barra de espaço).
 func _hint_text() -> String:
+	var touch := OS.has_feature("web") or DisplayServer.is_touchscreen_available()
 	if won:
-		if OS.has_feature("web") or DisplayServer.is_touchscreen_available():
-			return "Toque para inserir suas iniciais"
-		return "Espaço para inserir suas iniciais"
-	if OS.has_feature("web") or DisplayServer.is_touchscreen_available():
-		return "Toque para voltar ao menu"
-	return "Espaço para voltar ao menu"
+		return Lang.t(&"end.hint.touch.won" if touch else &"end.hint.key.won")
+	return Lang.t(&"end.hint.touch.lost" if touch else &"end.hint.key.lost")
 
 # Usa _input (não _unhandled_input): o Background/CenterContainer cobrem a tela inteira com
 # mouse_filter=STOP por padrão, engolindo o toque na fase de GUI. No mobile, sem barra de

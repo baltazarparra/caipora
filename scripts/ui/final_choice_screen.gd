@@ -183,7 +183,7 @@ func _build_ui() -> void:
 	add_child(ui)
 
 	_question = Label.new()
-	_question.text = QUESTION_TEXT
+	_question.text = Lang.t(&"choice.question")
 	_question.visible_characters = 0
 	_question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_question.add_theme_font_size_override("font_size", Constants.FONT_TITLE)
@@ -208,11 +208,11 @@ func _build_ui() -> void:
 	_buttons_box.modulate.a = 0.0
 	ui.add_child(_buttons_box)
 
-	_btn_spare = _make_choice_button(BTN_SPARE_TEXT)
+	_btn_spare = _make_choice_button(Lang.t(&"choice.spare"))
 	_btn_spare.pressed.connect(_choose.bind(true))
 	_buttons_box.add_child(_btn_spare)
 
-	_btn_kill = _make_choice_button(BTN_KILL_TEXT)
+	_btn_kill = _make_choice_button(Lang.t(&"choice.kill"))
 	_btn_kill.pressed.connect(_choose.bind(false))
 	_buttons_box.add_child(_btn_kill)
 

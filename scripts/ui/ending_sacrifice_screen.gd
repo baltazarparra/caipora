@@ -95,9 +95,9 @@ func _build_scene() -> void:
 	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(scrim)
 
-	var msg1 := _make_sky_message(MESSAGE_1, 0.16, Constants.COLOR_TEXT)
+	var msg1 := _make_sky_message(Lang.t(&"sacrifice.msg1"), 0.16, Constants.COLOR_TEXT)
 	add_child(msg1)
-	var msg2 := _make_sky_message(MESSAGE_2, 0.24, Constants.COLOR_BAPTISM_TINT)
+	var msg2 := _make_sky_message(Lang.t(&"sacrifice.msg2"), 0.24, Constants.COLOR_BAPTISM_TINT)
 	add_child(msg2)
 
 	var menu_btn := _make_menu_button()
@@ -252,7 +252,7 @@ func _make_sky_message(text: String, anchor_y: float, color: Color) -> Label:
 
 func _make_menu_button() -> Button:
 	var btn := Button.new()
-	btn.text = "Menu Principal"
+	btn.text = Lang.t(&"sacrifice.menu_btn")
 	btn.add_theme_font_size_override("font_size", Constants.FONT_MD)
 	btn.anchor_left = 0.35
 	btn.anchor_right = 0.65

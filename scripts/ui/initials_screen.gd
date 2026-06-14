@@ -44,7 +44,7 @@ func _build_ui() -> void:
 
 	# Título
 	var title := Label.new()
-	title.text = "PODIO"
+	title.text = Lang.t(&"initials.title")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font", _press_start)
 	title.add_theme_color_override("font_color", Color(0.91, 0.45, 0.12))
@@ -62,7 +62,7 @@ func _build_ui() -> void:
 
 	# Instrução
 	var sub := Label.new()
-	sub.text = "INSIRA SUAS INICIAIS"
+	sub.text = Lang.t(&"initials.sub")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_color_override("font_color", Color(0.49, 0.45, 0.44))
 	sub.add_theme_font_size_override("font_size", 10)
@@ -118,14 +118,14 @@ func _build_ui() -> void:
 	vbox.add_child(brow)
 
 	var confirm_btn := Button.new()
-	confirm_btn.text = "CONFIRMAR"
+	confirm_btn.text = Lang.t(&"initials.confirm")
 	confirm_btn.custom_minimum_size = Vector2(150, 44)
 	_style_btn_primary(confirm_btn)
 	confirm_btn.pressed.connect(_submit)
 	brow.add_child(confirm_btn)
 
 	var skip_btn := Button.new()
-	skip_btn.text = "PULAR"
+	skip_btn.text = Lang.t(&"initials.skip")
 	skip_btn.custom_minimum_size = Vector2(90, 44)
 	_style_btn_ghost(skip_btn)
 	skip_btn.pressed.connect(_go_to_hub)
@@ -235,7 +235,7 @@ func _submit() -> void:
 	if _confirmed:
 		return
 	_confirmed = true
-	_status_label.text = "ENVIANDO..."
+	_status_label.text = Lang.t(&"initials.sending")
 	_status_label.add_theme_color_override("font_color", Color(0.49, 0.45, 0.44))
 	var initials := _letters[0] + _letters[1] + _letters[2]
 	var body := JSON.stringify({
@@ -255,11 +255,11 @@ func _submit() -> void:
 
 func _on_request_completed(_result: int, code: int, _headers: PackedStringArray, _raw: PackedByteArray) -> void:
 	if code != 200:
-		_status_label.text = "ERRO AO SALVAR"
+		_status_label.text = Lang.t(&"initials.error")
 		_status_label.add_theme_color_override("font_color", Color(0.706, 0.094, 0.094))
 		_confirmed = false
 		return
-	_status_label.text = "SALVO!"
+	_status_label.text = Lang.t(&"initials.saved")
 	_status_label.add_theme_color_override("font_color", Color(0.31, 0.68, 0.33))
 	get_tree().create_timer(0.8).timeout.connect(_go_to_hub)
 

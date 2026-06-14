@@ -107,7 +107,7 @@ func _build_header() -> void:
 	row.add_child(spacer)
 
 	_options_button = Button.new()
-	_options_button.text = "Opções"
+	_options_button.text = Lang.t(&"hub.options.btn")
 	_options_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	row.add_child(_options_button)
 
@@ -140,11 +140,11 @@ func _build_cards() -> void:
 	_tracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(_tracks)
 
-	_columns["furia"] = _build_column(_tracks, TITLE_FURIA, MetaProgression.FURIA_KEYS)
-	_columns["cura"] = _build_column(_tracks, TITLE_CURA, MetaProgression.CURA_KEYS)
+	_columns["furia"] = _build_column(_tracks, Lang.t(&"hub.track.furia"), MetaProgression.FURIA_KEYS)
+	_columns["cura"] = _build_column(_tracks, Lang.t(&"hub.track.cura"), MetaProgression.CURA_KEYS)
 
 	var hint := Label.new()
-	hint.text = "clique na erva pra fumar • caminhe até o rastro pra entrar na mata"
+	hint.text = Lang.t(&"hub.hint")
 	hint.add_theme_color_override("font_color", HINT_COLOR)
 	hint.add_theme_font_size_override("font_size", Constants.FONT_SM)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -205,12 +205,12 @@ func _add_status(column: Dictionary, keys: Array) -> void:
 func _trilha_status_text(keys: Array) -> String:
 	var pending := MetaProgression.next_pending_key(keys)
 	if pending == "":
-		return "trilha completa"
+		return Lang.t(&"hub.track.complete")
 	var def: Dictionary = MetaProgression.UPGRADE_DEFS[pending]
 	var nm: String = String(def.get("name", pending))
 	if MetaProgression.phase_reached < int(def.get("phase", 1)):
-		return "próxima: %s — Fase %d" % [nm, int(def.get("phase", 1))]
-	return "próxima: %s — na próxima fogueira" % nm
+		return Lang.tf(&"hub.next.phase", [nm, int(def.get("phase", 1))])
+	return Lang.tf(&"hub.next.fire", [nm])
 
 # ─── Compra ────────────────────────────────────────
 func _on_card_pressed(card: HubCard) -> void:
@@ -255,10 +255,8 @@ func _remove_card(card: HubCard) -> void:
 ## Reescreve fragmentos/bônus e re-avalia o brilho de cada card (comprar pode ter esvaziado o
 ## bolso). Fonte de verdade: MetaProgression.
 func refresh() -> void:
-	_frag_label.text = "Fragmentos: %d" % int(MetaProgression.fragments)
-	_bonus_label.text = "Fúria +%d dano   Cura +%d HP" % [
-		MetaProgression.get_damage_bonus(), MetaProgression.get_health_bonus()
-	]
+	_frag_label.text = Lang.tf(&"hub.fragments", [int(MetaProgression.fragments)])
+	_bonus_label.text = Lang.tf(&"hub.bonus", [MetaProgression.get_damage_bonus(), MetaProgression.get_health_bonus()])
 	for line: String in _columns:
 		for card: HubCard in _columns[line]["cards"]:
 			card.set_affordable(MetaProgression.fragments >= card.cost)

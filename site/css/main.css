@@ -316,6 +316,28 @@ a {
   color: var(--accent-flame);
 }
 
+.lang-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: transform 0.12s ease;
+  display: flex;
+  align-items: center;
+}
+
+.lang-toggle:hover {
+  transform: scale(1.2);
+}
+
+.lang-toggle:focus-visible {
+  outline: 2px solid var(--accent-flame);
+  outline-offset: 2px;
+}
+
 /* --------------------------------------------------------------
    Hero
    -------------------------------------------------------------- */

@@ -80,29 +80,34 @@ const DECO_CHURCH: Array[MapObject.Type] = [
 	MapObject.Type.BONES, MapObject.Type.BLOOD_POOL,
 ]
 
-const MULA_DIALOGUE: Array[Dictionary] = [
-	{"speaker": "CAIPORA", "text": "Vim terminar o que comecei."},
-	{"speaker": "MULA SEM CABEÇA", "text": "..."},
-]
-const BOITATA_DIALOGUE: Array[Dictionary] = [
-	{"speaker": "CAIPORA", "text": "Você nos traiu..."},
-	{"speaker": "BOITATÁ", "text": "Vocês me abandonaram!"},
-]
-const CURUPIRA_DIALOGUE: Array[Dictionary] = [
-	{"speaker": "CAIPORA",  "text": "ninguém te deixou..."},
-	{"speaker": "CURUPIRA", "text": "isso pouco importa agora"},
-]
-const SACI_DIALOGUE: Array[Dictionary] = [
-	{"speaker": "CAIPORA", "text": "Vou salvar nossa casa"},
-	{"speaker": "SACI",    "text": "Não pertenço mais..."},
-]
+# Diálogos: funções em vez de const para que Lang.t() leia o idioma corrente.
+func _mula_dialogue() -> Array[Dictionary]:
+	return [
+		{"speaker": Lang.t(&"dialogue.caipora"), "text": Lang.t(&"dlg.mula.1")},
+		{"speaker": Lang.t(&"boss.mula.name"),   "text": Lang.t(&"dlg.mula.2")},
+	]
+func _boitata_dialogue() -> Array[Dictionary]:
+	return [
+		{"speaker": Lang.t(&"dialogue.caipora"),  "text": Lang.t(&"dlg.boitata.1")},
+		{"speaker": Lang.t(&"boss.boitata.name"), "text": Lang.t(&"dlg.boitata.2")},
+	]
+func _curupira_dialogue() -> Array[Dictionary]:
+	return [
+		{"speaker": Lang.t(&"dialogue.caipora"),   "text": Lang.t(&"dlg.curupira.1")},
+		{"speaker": Lang.t(&"boss.curupira.name"), "text": Lang.t(&"dlg.curupira.2")},
+	]
+func _saci_dialogue() -> Array[Dictionary]:
+	return [
+		{"speaker": Lang.t(&"dialogue.caipora"), "text": Lang.t(&"dlg.saci.1")},
+		{"speaker": Lang.t(&"boss.saci.name"),   "text": Lang.t(&"dlg.saci.2")},
+	]
 # Fase FINAL: a fala marcante do Jesuíta abre a FASE (antes de explorar a igreja),
 # não a porta do chefe. Por isso o diálogo de boss é vazio (já falou na abertura).
-const JESUITA_INTRO_DIALOGUE: Array[Dictionary] = [
-	{"speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR", "text": "converti todos eles com espelhos e água benta. a floresta pertence ao vaticano."},
-	{"speaker": "CAIPORA", "text": "teus santos viram húmus na minha mata."},
-]
-const JESUITA_DIALOGUE: Array[Dictionary] = []
+func _jesuita_intro_dialogue() -> Array[Dictionary]:
+	return [
+		{"speaker": Lang.t(&"boss.jesuita.name"), "text": Lang.t(&"dlg.jesuita.intro.1")},
+		{"speaker": Lang.t(&"dialogue.caipora"),  "text": Lang.t(&"dlg.jesuita.intro.2")},
+	]
 
 # ─── Exports ───────────────────────────────────────
 @export var phase: int = 1
@@ -447,7 +452,7 @@ func _show_boss_dialogue() -> void:
 	var dlg: DialogueScreen = DIALOGUE_SCENE.instantiate()
 	add_child(dlg)
 	SignalBus.dialogue_finished.connect(_on_dialogue_finished, CONNECT_ONE_SHOT)
-	dlg.start(_profile["boss_speaker"], _profile["boss_dialogue"], "CAIPORA",
+	dlg.start(_profile["boss_speaker"], _profile["boss_dialogue"], Lang.t(&"dialogue.caipora"),
 		Constants.COLOR_DIALOGUE_CAIPORA, _profile["boss_color"])
 
 func _on_dialogue_finished() -> void:
@@ -469,7 +474,7 @@ func _maybe_show_intro_dialogue() -> void:
 	var dlg: DialogueScreen = DIALOGUE_SCENE.instantiate()
 	add_child(dlg)
 	SignalBus.dialogue_finished.connect(_on_intro_dialogue_finished, CONNECT_ONE_SHOT)
-	dlg.start(_profile["intro_speaker"], intro, "CAIPORA",
+	dlg.start(_profile["intro_speaker"], intro, Lang.t(&"dialogue.caipora"),
 		Constants.COLOR_DIALOGUE_CAIPORA, _profile["boss_color"])
 
 func _on_intro_dialogue_finished() -> void:
@@ -593,8 +598,8 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE2,
 				"boss_scene": BOITATA_SCENE,
-				"boss_dialogue": BOITATA_DIALOGUE,
-				"boss_speaker": "BOITATÁ",
+				"boss_dialogue": _boitata_dialogue(),
+				"boss_speaker": Lang.t(&"boss.boitata.name"),
 				"boss_color": Constants.COLOR_DIALOGUE_BOITATA,
 				"boss_frames": BOITATA_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_BOITATA,
@@ -614,8 +619,8 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE3,
 				"boss_scene": CURUPIRA_SCENE,
-				"boss_dialogue": CURUPIRA_DIALOGUE,
-				"boss_speaker": "CURUPIRA",
+				"boss_dialogue": _curupira_dialogue(),
+				"boss_speaker": Lang.t(&"boss.curupira.name"),
 				"boss_color": Constants.COLOR_DIALOGUE_CURUPIRA,
 				"boss_frames": CURUPIRA_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_CURUPIRA,
@@ -635,8 +640,8 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE4,
 				"boss_scene": SACI_SCENE,
-				"boss_dialogue": SACI_DIALOGUE,
-				"boss_speaker": "SACI",
+				"boss_dialogue": _saci_dialogue(),
+				"boss_speaker": Lang.t(&"boss.saci.name"),
 				"boss_color": Constants.COLOR_DIALOGUE_SACI,
 				"boss_frames": SACI_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_SACI,
@@ -661,8 +666,8 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA_PHASE5,
 				"boss_scene": JESUITA_SCENE,
-				"boss_dialogue": JESUITA_DIALOGUE,
-				"boss_speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR",
+				"boss_dialogue": [],
+				"boss_speaker": Lang.t(&"boss.jesuita.name"),
 				"boss_color": Constants.COLOR_DIALOGUE_JESUITA,
 				"boss_frames": JESUITA_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_JESUITA,
@@ -677,8 +682,8 @@ func _build_profile() -> Dictionary:
 				"enhance_fire": true,
 				"exit_marker": ExitMarker.NONE,
 				"deco_palette": DECO_CHURCH,
-				"intro_dialogue": JESUITA_INTRO_DIALOGUE,
-				"intro_speaker": "JESUÍTA BANDEIRANTE CATEQUIZADOR",
+				"intro_dialogue": _jesuita_intro_dialogue(),
+				"intro_speaker": Lang.t(&"boss.jesuita.name"),
 				"floor_texture": FLOOR_TEXTURE_CHURCH,
 				"wall_texture": WALL_TEXTURE_CHURCH,
 			}
@@ -688,8 +693,8 @@ func _build_profile() -> Dictionary:
 			return {
 				"arena_screen": SignalBus.Screen.ARENA,
 				"boss_scene": MULA_SCENE,
-				"boss_dialogue": MULA_DIALOGUE,
-				"boss_speaker": "MULA SEM CABEÇA",
+				"boss_dialogue": _mula_dialogue(),
+				"boss_speaker": Lang.t(&"boss.mula.name"),
 				"boss_color": Constants.COLOR_DIALOGUE_MULA,
 				"boss_frames": MULA_FRAMES,
 				"boss_aura": Constants.COLOR_AURA_MULA,

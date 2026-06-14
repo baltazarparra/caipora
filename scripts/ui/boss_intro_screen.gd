@@ -152,7 +152,7 @@ func _build(frames: SpriteFrames, accent: Color, name_color: Color) -> void:
 	add_child(_bar_top)
 
 	_subtitle = Label.new()
-	_subtitle.text = "— CHEFE —"
+	_subtitle.text = Lang.t(&"boss_intro.subtitle")
 	_subtitle.add_theme_font_size_override("font_size", Constants.FONT_SM)
 	_subtitle.add_theme_color_override("font_color", accent)
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

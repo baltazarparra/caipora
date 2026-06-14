@@ -37,7 +37,7 @@ func _ready() -> void:
 		Constants.COLOR_BLOOD,
 		Constants.COLOR_ARENA_BG,
 		Constants.COLOR_BLOOD.lightened(0.2),
-		"CAIPORA"
+		Lang.t(&"hud.player")
 	)
 	_player_bar.set_value(GameState.caipora_current_hp)
 
@@ -113,7 +113,7 @@ func _setup_enemy_bar(max_health: float, is_boss: bool) -> void:
 		Constants.COLOR_AMBER,
 		Constants.COLOR_ARENA_BG,
 		Constants.COLOR_AMBER.darkened(0.15),
-		"CRIATURA",
+		Lang.t(&"hud.enemy"),
 		is_boss
 	)
 
@@ -137,10 +137,10 @@ func _on_fragment_gained(total: float, amount: float) -> void:
 
 func _on_chama_gained() -> void:
 	# A CHAMA substitui o fragmento daquela morte; este popup é o feedback da conquista.
-	_show_popup("CHAMA!", Constants.COLOR_FIRE_HOT)
+	_show_popup(Lang.t(&"hud.chama"), Constants.COLOR_FIRE_HOT)
 
 func _on_chest_opened() -> void:
-	_show_popup("+1 HP", Constants.COLOR_BLOOD)
+	_show_popup(Lang.t(&"hud.chest"), Constants.COLOR_BLOOD)
 
 func _on_music_toggle() -> void:
 	AudioDirector.toggle_music_ambience()
@@ -148,12 +148,12 @@ func _on_music_toggle() -> void:
 
 # ─── Popups ────────────────────────────────────────
 func _show_fragment_popup(amount: float) -> void:
-	_show_popup(format_fragment_popup(amount), Constants.COLOR_AMBER)
+	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
+	var key := &"hud.fragment.pl" if amount != 1.0 else &"hud.fragment.s"
+	_show_popup(Lang.tf(key, [n]), Constants.COLOR_AMBER)
 
-## Texto compacto do ganho: inteiro sem casas ("+3 fragmentos"), fracionário com uma casa
-## ("+1.5 fragmento" — drops de 1.5/kill na Fase 2 somam múltiplos de 0.5). NÃO usar "%g": o
-## format do Godot não suporta esse especificador e o devolvia LITERAL na tela ("+%.4g
-## fragmento%s"), além de empurrar erro. Só "%d", "%.1f" e "%s" (todos válidos) aqui.
+## Texto compacto do ganho em pt-BR (função pura, sem acesso a Lang — testável isolado).
+## NÃO usar "%g": o format do Godot não suporta e vaza literal na tela. Só "%d", "%.1f", "%s".
 static func format_fragment_popup(amount: float) -> String:
 	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
 	var plural: String = "s" if amount != 1.0 else ""

@@ -465,7 +465,7 @@ func _next_rite() -> void:
 	_rite_phase = _rite_queue.pop_front()
 	_rite_skip_unlock_ms = Time.get_ticks_msec() + RITE_SKIP_GRACE_MS
 	AudioDirector.play_spirit_rite(_rite_phase)
-	_rite_label.text = String(RITE_LINES.get(_rite_phase, ""))
+	_rite_label.text = Lang.t(StringName("rite.%d" % _rite_phase))
 	_rite_label.modulate.a = 0.0
 	var spirit := _find_spirit(_rite_phase)
 	_rite_tween = create_tween()

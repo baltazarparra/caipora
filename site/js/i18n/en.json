@@ -1,0 +1,60 @@
+{
+  "meta.title": "Caipora — Brazilian Folk Horror Roguelike",
+  "meta.description": "The forest guardian woke up. Timing-based combat, procedural roguelike, and Brazilian folk horror. Play in the browser.",
+
+  "nav.bosses": "Bosses",
+  "nav.mechanics": "Mechanics",
+  "nav.play": "Play",
+  "lang.toggle": "🇧🇷",
+
+  "hero.subtitle": "The forest's guardian woke the hell up. And the woods are collecting debts in blood.",
+  "hero.cta.play": "Play now",
+
+  "manifesto.title": "What was sleeping in the woods wasn't sleeping alone.",
+  "manifesto.body": "Between twisted trails, dark rivers and abandoned chapels, the ancient pacts between humans, beasts, the dead and the enchanted all snapped. Hunters, priests, witches and corrupted creatures now patrol what was once sacred. Caipora woke up. And she didn't come to save anyone.",
+
+  "bosses.tag": "Threats",
+  "bosses.title": "The bosses of the woods",
+  "bosses.lead": "Five broken pacts. Five nightmares that don't know mercy.",
+
+  "boss.mula.phase": "Phase 1",
+  "boss.mula.epithet": "The road's punishment",
+  "boss.mula.desc": "Cursed black mare. Her neck ends in a raw stump where a column of fire shoots up for a head. Iron horseshoes gleam with every step — and the harness is still dripping from her last ride.",
+
+  "boss.boitata.phase": "Phase 2",
+  "boss.boitata.epithet": "The light serpent",
+  "boss.boitata.desc": "The fire snake that drifts through the burnt fields. Its trail don't shine — it burns. Every coil leaves a path of ash, and anyone who looks straight into the light ain't seeing nothing ever again.",
+
+  "boss.curupira.phase": "Phase 3",
+  "boss.curupira.epithet": "The oldest kin",
+  "boss.curupira.desc": "Caipora's kin. Older guardian of the woods, cold and lethal. Feet turned backwards leave tracks going the wrong way — and when he crouches down, the coldness breaks.",
+
+  "boss.saci.phase": "Phase 4",
+  "boss.saci.epithet": "The one-legged kid",
+  "boss.saci.desc": "Kid made of soot, embers and whirlwinds. The red cap cuts through the air like a blade. The pipe spits filthy smoke. Don't let the size fool you — he's the smallest boss and the fastest one.",
+
+  "boss.jesuita.phase": "Final Boss",
+  "boss.jesuita.epithet": "The warrior priest",
+  "boss.jesuita.desc": "The final invader. Blessed bayonets in each fist, gold cross on his chest, prayer papers marked in blood. He \"converted\" the whole forest once. Now it's Caipora's turn.",
+
+  "invaders.tag": "Enemies",
+  "invaders.title": "The invaders",
+  "invaders.body": "Hunters, witches and corrupted creatures prowl the woods. Humans who broke the pacts and paid with their own humanity. Under the hat, just red slits. Under the hood, just dying embers.",
+
+  "mechanics.tag": "Combat",
+  "mechanics.title": "Timing is everything.",
+  "mechanics.body": "Hit Space at the exact frame. Land the critical. Perfect dodge and counter. Every miss costs blood. Every hit is a shot at surviving the woods.",
+  "mechanics.li1": "Turn-based combat + action command",
+  "mechanics.li2": "Procedural roguelike",
+  "mechanics.li3": "Brazilian folk horror",
+
+  "gallery.tag": "Gallery",
+  "gallery.title": "Fragments of the forest",
+
+  "cta.title": "The forest ain't waiting.",
+  "cta.body": "Play in the browser. No install. No mercy.",
+  "cta.play": "Play now",
+  "cta.mobile": "Play on mobile",
+
+  "footer.tagline": "the forest lives... for now"
+}

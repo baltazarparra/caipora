@@ -33,9 +33,10 @@
         <span class="nav-brand-text">CAIPORA</span>
       </a>
       <nav class="nav-links">
-        <a href="#chefes" class="nav-link">Chefes</a>
-        <a href="#mecanicas" class="nav-link">Mecânicas</a>
-        <a href="play/" class="btn btn-primary">Jogar</a>
+        <a href="#chefes" class="nav-link" data-i18n="nav.bosses">Chefes</a>
+        <a href="#mecanicas" class="nav-link" data-i18n="nav.mechanics">Mecânicas</a>
+        <a href="play/" class="btn btn-primary" data-i18n="nav.play">Jogar</a>
+        <button id="lang-toggle" class="lang-toggle" lang="en-US" aria-label="Switch to English" onclick="CaiporaI18n.setLang(CaiporaI18n.current()==='pt'?'en':'pt')">🇺🇸</button>
       </nav>
     </div>
   </header>
@@ -59,9 +60,9 @@
           <img src="assets/sprites/logo_title.png" alt="Caipora" class="hero-title-img">
           <span class="hero-title-fallback">CAIPORA</span>
         </h1>
-        <p class="hero-subtitle">A guardiã da mata acordou. E a floresta cobra em sangue.</p>
+        <p class="hero-subtitle" data-i18n="hero.subtitle">A guardiã da mata acordou. E a floresta cobra em sangue.</p>
         <div class="hero-ctas">
-          <a href="play/" class="btn btn-primary btn-lg">Jogar agora</a>
+          <a href="play/" class="btn btn-primary btn-lg" data-i18n="hero.cta.play">Jogar agora</a>
           <a href="https://github.com/baltazarparra/caipora" class="btn btn-ghost" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
@@ -73,10 +74,8 @@
         <div class="manifesto-sprite" aria-hidden="true">
           <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="" loading="lazy">
         </div>
-        <h2 class="manifesto-title">O que dormia na mata não dormia só.</h2>
-        <p class="manifesto-body">
-          Entre trilhas tortas, rios escuros e capelas abandonadas, os pactos antigos entre humanos, bichos, mortos e encantados se romperam. Caçadores, padres, bruxos e feras corrompidas patrulham o que um dia foi sagrado. A Caipora despertou. E ela não veio para salvar ninguém.
-        </p>
+        <h2 class="manifesto-title" data-i18n="manifesto.title">O que dormia na mata não dormia só.</h2>
+        <p class="manifesto-body" data-i18n="manifesto.body">Entre trilhas tortas, rios escuros e capelas abandonadas, os pactos antigos entre humanos, bichos, mortos e encantados se romperam. Caçadores, padres, bruxos e feras corrompidas patrulham o que um dia foi sagrado. A Caipora despertou. E ela não veio para salvar ninguém.</p>
       </div>
     </section>
 
@@ -84,9 +83,9 @@
     <section class="bosses section-reveal" id="chefes">
       <div class="bosses-inner">
         <header class="bosses-header">
-          <span class="section-tag">Ameaças</span>
-          <h2 class="bosses-title">Os chefes da mata</h2>
-          <p class="bosses-lead">Cinco pactos quebrados. Cinco pesadelos que não conhecem perdão.</p>
+          <span class="section-tag" data-i18n="bosses.tag">Ameaças</span>
+          <h2 class="bosses-title" data-i18n="bosses.title">Os chefes da mata</h2>
+          <p class="bosses-lead" data-i18n="bosses.lead">Cinco pactos quebrados. Cinco pesadelos que não conhecem perdão.</p>
         </header>
 
         <div class="boss-grid">
@@ -98,12 +97,12 @@
                 <img src="assets/sprites/mula_windup.png" alt="" class="boss-windup" loading="lazy" aria-hidden="true">
               </div>
               <div class="boss-card-meta">
-                <span class="boss-phase">Fase 1</span>
+                <span class="boss-phase" data-i18n="boss.mula.phase">Fase 1</span>
                 <h3 class="boss-name">Mula sem Cabeça</h3>
-                <p class="boss-epithet">O castigo da estrada</p>
+                <p class="boss-epithet" data-i18n="boss.mula.epithet">O castigo da estrada</p>
               </div>
             </div>
-            <p class="boss-desc">Égua negra amaldiçoada. O pescoço termina num toco cru de onde jorra uma coluna de fogo que serve de cabeça. As ferraduras de ferro reluzem a cada passada — e o arreio ainda pinga da última cavalgada.</p>
+            <p class="boss-desc" data-i18n="boss.mula.desc">Égua negra amaldiçoada. O pescoço termina num toco cru de onde jorra uma coluna de fogo que serve de cabeça. As ferraduras de ferro reluzem a cada passada — e o arreio ainda pinga da última cavalgada.</p>
           </article>
 
           <article class="boss-card" data-id="boitata">
@@ -114,12 +113,12 @@
                 <img src="assets/sprites/boitata_windup.png" alt="" class="boss-windup" loading="lazy" aria-hidden="true">
               </div>
               <div class="boss-card-meta">
-                <span class="boss-phase">Fase 2</span>
+                <span class="boss-phase" data-i18n="boss.boitata.phase">Fase 2</span>
                 <h3 class="boss-name">Boitatá</h3>
-                <p class="boss-epithet">A serpente de luz</p>
+                <p class="boss-epithet" data-i18n="boss.boitata.epithet">A serpente de luz</p>
               </div>
             </div>
-            <p class="boss-desc">A cobra de fogo que vaga pelas queimadas. Seu rastro não ilumina: queima. Cada curva do corpo é uma trilha de cinzas, e quem olhar direto para a luz não enxerga mais nada.</p>
+            <p class="boss-desc" data-i18n="boss.boitata.desc">A cobra de fogo que vaga pelas queimadas. Seu rastro não ilumina: queima. Cada curva do corpo é uma trilha de cinzas, e quem olhar direto para a luz não enxerga mais nada.</p>
           </article>
 
           <article class="boss-card" data-id="curupira">
@@ -130,12 +129,12 @@
                 <img src="assets/sprites/curupira_windup.png" alt="" class="boss-windup" loading="lazy" aria-hidden="true">
               </div>
               <div class="boss-card-meta">
-                <span class="boss-phase">Fase 3</span>
+                <span class="boss-phase" data-i18n="boss.curupira.phase">Fase 3</span>
                 <h3 class="boss-name">Curupira</h3>
-                <p class="boss-epithet">O parente mais antigo</p>
+                <p class="boss-epithet" data-i18n="boss.curupira.epithet">O parente mais antigo</p>
               </div>
             </div>
-            <p class="boss-desc">Parente da Caipora. Protetor mais velho da mata, indiferente e letal. Os pés virados para trás deixam pegadas no sentido errado — e quando ele se agacha, a indiferença quebra.</p>
+            <p class="boss-desc" data-i18n="boss.curupira.desc">Parente da Caipora. Protetor mais velho da mata, indiferente e letal. Os pés virados para trás deixam pegadas no sentido errado — e quando ele se agacha, a indiferença quebra.</p>
           </article>
 
           <article class="boss-card" data-id="saci">
@@ -146,12 +145,12 @@
                 <img src="assets/sprites/saci_windup.png" alt="" class="boss-windup" loading="lazy" aria-hidden="true">
               </div>
               <div class="boss-card-meta">
-                <span class="boss-phase">Fase 4</span>
+                <span class="boss-phase" data-i18n="boss.saci.phase">Fase 4</span>
                 <h3 class="boss-name">Saci</h3>
-                <p class="boss-epithet">O menino de uma perna</p>
+                <p class="boss-epithet" data-i18n="boss.saci.epithet">O menino de uma perna</p>
               </div>
             </div>
-            <p class="boss-desc">Criança de fuligem, brasa e redemoinho. A carapuça vermelha corta o ar como uma faca. O cachimbo cospe fumaça suja. Não é fofo: é o menor dos chefes, e o mais rápido.</p>
+            <p class="boss-desc" data-i18n="boss.saci.desc">Criança de fuligem, brasa e redemoinho. A carapuça vermelha corta o ar como uma faca. O cachimbo cospe fumaça suja. Não é fofo: é o menor dos chefes, e o mais rápido.</p>
           </article>
 
           <article class="boss-card boss-card--wide" data-id="jesuita">
@@ -162,12 +161,12 @@
                 <img src="assets/sprites/jesuita_windup.png" alt="" class="boss-windup" loading="lazy" aria-hidden="true">
               </div>
               <div class="boss-card-meta">
-                <span class="boss-phase">Boss Final</span>
+                <span class="boss-phase" data-i18n="boss.jesuita.phase">Boss Final</span>
                 <h3 class="boss-name">Jesuíta Bandeirante</h3>
-                <p class="boss-epithet">O padre-guerreiro</p>
+                <p class="boss-epithet" data-i18n="boss.jesuita.epithet">O padre-guerreiro</p>
               </div>
             </div>
-            <p class="boss-desc">O invasor final. Baionetas consagradas em cada punho, cruz de ouro no peito e papéis de oração marcados a sangue. Ele "converteu" a floresta inteira uma vez. Agora é a vez da Caipora.</p>
+            <p class="boss-desc" data-i18n="boss.jesuita.desc">O invasor final. Baionetas consagradas em cada punho, cruz de ouro no peito e papéis de oração marcados a sangue. Ele "converteu" a floresta inteira uma vez. Agora é a vez da Caipora.</p>
           </article>
         </div>
       </div>
@@ -180,11 +179,9 @@
           <img src="assets/sprites/inimigos_contact_sheet.png" alt="" loading="lazy">
         </div>
         <div class="invaders-content">
-          <span class="section-tag">Inimigos</span>
-          <h2 class="invaders-title">Os invasores</h2>
-          <p class="invaders-body">
-            Caçadores, bruxos e criaturas corrompidas rondam a mata. Humanos que quebraram os pactos e pagaram com a própria humanidade. Abaixo do chapéu, só fendas vermelhas. Sob o capuz, só brasa mortiça.
-          </p>
+          <span class="section-tag" data-i18n="invaders.tag">Inimigos</span>
+          <h2 class="invaders-title" data-i18n="invaders.title">Os invasores</h2>
+          <p class="invaders-body" data-i18n="invaders.body">Caçadores, bruxos e criaturas corrompidas rondam a mata. Humanos que quebraram os pactos e pagaram com a própria humanidade. Abaixo do chapéu, só fendas vermelhas. Sob o capuz, só brasa mortiça.</p>
           <div class="invaders-sprites">
             <img src="assets/sprites/boss_idle.png" alt="" loading="lazy">
             <img src="assets/sprites/boss_windup.png" alt="" loading="lazy" aria-hidden="true">
@@ -200,15 +197,13 @@
           <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Animações da Caipora" loading="lazy">
         </div>
         <div class="mechanics-content">
-          <span class="section-tag">Combate</span>
-          <h2 class="mechanics-title">Timing é tudo.</h2>
-          <p class="mechanics-body">
-            Aperte Espaço no frame exato. Acerte o crítico. Esquive perfeito e contra-ataque. Cada erro custa sangue. Cada acerto, uma chance de sobreviver à mata.
-          </p>
+          <span class="section-tag" data-i18n="mechanics.tag">Combate</span>
+          <h2 class="mechanics-title" data-i18n="mechanics.title">Timing é tudo.</h2>
+          <p class="mechanics-body" data-i18n="mechanics.body">Aperte Espaço no frame exato. Acerte o crítico. Esquive perfeito e contra-ataque. Cada erro custa sangue. Cada acerto, uma chance de sobreviver à mata.</p>
           <ul class="mechanics-list">
-            <li>Combate por turnos + action command</li>
-            <li>Roguelike procedural</li>
-            <li>Horror folclórico brasileiro</li>
+            <li data-i18n="mechanics.li1">Combate por turnos + action command</li>
+            <li data-i18n="mechanics.li2">Roguelike procedural</li>
+            <li data-i18n="mechanics.li3">Horror folclórico brasileiro</li>
           </ul>
         </div>
       </div>
@@ -218,8 +213,8 @@
     <section class="gallery section-reveal" id="galeria">
       <div class="gallery-inner">
         <header class="gallery-header">
-          <span class="section-tag">Galeria</span>
-          <h2 class="gallery-title">Fragmentos da floresta</h2>
+          <span class="section-tag" data-i18n="gallery.tag">Galeria</span>
+          <h2 class="gallery-title" data-i18n="gallery.title">Fragmentos da floresta</h2>
         </header>
         <div class="bento">
           <div class="bento-cell bento-cell-large bento-cell-screenshot">
@@ -244,11 +239,11 @@
     <!-- CTA Final -->
     <section class="final-cta" id="jogar">
       <div class="final-cta-inner">
-        <h2 class="final-cta-title">A floresta não espera.</h2>
-        <p class="final-cta-body">Jogue no navegador. Sem instalação. Sem perdão.</p>
+        <h2 class="final-cta-title" data-i18n="cta.title">A floresta não espera.</h2>
+        <p class="final-cta-body" data-i18n="cta.body">Jogue no navegador. Sem instalação. Sem perdão.</p>
         <div class="final-cta-buttons">
-          <a href="play/" class="btn btn-primary btn-xl">Jogar agora</a>
-          <a href="play/" class="btn btn-ghost btn-lg">Jogar no celular</a>
+          <a href="play/" class="btn btn-primary btn-xl" data-i18n="cta.play">Jogar agora</a>
+          <a href="play/" class="btn btn-ghost btn-lg" data-i18n="cta.mobile">Jogar no celular</a>
         </div>
       </div>
     </section>
@@ -257,7 +252,7 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="footer-inner">
-      <p class="footer-tagline">a floresta vive... por enquanto</p>
+      <p class="footer-tagline" data-i18n="footer.tagline">a floresta vive... por enquanto</p>
       <div class="footer-links">
         <a href="https://github.com/baltazarparra/caipora" target="_blank" rel="noopener">GitHub</a>
         <a href="https://baltazarparra.itch.io/caipora" target="_blank" rel="noopener">itch.io</a>
@@ -265,6 +260,8 @@
     </div>
   </footer>
 
+  <script src="js/i18n.js"></script>
+  <script>CaiporaI18n.init();</script>
   <script src="js/main.js"></script>
 </body>
 </html>

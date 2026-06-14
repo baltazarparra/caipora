@@ -99,7 +99,7 @@ func setup(erva_key: String) -> void:
 
 	# Custo em fragmentos, rodapé da coluna de textos.
 	_cost_label = Label.new()
-	_cost_label.text = "%d fragmentos" % cost
+	_cost_label.text = Lang.tf(&"card.cost", [cost])
 	_cost_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
 	_cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_cost_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL

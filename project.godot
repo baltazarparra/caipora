@@ -24,6 +24,7 @@ boot_splash/fullsize=true
 
 [autoload]
 
+Lang="*res://scripts/core/lang.gd"
 GameState="*res://scripts/core/game_state.gd"
 SignalBus="*res://scripts/core/signal_bus.gd"
 SceneTransition="*res://scripts/core/scene_transition.gd"

@@ -271,10 +271,10 @@ func effect_text(key: String) -> String:
 	if line == "furia":
 		var inc: int = _upgrade_attr(key)
 		var total := BASE_DAMAGE + _cumulative(FURIA_KEYS, key)
-		return "Dano +%d/hit (total %d)" % [inc, total]
+		return Lang.tf(&"card.effect.dmg", [inc, total])
 	var inc_hp: int = _upgrade_attr(key)
 	var total_hp := Constants.CAIPORA_MAX_HEALTH + _cumulative(CURA_KEYS, key)
-	return "+%d HP (total %d)" % [inc_hp, total_hp]
+	return Lang.tf(&"card.effect.hp", [inc_hp, total_hp])
 
 ## Soma o atributo de todas as ervas de `order` até `key` (inclusive).
 func _cumulative(order: Array[String], key: String) -> int:

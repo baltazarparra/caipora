@@ -28,6 +28,8 @@ var _logo: TextureRect
 
 func _ready() -> void:
 	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
+	_start_button.text = Lang.t(&"menu.start")
+	_quit_button.text = Lang.t(&"menu.quit")
 	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
 	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
@@ -76,7 +78,7 @@ func _show_update_banner() -> void:
 	if is_instance_valid(_update_banner):
 		return
 	_update_banner = Button.new()
-	_update_banner.text = "⟳  Novo balanceamento — Atualizar"
+	_update_banner.text = Lang.t(&"menu.update")
 	_update_banner.add_theme_font_size_override("font_size", 14)
 	_update_banner.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_update_banner.focus_mode = Control.FOCUS_NONE

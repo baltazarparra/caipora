@@ -79,7 +79,7 @@ func _build_scene() -> void:
 ## A mensagem escrita no céu do por do sol, acima da treeline.
 func _make_sky_message() -> Label:
 	var msg := Label.new()
-	msg.text = SKY_MESSAGE
+	msg.text = Lang.t(&"ending.sky")
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	msg.add_theme_font_size_override("font_size", Constants.FONT_LG)
 	msg.add_theme_color_override("font_color", Constants.COLOR_TEXT)
@@ -96,7 +96,7 @@ func _make_sky_message() -> Label:
 
 func _make_menu_button() -> Button:
 	var btn := Button.new()
-	btn.text = "Menu Principal"
+	btn.text = Lang.t(&"ending.menu_btn")
 	btn.add_theme_font_size_override("font_size", Constants.FONT_MD)
 	btn.anchor_left = 0.35
 	btn.anchor_right = 0.65

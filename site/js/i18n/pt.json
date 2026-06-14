@@ -1,0 +1,60 @@
+{
+  "meta.title": "Caipora — Roguelike de Horror Folclórico Brasileiro",
+  "meta.description": "A guardiã da mata acordou. Combate por turnos com timing preciso, roguelike procedural e horror folclórico brasileiro. Jogue no navegador.",
+
+  "nav.bosses": "Chefes",
+  "nav.mechanics": "Mecânicas",
+  "nav.play": "Jogar",
+  "lang.toggle": "🇺🇸",
+
+  "hero.subtitle": "A guardiã da mata acordou. E a floresta cobra em sangue.",
+  "hero.cta.play": "Jogar agora",
+
+  "manifesto.title": "O que dormia na mata não dormia só.",
+  "manifesto.body": "Entre trilhas tortas, rios escuros e capelas abandonadas, os pactos antigos entre humanos, bichos, mortos e encantados se romperam. Caçadores, padres, bruxos e feras corrompidas patrulham o que um dia foi sagrado. A Caipora despertou. E ela não veio para salvar ninguém.",
+
+  "bosses.tag": "Ameaças",
+  "bosses.title": "Os chefes da mata",
+  "bosses.lead": "Cinco pactos quebrados. Cinco pesadelos que não conhecem perdão.",
+
+  "boss.mula.phase": "Fase 1",
+  "boss.mula.epithet": "O castigo da estrada",
+  "boss.mula.desc": "Égua negra amaldiçoada. O pescoço termina num toco cru de onde jorra uma coluna de fogo que serve de cabeça. As ferraduras de ferro reluzem a cada passada — e o arreio ainda pinga da última cavalgada.",
+
+  "boss.boitata.phase": "Fase 2",
+  "boss.boitata.epithet": "A serpente de luz",
+  "boss.boitata.desc": "A cobra de fogo que vaga pelas queimadas. Seu rastro não ilumina: queima. Cada curva do corpo é uma trilha de cinzas, e quem olhar direto para a luz não enxerga mais nada.",
+
+  "boss.curupira.phase": "Fase 3",
+  "boss.curupira.epithet": "O parente mais antigo",
+  "boss.curupira.desc": "Parente da Caipora. Protetor mais velho da mata, indiferente e letal. Os pés virados para trás deixam pegadas no sentido errado — e quando ele se agacha, a indiferença quebra.",
+
+  "boss.saci.phase": "Fase 4",
+  "boss.saci.epithet": "O menino de uma perna",
+  "boss.saci.desc": "Criança de fuligem, brasa e redemoinho. A carapuça vermelha corta o ar como uma faca. O cachimbo cospe fumaça suja. Não é fofo: é o menor dos chefes, e o mais rápido.",
+
+  "boss.jesuita.phase": "Boss Final",
+  "boss.jesuita.epithet": "O padre-guerreiro",
+  "boss.jesuita.desc": "O invasor final. Baionetas consagradas em cada punho, cruz de ouro no peito e papéis de oração marcados a sangue. Ele \"converteu\" a floresta inteira uma vez. Agora é a vez da Caipora.",
+
+  "invaders.tag": "Inimigos",
+  "invaders.title": "Os invasores",
+  "invaders.body": "Caçadores, bruxos e criaturas corrompidas rondam a mata. Humanos que quebraram os pactos e pagaram com a própria humanidade. Abaixo do chapéu, só fendas vermelhas. Sob o capuz, só brasa mortiça.",
+
+  "mechanics.tag": "Combate",
+  "mechanics.title": "Timing é tudo.",
+  "mechanics.body": "Aperte Espaço no frame exato. Acerte o crítico. Esquive perfeito e contra-ataque. Cada erro custa sangue. Cada acerto, uma chance de sobreviver à mata.",
+  "mechanics.li1": "Combate por turnos + action command",
+  "mechanics.li2": "Roguelike procedural",
+  "mechanics.li3": "Horror folclórico brasileiro",
+
+  "gallery.tag": "Galeria",
+  "gallery.title": "Fragmentos da floresta",
+
+  "cta.title": "A floresta não espera.",
+  "cta.body": "Jogue no navegador. Sem instalação. Sem perdão.",
+  "cta.play": "Jogar agora",
+  "cta.mobile": "Jogar no celular",
+
+  "footer.tagline": "a floresta vive... por enquanto"
+}
