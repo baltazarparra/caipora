@@ -89,19 +89,16 @@ func test_no_spirits_when_none_freed() -> void:
 	await _instantiate()
 	assert_eq(_count_spirits(), 0, "sem libertação, sem espírito no acampamento")
 
-func test_one_spirit_per_freed_boss_on_forest_frame() -> void:
+func test_one_spirit_per_freed_boss_wanders_clearing() -> void:
 	MetaProgression.freed_bosses = [1, 2, 3, 4] as Array[int]
 	await _instantiate()
 	assert_eq(_count_spirits(), 4, "um espírito por encantado libertado")
-	var seen := {}
-	for spirit: Node in _hub._objects.get_children():
-		if not (spirit is CampSpirit):
-			continue
-		var tile := Vector2i((spirit.position / Constants.TILE_SIZE).floor())
-		assert_false(_hub._is_floor(tile),
-			"espírito na moldura de mata (fase %d) — walkability intocada" % spirit.phase)
-		assert_false(seen.has(tile), "celas distintas por espírito")
-		seen[tile] = true
+	var bounds: Rect2 = _hub._clearing_bounds()
+	for spirit: CampSpirit in _spirits():
+		assert_true(spirit._wandering,
+			"espírito da fase %d perambula livremente" % spirit.phase)
+		assert_true(bounds.has_point(spirit.position),
+			"espírito nasce dentro da clareira (fase %d)" % spirit.phase)
 
 func test_partial_sanctuary_spawns_only_freed() -> void:
 	MetaProgression.freed_bosses = [2] as Array[int]
@@ -109,11 +106,14 @@ func test_partial_sanctuary_spawns_only_freed() -> void:
 	assert_eq(_count_spirits(), 1, "só o Boitatá libertado tem presença")
 
 func _count_spirits() -> int:
-	var n := 0
+	return _spirits().size()
+
+func _spirits() -> Array:
+	var out: Array = []
 	for child: Node in _hub._objects.get_children():
 		if child is CampSpirit:
-			n += 1
-	return n
+			out.append(child)
+	return out
 
 # ── Transformações do santuário: cada libertação muda a cena, cumulativo ──
 func test_sanctuary_layers_transform_camp() -> void:
@@ -200,22 +200,25 @@ func test_rites_queue_for_multiple_pending() -> void:
 	assert_true(MetaProgression.has_seen_spirit(2), "segundo rito visto")
 	assert_false(_hub._locked, "fila esvaziada devolve o acampamento")
 
-# ── Câmera-diorama: o santuário lê INTEIRO (contain da clareira, quadro pinado) ──
-func test_camp_camera_frames_whole_clearing() -> void:
+# ── Câmera = exploração: cover/follow (fecha na Caipora, presa ao grid) ──
+func test_camp_camera_follows_like_exploration() -> void:
 	await _instantiate()
 	var cam: Camera2D = _hub._caipora.get_node("Camera2D")
 	var vp: Vector2 = _hub.get_viewport().get_visible_rect().size
+	# Limites no grid inteiro (idêntico à câmera nativa da Caipora na exploração) — a câmera
+	# acompanha a Caipora em vez de pinar o quadro no acampamento.
+	assert_eq(cam.limit_left, 0, "limite esquerdo no grid")
+	assert_eq(cam.limit_top, 0, "limite superior no grid")
+	assert_eq(cam.limit_right, Constants.GRID_WIDTH * Constants.TILE_SIZE,
+		"limite direito no grid")
+	assert_eq(cam.limit_bottom, Constants.GRID_HEIGHT * Constants.TILE_SIZE,
+		"limite inferior no grid")
+	# Cover: a área visível cabe DENTRO do mapa nos dois eixos (zoom fecha, não miniaturiza).
 	var visible := vp / cam.zoom.x
-	var t := float(Constants.TILE_SIZE)
-	assert_gte(visible.x + 0.01, _hub._clearing.size.x * t,
-		"clareira inteira no quadro (largura)")
-	assert_gte(visible.y + 0.01, _hub._clearing.size.y * t,
-		"clareira inteira no quadro (altura)")
-	# Quadro pinado no coração do acampamento: a janela dos limites == área visível.
-	assert_almost_eq(float(cam.limit_right - cam.limit_left), visible.x, 2.0,
-		"limites pinam a largura visível")
-	assert_almost_eq(float(cam.limit_bottom - cam.limit_top), visible.y, 2.0,
-		"limites pinam a altura visível")
+	assert_lte(visible.x, Constants.GRID_WIDTH * Constants.TILE_SIZE + 0.01,
+		"cover: largura visível ≤ mapa")
+	assert_lte(visible.y, Constants.GRID_HEIGHT * Constants.TILE_SIZE + 0.01,
+		"cover: altura visível ≤ mapa")
 
 # ── O D-pad de toque trata o HUB como gameplay (a Caipora anda no acampamento) ──
 func test_hub_is_gameplay_for_dpad() -> void:

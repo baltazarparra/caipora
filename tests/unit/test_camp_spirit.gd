@@ -37,3 +37,30 @@ func test_setup_rejects_non_encantado_phases() -> void:
 		add_child_autofree(spirit)
 		assert_false(spirit.setup(phase), "fase %d não monta espírito" % phase)
 		assert_eq(spirit.get_child_count(), 0, "setup rejeitado não cria nós")
+
+func test_setup_alone_keeps_spirit_still() -> void:
+	var spirit := CampSpirit.new()
+	add_child_autofree(spirit)
+	spirit.setup(1)
+	spirit.position = Vector2(100, 100)
+	await wait_frames(3)
+	assert_eq(spirit.position, Vector2(100, 100),
+		"sem enable_wander o espírito fica parado (contrato preservado)")
+
+func test_enable_wander_moves_within_bounds() -> void:
+	var spirit := CampSpirit.new()
+	add_child_autofree(spirit)
+	spirit.setup(1)
+	var bounds := Rect2(0, 0, 400, 300)
+	spirit.position = bounds.get_center()
+	spirit.enable_wander(bounds)
+	assert_true(spirit._wandering, "perambulação ligada")
+	var start := spirit.position
+	var moved := false
+	for _i in range(120):
+		await wait_frames(1)
+		if spirit.position != start:
+			moved = true
+		assert_true(bounds.has_point(spirit.position),
+			"posição permanece dentro da clareira")
+	assert_true(moved, "o espírito se moveu ao perambular")

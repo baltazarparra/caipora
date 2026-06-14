@@ -1,30 +1,30 @@
 class_name HubCard
 extends Button
 
-# Card clicável de UMA erva de aprimoramento no Hub: ícone + nome + efeito derivado
-# (ex: "Dano +1/hit (total 2)") + custo em fragmentos. Clicar/tocar pede a compra ao HubShop
-# (que valida via MetaProgression.purchase_upgrade — fonte única). Estado visual ACESSÍVEL
-# (borda âmbar viva, custo âmbar, respiro pulsante) vs. CARO (borda apagada, custo em sangue).
-# É um Button: foco por teclado/D-pad e clique/toque de graça; o conteúdo (HBox) ignora o mouse
-# para os cliques caírem no botão.
+# Card clicável de UMA erva de aprimoramento no Hub — ficha compacta de duas linhas:
+#   [ícone  NOME]
+#   [+N dano/HP                custo]
+# Clicar/tocar pede a compra ao HubShop (que valida via MetaProgression.purchase_upgrade —
+# fonte única). Estado visual ACESSÍVEL (borda âmbar viva, custo âmbar, respiro pulsante) vs.
+# CARO (borda apagada, custo em sangue). É um Button: o conteúdo ignora o mouse para os
+# cliques caírem no botão.
 #
-# O card é HORIZONTAL e baixo (ícone à esquerda, textos à direita) nas DUAS orientações: a
-# pilha das trilhas mora na FAIXA SUPERIOR da tela, deixando o resto livre pro mundo/rastro/
-# D-pad — em retrato empilhadas, em paisagem lado a lado. A largura vem do HubShop em relayout().
+# Baixo e largo nas DUAS orientações: a pilha das trilhas mora na FAIXA SUPERIOR da tela,
+# deixando o resto livre pro mundo/rastro/D-pad — em retrato empilhadas, em paisagem lado a
+# lado. A largura vem do HubShop em relayout().
 
-const ICON_PX: int = 46               # lado do ícone à esquerda do card
-const CARD_HEIGHT := 96               # altura baixa: faixa de cards, não parede de cards
+const ICON_PX: int = 38               # ícone na primeira linha, à esquerda do nome
+const CARD_HEIGHT := 68               # ficha baixa: duas linhas curtas, não parede de cards
 const BORDER := 3                     # bordas duras (sem cantos arredondados — guia de UI)
 # Fonte do nome entre MD(18) e LG(28): a fonte pixelada é larga, então 28 estoura a largura do
-# card; 22 mantém os nomes curtos numa linha (os longos quebram no hífen, leitura natural).
-const NAME_FONT: int = 22
+# card; 20 mantém os nomes curtos numa linha (os longos quebram no hífen, leitura natural).
+const NAME_FONT: int = 20
 
 var key: String
 var cost: int
 
 var _icon: TextureRect
-var _content: BoxContainer    # ícone + textos; vertical em paisagem, horizontal em retrato
-var _text: VBoxContainer      # coluna de nome/efeito/custo (à direita do ícone em retrato)
+var _content: VBoxContainer   # duas linhas: [ícone+nome] em cima, [efeito+custo] embaixo
 var _name_label: Label
 var _effect_label: Label
 var _cost_label: Label
@@ -47,14 +47,21 @@ func setup(erva_key: String) -> void:
 	clip_text = false
 	_build_styles()
 
-	# Conteúdo dentro do botão: ícone à esquerda + coluna de textos (nome → efeito → custo).
-	# Tudo ignora o mouse para o clique cair no Button.
-	_content = BoxContainer.new()
+	# Conteúdo: duas linhas empilhadas. Tudo ignora o mouse para o clique cair no Button.
+	_content = VBoxContainer.new()
 	_content.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_content.add_theme_constant_override("separation", 10)
+	_content.add_theme_constant_override("separation", 4)
 	_content.alignment = BoxContainer.ALIGNMENT_CENTER
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_content)
+
+	# Linha de cima: ícone + nome.
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 10)
+	top.alignment = BoxContainer.ALIGNMENT_BEGIN
+	top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_content.add_child(top)
 
 	_icon = TextureRect.new()
 	_icon.texture = load(String(def["icon"]))
@@ -65,46 +72,45 @@ func setup(erva_key: String) -> void:
 	_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_content.add_child(_icon)
-
-	# Coluna de textos: preenche o espaço à direita do ícone.
-	_text = VBoxContainer.new()
-	_text.add_theme_constant_override("separation", 4)
-	_text.alignment = BoxContainer.ALIGNMENT_CENTER
-	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_content.add_child(_text)
+	top.add_child(_icon)
 
 	_name_label = Label.new()
 	_name_label.text = String(def.get("name", key))
 	_name_label.add_theme_font_size_override("font_size", NAME_FONT)
 	_name_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_name_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_text.add_child(_name_label)
+	top.add_child(_name_label)
 
-	# Efeito derivado da matemática (fonte única — KI-006).
+	# Linha de baixo: efeito curto à esquerda, custo à direita.
+	var bottom := HBoxContainer.new()
+	bottom.add_theme_constant_override("separation", 10)
+	bottom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_content.add_child(bottom)
+
+	# Efeito curto derivado da matemática (fonte única — KI-006).
 	_effect_label = Label.new()
-	_effect_label.text = MetaProgression.effect_text(key)
+	_effect_label.text = MetaProgression.effect_short(key)
 	_effect_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
 	_effect_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
 	_effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_effect_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_text.add_child(_effect_label)
+	bottom.add_child(_effect_label)
 
-	# Custo em fragmentos, rodapé da coluna de textos.
+	# Custo em fragmentos, alinhado à direita da segunda linha.
 	_cost_label = Label.new()
-	_cost_label.text = Lang.tf(&"card.cost", [cost])
+	_cost_label.text = Lang.tf(&"card.cost.short", [cost])
 	_cost_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
-	_cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_cost_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_cost_label.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_text.add_child(_cost_label)
+	bottom.add_child(_cost_label)
 
 # Dois styleboxes de borda dura: âmbar quando dá pra pagar, apagado quando não.
 func _build_styles() -> void:
@@ -112,13 +118,13 @@ func _build_styles() -> void:
 	_style_afford.bg_color = Color(0.06, 0.05, 0.04, 0.92)
 	_style_afford.border_color = Constants.COLOR_AMBER
 	_style_afford.set_border_width_all(BORDER)
-	_style_afford.set_content_margin_all(16)
+	_style_afford.set_content_margin_all(12)
 
 	_style_locked = StyleBoxFlat.new()
 	_style_locked.bg_color = Color(0.05, 0.04, 0.045, 0.88)
 	_style_locked.border_color = Color(0.35, 0.18, 0.18, 0.9)
 	_style_locked.set_border_width_all(BORDER)
-	_style_locked.set_content_margin_all(16)
+	_style_locked.set_content_margin_all(12)
 
 ## Atualiza o estado visual conforme o jogador pode (ou não) pagar a erva. Acessível ganha
 ## borda âmbar, custo âmbar e respiro pulsante; cara fica apagada com custo em sangue.

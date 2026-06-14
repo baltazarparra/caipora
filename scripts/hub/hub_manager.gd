@@ -51,7 +51,6 @@ func _ready() -> void:
 	_compute_layout()
 	_setup_tilemap()
 	_setup_caipora()
-	_setup_camp_camera()
 	_spawn_exit_marker()
 	_spawn_exit_beacon()
 	_spawn_camp_identity()
@@ -82,44 +81,13 @@ func _setup_caipora() -> void:
 	_caipora.position = Vector2(_spawn_pos) * Constants.TILE_SIZE
 	_caipora.move_finished.connect(_on_caipora_moved)
 
-# ─── Câmera-diorama do acampamento ─────────────────
-# O acampamento é a vitrine do meta-progresso (Santuário dos Encantados): em vez do
-# cover da exploração (close na Caipora), a câmera faz CONTAIN da clareira + moldura —
-# o santuário lê INTEIRO em retrato e paisagem, com os limit_* pinando o quadro no
-# coração do acampamento (diorama estável; a câmera não rola). A mata pintada além do
-# grid (FOREST_APRON) cobre o respiro do contain — sem void nas bordas.
-const CAMP_VIEW_TILES := Vector2(18.0, 14.0)   # clareira 16×12 + 1 tile de moldura
-const CAMP_ZOOM_MAX: float = 2.0               # mesmo teto da arena (tablet)
-const CAMP_ZOOM_MIN: float = 0.55              # piso de sanidade p/ viewport degenerada
+# ─── Câmera = a mesma da exploração ────────────────
+# O acampamento usa o zoom COVER/follow nativo da Caipora (caipora.gd:_update_camera_zoom):
+# a câmera fecha na Caipora e a acompanha, presa pelos limit_* do grid — mesmo feel da
+# exploração (a Caipora segue dona da tela; os encantados vagam ao redor). Não há setup de
+# câmera aqui: o handler de cover da própria Caipora, conectado ao size_changed no _ready
+# dela, manda sozinho. A mata pintada além do grid (FOREST_APRON) segue emoldurando.
 const FOREST_APRON: int = 12                   # tiles de mata pintados além do grid
-
-func _setup_camp_camera() -> void:
-	var cam := _caipora.get_node("Camera2D") as Camera2D
-	_fit_camp_camera(cam)
-	# Filhos ficam prontos antes do pai: o handler de cover da própria Caipora já está
-	# conectado ao size_changed — este conecta DEPOIS, então no resize o contain do
-	# acampamento decide por último (gotcha #10: reagir a size_changed sempre).
-	get_viewport().size_changed.connect(_fit_camp_camera.bind(cam))
-
-func _fit_camp_camera(cam: Camera2D) -> void:
-	var view := CAMP_VIEW_TILES * float(Constants.TILE_SIZE)
-	var vp := get_viewport().get_visible_rect().size
-	var raw := clampf(minf(vp.x / view.x, vp.y / view.y), CAMP_ZOOM_MIN, CAMP_ZOOM_MAX)
-	# Snap por FLOOR (não snap_contain, que arredonda pra cima: em retrato 0.68→1.0
-	# estoura o contain e corta a clareira). z <= raw preserva o diorama; com texel < 1
-	# o zoom fica fracionário — pixel menos chunky, aceitável na vitrine do acampamento.
-	var s := PixelScale.device_scale(get_viewport())
-	var texel := floorf(raw * s)
-	var z := raw if texel < 1.0 else texel / s
-	cam.zoom = Vector2(z, z)
-	# Pina o quadro: a janela dos limites tem exatamente o tamanho visível, centrada
-	# no coração do acampamento — a câmera fica imóvel enquanto a Caipora anda.
-	var visible := vp / z
-	var center := _clearing_bounds().get_center()
-	cam.limit_left = int(center.x - visible.x * 0.5)
-	cam.limit_top = int(center.y - visible.y * 0.5)
-	cam.limit_right = int(center.x + visible.x * 0.5)
-	cam.limit_bottom = int(center.y + visible.y * 0.5)
 
 # ─── SFX da compra (dono do SfxSystem) ─────────────
 ## "Fumar a erva": chocalho da colheita e, um tempo de tragada depois, o sopro no
@@ -221,38 +189,32 @@ func _spawn_camp_identity() -> void:
 	add_child(Atmosphere.new())
 
 # ─── Santuário dos Encantados ──────────────────────
-# Os encantados libertados (MetaProgression.freed_bosses) vivem aqui: presenças em
-# repouso (CampSpirit) na moldura de mata ao redor da clareira — celas não-caminháveis,
-# walkability intocada. O visual de cada espírito é data-driven em CampSpirit.DEFS;
-# aqui mora só o layout (a cela de cada um no acampamento).
+# Os encantados libertados (MetaProgression.freed_bosses) vivem aqui: presenças em repouso
+# (CampSpirit) que VAGAM livremente pela clareira, sem colisão nem interação (decoração
+# etérea — não interferem no movimento grid da Caipora). Cada um nasce num ponto sorteado da
+# clareira e perambula dentro dela (enable_wander). O visual é data-driven em CampSpirit.DEFS.
 func _spawn_spirits() -> void:
-	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	var bounds := _clearing_bounds()
 	for spirit_phase: int in MetaProgression.freed_bosses:
 		var spirit := CampSpirit.new()
 		_objects.add_child(spirit)
 		if not spirit.setup(spirit_phase):
 			spirit.queue_free()
 			continue
-		spirit.position = Vector2(_spirit_anchor(spirit_phase)) * Constants.TILE_SIZE + half
+		spirit.position = _random_clearing_point(bounds)
+		spirit.enable_wander(bounds)
 		# Espírito recém-chegado nasce invisível: o rito de chegada o revela (uma vez).
 		if not MetaProgression.has_seen_spirit(spirit_phase):
 			spirit.modulate.a = 0.0
 
-# Cela de cada espírito na moldura de mata, nos FLANCOS leste/oeste: Mula e Curupira
-# a oeste (atrás do spawn), Boitatá e Saci a leste (atrás do rastro). A banda y
-# [mid+1, mid+4] é a única legível nas duas orientações: em retrato os cards do
-# HubShop cobrem a metade norte, em paisagem a borda sul corta, e a vinheta da
-# Atmosphere come os cantos (gotcha #13). Derivado de _clearing.
-func _spirit_anchor(spirit_phase: int) -> Vector2i:
-	var mid_y: int = _clearing.position.y + _clearing.size.y / 2
-	var west: int = _clearing.position.x - 1
-	var east: int = _clearing.end.x
-	match spirit_phase:
-		1: return Vector2i(west, mid_y + 1)
-		2: return Vector2i(east, mid_y + 1)
-		3: return Vector2i(west, mid_y + 4)
-		4: return Vector2i(east, mid_y + 4)
-	return _clearing.position
+# Ponto aleatório dentro da clareira, com margem de meio tile pra borda — onde o espírito
+# nasce antes de começar a perambular.
+func _random_clearing_point(bounds: Rect2) -> Vector2:
+	var margin := float(Constants.TILE_SIZE) * 0.5
+	return Vector2(
+		randf_range(bounds.position.x + margin, bounds.end.x - margin),
+		randf_range(bounds.position.y + margin, bounds.end.y - margin),
+	)
 
 # ─── Transformações do santuário (o grande upgrade visual por encantado) ───
 # Cada libertação muda a CENA do acampamento, de forma cumulativa: pira da Mula,

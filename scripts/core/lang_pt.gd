@@ -20,8 +20,6 @@ const STRINGS: Dictionary = {
 
 	# Hub Shop
 	&"hub.fragments":           "Fragmentos: %d",
-	&"hub.bonus":               "Fúria +%d dano   Cura +%d HP",
-	&"hub.hint":                "clique na erva pra fumar • caminhe até o rastro pra entrar na mata",
 	&"hub.track.furia":         "FÚRIA · dano",
 	&"hub.track.cura":          "CURA · vida",
 	&"hub.options.btn":         "Opções",
@@ -31,8 +29,11 @@ const STRINGS: Dictionary = {
 
 	# Hub Card
 	&"card.cost":               "%d fragmentos",
+	&"card.cost.short":         "%d frag",
 	&"card.effect.dmg":         "Dano +%d/hit (total %d)",
 	&"card.effect.hp":          "+%d HP (total %d)",
+	&"card.effect.dmg.short":   "+%d dano",
+	&"card.effect.hp.short":    "+%d HP",
 
 	# HUD
 	&"hud.player":              "CAIPORA",

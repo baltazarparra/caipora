@@ -21,8 +21,6 @@ const STRINGS: Dictionary = {
 
 	# Hub Shop
 	&"hub.fragments":           "Shards: %d",
-	&"hub.bonus":               "Fury +%d dmg   Heal +%d HP",
-	&"hub.hint":                "click the herb to smoke • walk to the trail to enter the woods",
 	&"hub.track.furia":         "FURY · damage",
 	&"hub.track.cura":          "HEAL · life",
 	&"hub.options.btn":         "Options",
@@ -32,8 +30,11 @@ const STRINGS: Dictionary = {
 
 	# Hub Card
 	&"card.cost":               "%d shards",
+	&"card.cost.short":         "%d shards",
 	&"card.effect.dmg":         "Dmg +%d/hit (total %d)",
 	&"card.effect.hp":          "+%d HP (total %d)",
+	&"card.effect.dmg.short":   "+%d dmg",
+	&"card.effect.hp.short":    "+%d HP",
 
 	# HUD
 	&"hud.player":              "CAIPORA",

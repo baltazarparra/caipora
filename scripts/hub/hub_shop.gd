@@ -25,13 +25,11 @@ const CARD_WIDTH_MIN := 240    # piso tocável/legível da coluna (ambas orienta
 # Em paisagem cada coluna fica em ≤30% da largura: os cards saem do centro do mapa e moram
 # numa faixa compacta no topo, junto do cabeçalho (o acampamento volta a ser o protagonista).
 const LANDSCAPE_COLUMN_FRACTION := 0.30
-const HEADER_BAND_OFFSET := 64.0  # altura das duas linhas do cabeçalho (fragmentos + bônus)
+const HEADER_BAND_OFFSET := 44.0  # altura da linha de fragmentos do cabeçalho
 
 # ─── State ─────────────────────────────────────────
 var _root: Control
 var _frag_label: Label
-var _bonus_label: Label
-var _hint: Label
 var _options: OptionsPanel
 var _options_button: Button
 var _margin: MarginContainer
@@ -97,10 +95,6 @@ func _build_header() -> void:
 	_frag_label.add_theme_font_size_override("font_size", Constants.FONT_LG)
 	vbox.add_child(_frag_label)
 
-	_bonus_label = Label.new()
-	_bonus_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
-	vbox.add_child(_bonus_label)
-
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -142,19 +136,6 @@ func _build_cards() -> void:
 
 	_columns["furia"] = _build_column(_tracks, Lang.t(&"hub.track.furia"), MetaProgression.FURIA_KEYS)
 	_columns["cura"] = _build_column(_tracks, Lang.t(&"hub.track.cura"), MetaProgression.CURA_KEYS)
-
-	var hint := Label.new()
-	hint.text = Lang.t(&"hub.hint")
-	hint.add_theme_color_override("font_color", HINT_COLOR)
-	hint.add_theme_font_size_override("font_size", Constants.FONT_SM)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# Sem autowrap a frase (longa) força a bandeja a ficar mais larga que a tela em retrato e
-	# vaza o viewport — quebra dentro da largura da bandeja (definida pelos cards) em vez disso.
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.size_flags_horizontal = Control.SIZE_FILL
-	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(hint)
-	_hint = hint
 
 # Uma trilha: título + os cards disponíveis (ou um status do que vem a seguir).
 func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictionary:
@@ -256,7 +237,6 @@ func _remove_card(card: HubCard) -> void:
 ## bolso). Fonte de verdade: MetaProgression.
 func refresh() -> void:
 	_frag_label.text = Lang.tf(&"hub.fragments", [int(MetaProgression.fragments)])
-	_bonus_label.text = Lang.tf(&"hub.bonus", [MetaProgression.get_damage_bonus(), MetaProgression.get_health_bonus()])
 	for line: String in _columns:
 		for card: HubCard in _columns[line]["cards"]:
 			card.set_affordable(MetaProgression.fragments >= card.cost)
@@ -295,7 +275,6 @@ func _apply_safe_margins() -> void:
 	_margin.add_theme_constant_override("margin_top", top)
 	_margin.add_theme_constant_override("margin_left", side)
 	_margin.add_theme_constant_override("margin_right", side)
-	_bonus_label.add_theme_font_size_override("font_size", fs)
 	_options_button.add_theme_font_size_override("font_size", fs)
 
 # ─── Layout responsivo (orientação + largura dos cards) ───
@@ -326,13 +305,10 @@ func _relayout() -> void:
 			col["status"].custom_minimum_size = Vector2(_card_w, 0)
 		for card: HubCard in col["cards"]:
 			card.relayout(_card_w)
-	# Mantém a dica na largura da coluna de cards (quebra dentro dela, nunca alarga a bandeja).
-	if _hint != null:
-		_hint.custom_minimum_size = Vector2(_card_w, 0)
 	_position_band(vp)
 
-## Posiciona a bandeja dos cards: ancorada ABAIXO do cabeçalho (margem superior segura + as
-## duas linhas de fragmentos/bônus), pilha alinhada ao TOPO — nas DUAS orientações. Os cards
+## Posiciona a bandeja dos cards: ancorada ABAIXO do cabeçalho (margem superior segura + a
+## linha de fragmentos), pilha alinhada ao TOPO — nas DUAS orientações. Os cards
 ## moram na faixa de cima e o resto da tela fica livre pro acampamento, o rastro de saída e o
 ## D-pad (em paisagem, centralizar na vertical cobria o mapa).
 func _position_band(vp: Vector2) -> void:

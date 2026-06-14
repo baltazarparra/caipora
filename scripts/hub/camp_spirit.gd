@@ -28,6 +28,13 @@ const AURA_RISE: float = -14.0
 const GLOW_ENERGY: float = 0.95
 const GLOW_SCALE: float = 1.1
 const GLOW_WHITEN: float = 0.5
+# Perambulação livre pela clareira (sem colisão/interação — entidade etérea em repouso).
+# Lento e à deriva, com pausas longas: lê como descanso vagando, não fuga.
+const WANDER_SPEED: float = 14.0   # px/s — bem mais lento que o combate
+const WANDER_PAUSE_MIN: float = 1.4
+const WANDER_PAUSE_MAX: float = 3.6
+const WANDER_ARRIVE_DIST: float = 4.0
+const WANDER_INSET: float = 16.0   # margem pra borda da clareira (não encosta na mata)
 
 # Identidade visual de cada espírito: os MESMOS frames premium da arena, em escala de
 # set piece (2–4 tiles), com a cor de aura canônica da fase. `flip` vira o encantado
@@ -46,6 +53,11 @@ const DEFS := {
 # ─── State ─────────────────────────────────────────
 var phase: int = 0
 var _sprite: AnimatedSprite2D
+# Perambulação (ligada por enable_wander; setup() sozinho deixa o espírito parado).
+var _wandering: bool = false
+var _roam_bounds: Rect2
+var _roam_target: Vector2
+var _pause_timer: float = 0.0
 
 # ─── Public API ────────────────────────────────────
 ## Monta a presença do encantado da fase. Retorna false para fase sem espírito
@@ -70,7 +82,40 @@ func setup(spirit_phase: int) -> bool:
 	_start_breathing()
 	return true
 
+## Liga a perambulação livre dentro de `bounds` (a clareira). O espírito passa a derivar
+## de ponto em ponto, sem colisão, virando o sprite pela direção. Chamar DEPOIS de setup().
+func enable_wander(bounds: Rect2) -> void:
+	_roam_bounds = bounds.grow(-WANDER_INSET)
+	_wandering = true
+	_roam_target = _pick_target()
+	set_process(true)
+
+# ─── Process: deriva lenta com pausas ──────────────
+func _process(delta: float) -> void:
+	if not _wandering:
+		return
+	if _pause_timer > 0.0:
+		_pause_timer -= delta
+		if _pause_timer <= 0.0:
+			_roam_target = _pick_target()
+		return
+	var to := _roam_target - position
+	if to.length() <= WANDER_ARRIVE_DIST:
+		_pause_timer = randf_range(WANDER_PAUSE_MIN, WANDER_PAUSE_MAX)
+		return
+	var step := to.normalized() * WANDER_SPEED * delta
+	position += step
+	# Vira o sprite pela direção do passo (mantém o último rumo nos passos verticais).
+	if absf(step.x) > 0.01:
+		_sprite.flip_h = step.x < 0.0
+
 # ─── Private ───────────────────────────────────────
+func _pick_target() -> Vector2:
+	return Vector2(
+		randf_range(_roam_bounds.position.x, _roam_bounds.end.x),
+		randf_range(_roam_bounds.position.y, _roam_bounds.end.y),
+	)
+
 func _spawn_calm_aura(color: Color) -> void:
 	var aura := CPUParticles2D.new()
 	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2.ZERO

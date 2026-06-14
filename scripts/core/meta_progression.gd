@@ -276,6 +276,17 @@ func effect_text(key: String) -> String:
 	var total_hp := Constants.CAIPORA_MAX_HEALTH + _cumulative(CURA_KEYS, key)
 	return Lang.tf(&"card.effect.hp", [inc_hp, total_hp])
 
+## Versão curta do efeito para o card compacto: só o incremento ("+N dano" / "+N HP"),
+## sem o total. Mesma fonte (a matemática de _upgrade_attr — KI-006).
+func effect_short(key: String) -> String:
+	if not UPGRADE_DEFS.has(key):
+		return ""
+	var def: Dictionary = UPGRADE_DEFS[key]
+	var inc: int = _upgrade_attr(key)
+	if String(def.get("line", "")) == "furia":
+		return Lang.tf(&"card.effect.dmg.short", [inc])
+	return Lang.tf(&"card.effect.hp.short", [inc])
+
 ## Soma o atributo de todas as ervas de `order` até `key` (inclusive).
 func _cumulative(order: Array[String], key: String) -> int:
 	var sum := 0
