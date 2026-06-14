@@ -490,7 +490,7 @@ func _start_enemy_turn() -> void:
 		return
 	_boss_special_hit_index = 0
 	_last_boss_bubble_pos = Vector2(-999.0, -999.0)
-	_active_enemy_pattern = _enemy.get_attack_pattern()
+	_active_enemy_pattern = RemotePatterns.apply(_enemy.get_attack_pattern())
 	_enemy.state_machine.start_pattern(_active_enemy_pattern)
 
 func _on_enemy_attack_started() -> void:

@@ -64,7 +64,8 @@ func _setup_version_label() -> void:
 var _update_banner: Button
 func _setup_update_banner() -> void:
 	SignalBus.remote_config_update_available.connect(_on_update_available)
-	if RemoteConfig.has_pending():
+	SignalBus.remote_patterns_update_available.connect(_on_update_available)
+	if RemoteConfig.has_pending() or RemotePatterns.has_pending():
 		_show_update_banner()
 
 func _on_update_available(_version: int) -> void:
@@ -80,6 +81,7 @@ func _show_update_banner() -> void:
 	_update_banner.focus_mode = Control.FOCUS_NONE
 	_update_banner.pressed.connect(func() -> void:
 		AudioDirector.play_ui_hover()
+		RemotePatterns.apply_pending()
 		RemoteConfig.apply_pending())
 	add_child(_update_banner)
 

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Caipora — Sequências de Ataque</title>
+  <link rel="icon" type="image/png" href="assets/sprites/brand_mark.png">
+  <style>
+    @font-face {
+      font-family: "PressStart2P";
+      src: url("assets/fonts/PressStart2P.ttf") format("truetype");
+      font-display: swap;
+    }
+    :root {
+      --bg: #050505;
+      --panel: #0e0d0d;
+      --line: #2a1414;
+      --blood: #b41818;
+      --ember: #e8731f;
+      --ink: #d8cfca;
+      --muted: #7e7470;
+      --green: #4fae54;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Courier New", monospace; line-height: 1.4;
+      background-image: radial-gradient(circle at 50% -10%, #1a0808 0%, #050505 60%);
+      min-height: 100vh;
+    }
+    h1, h2, .pix { font-family: "PressStart2P", monospace; }
+    a { color: var(--ember); }
+    header {
+      padding: 22px 18px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 13px; margin: 0; color: var(--blood); letter-spacing: 1px; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+
+    /* ---- login ---- */
+    #login {
+      position: fixed; inset: 0; background: rgba(5,5,5,.96);
+      display: flex; align-items: center; justify-content: center; z-index: 50;
+    }
+    #login .box {
+      width: min(360px, 92vw); background: var(--panel);
+      border: 1px solid var(--line); padding: 26px;
+    }
+    #login h2 { font-size: 12px; color: var(--blood); margin: 0 0 18px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+    input[type=text], input[type=password], input[type=number] {
+      width: 100%; background: #000; color: var(--ink);
+      border: 1px solid var(--line); padding: 8px 9px; font-family: inherit; font-size: 13px;
+    }
+    input:focus { outline: none; border-color: var(--ember); }
+    .chk { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 12px; }
+    button {
+      font-family: "PressStart2P", monospace; font-size: 10px; cursor: pointer;
+      background: var(--blood); color: #fff; border: none; padding: 11px 13px; letter-spacing: 1px;
+    }
+    button:hover { background: var(--ember); }
+    button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    button.ghost:hover { color: var(--ink); border-color: var(--ember); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .err { color: var(--blood); font-size: 12px; margin-top: 12px; min-height: 16px; }
+
+    /* ---- groups + cards ---- */
+    .group-title {
+      font-size: 11px; color: var(--ember); margin: 28px 0 10px;
+      border-bottom: 1px solid var(--line); padding-bottom: 7px;
+      font-family: "PressStart2P", monospace;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .card { background: var(--panel); border: 1px solid var(--line); padding: 14px; }
+
+    .card .label-row { margin-bottom: 10px; }
+    .card .label-row label { margin: 0 0 4px; }
+    .card .label-row input[type=text] { font-size: 12px; padding: 6px 8px; }
+
+    .card .windows {
+      font-size: 10px; color: var(--muted); background: #000;
+      padding: 5px 8px; margin-bottom: 10px; border-left: 2px solid var(--ember);
+      letter-spacing: 0.5px;
+    }
+
+    .row2 { display: flex; gap: 10px; margin-bottom: 8px; }
+    .row2 .f { flex: 1; }
+    .row2 label { margin: 0 0 3px; }
+    .row2 input { padding: 6px 7px; font-size: 12px; }
+
+    .row3 { display: flex; gap: 10px; margin-bottom: 10px; }
+    .row3 .f { flex: 1; }
+    .row3 label { margin: 0 0 3px; }
+    .row3 input { padding: 6px 7px; font-size: 12px; }
+
+    /* ---- sequence chips ---- */
+    .seq-area { margin-top: 4px; }
+    .seq-area > label { margin: 0 0 5px; }
+    .seq-chips {
+      display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px;
+      background: #000; border: 1px solid var(--line); padding: 5px 6px; margin-bottom: 6px;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--blood); color: #fff; padding: 2px 7px; font-size: 14px;
+      border-radius: 2px; cursor: default;
+    }
+    .chip .rm {
+      font-size: 11px; cursor: pointer; opacity: .7; font-family: monospace;
+      background: none; border: none; color: inherit; padding: 0; margin: 0;
+      font-family: "Courier New", monospace;
+      letter-spacing: 0;
+    }
+    .chip .rm:hover { opacity: 1; }
+    .seq-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .arrow-btn {
+      background: #111; color: var(--ink); border: 1px solid var(--line);
+      padding: 6px 14px; font-size: 16px; font-family: monospace;
+      cursor: pointer; letter-spacing: 0;
+    }
+    .arrow-btn:hover { border-color: var(--ember); color: var(--ember); background: #000; }
+    .seq-hint { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+    /* ---- sticky bar ---- */
+    .bar {
+      position: sticky; bottom: 0; background: rgba(5,5,5,.95); border-top: 1px solid var(--line);
+      padding: 14px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 24px;
+    }
+    .status { font-size: 12px; color: var(--muted); }
+    .status.ok { color: var(--green); }
+    .status.bad { color: var(--blood); }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="login">
+    <div class="box">
+      <h2>ACESSO — SEQUÊNCIAS</h2>
+      <form id="loginForm">
+        <label for="user">Usuário</label>
+        <input type="text" id="user" autocomplete="username" autocapitalize="none" spellcheck="false">
+        <label for="pass">Senha</label>
+        <input type="password" id="pass" autocomplete="current-password">
+        <div class="chk">
+          <input type="checkbox" id="remember" checked>
+          <label for="remember" style="margin:0;text-transform:none;letter-spacing:0;">Salvar sessão (encriptada) neste aparelho</label>
+        </div>
+        <div class="err" id="loginErr"></div>
+        <button type="submit" style="width:100%;margin-top:6px;">ENTRAR</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="app" class="hide">
+    <header>
+      <h1>⚔ CAIPORA — SEQUÊNCIAS DE ATAQUE</h1>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <a href="admin.html" class="ghost" style="font-size:10px;font-family:'PressStart2P',monospace;color:var(--muted);text-decoration:none;">HP/DANO</a>
+        <button class="ghost" id="logout">SAIR</button>
+      </div>
+    </header>
+    <div class="wrap">
+      <p class="status" id="loadStatus">Carregando…</p>
+      <div id="groups"></div>
+    </div>
+    <div class="bar">
+      <button id="save" disabled>SALVAR E PUBLICAR</button>
+      <span class="status" id="saveStatus"></span>
+      <span class="status" style="margin-left:auto;" id="versionTag"></span>
+    </div>
+  </div>
+
+  <script>
+    const ENDPOINT = "https://mlykeulezzfwljriytuf.supabase.co/functions/v1/caipora-api";
+    const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1seWtldWxlenpmd2xqcml5dHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTIzMTksImV4cCI6MjA5NTgyODMxOX0.i9jQGbtQrxbcyR4M-XNZpwPYwJ_GcxrP-VE4Gniamqg";
+    const ADMIN_USER = "baltz";
+    const LS_KEY = "caipora_admin_hash";
+
+    // Glyphs para cada direção de input
+    const DIR_GLYPH = { ui_up: "↑", ui_down: "↓", ui_left: "←", ui_right: "→" };
+
+    // Catálogo fixo dos 24 padrões com valores baked como fallback.
+    // Os valores reais vêm do servidor (get_attack_patterns).
+    const PATTERNS = [
+      { key:"assobio_pattern",             group:"Assombração", label:"Assombração — Assobio",           wind_up_duration:0.9,  attack_duration:0.45, strike_count:1, strike_delay:0.0,  damage_multiplier:3.0, input_sequence:[] },
+      { key:"assombracao_pattern",          group:"Assombração", label:"Assombração — Duplo",             wind_up_duration:0.35, attack_duration:0.9,  strike_count:2, strike_delay:0.35, damage_multiplier:1.0, input_sequence:[] },
+      { key:"rastro_pattern",               group:"Assombração", label:"Assombração — Rastro",            wind_up_duration:0.5,  attack_duration:0.7,  strike_count:4, strike_delay:0.35, damage_multiplier:2.5, input_sequence:["ui_right","ui_left","ui_right","ui_left"] },
+      { key:"criatura_pattern",             group:"Criatura",    label:"Criatura — Base",                 wind_up_duration:0.25, attack_duration:1.0,  strike_count:1, strike_delay:0.4,  damage_multiplier:1.0, input_sequence:[] },
+      { key:"criatura_double_block_pattern",group:"Criatura",    label:"Criatura — Duplo Bloqueio",       wind_up_duration:0.25, attack_duration:0.85, strike_count:2, strike_delay:0.4,  damage_multiplier:1.0, input_sequence:[] },
+      { key:"boss_pattern",                 group:"Criatura",    label:"Criatura Boss — Triplo",          wind_up_duration:0.15, attack_duration:0.8,  strike_count:3, strike_delay:0.4,  damage_multiplier:1.0, input_sequence:[] },
+      { key:"boss_double_pattern",          group:"Criatura",    label:"Criatura Boss — Duplo",           wind_up_duration:0.35, attack_duration:0.8,  strike_count:2, strike_delay:0.3,  damage_multiplier:1.0, input_sequence:[] },
+      { key:"boss_double_block_pattern",    group:"Criatura",    label:"Criatura Boss — Duplo Bloqueio",  wind_up_duration:0.2,  attack_duration:1.05, strike_count:2, strike_delay:0.3,  damage_multiplier:1.0, input_sequence:[] },
+      { key:"boss_special_pattern",         group:"Criatura",    label:"Criatura Boss — Especial",        wind_up_duration:0.5,  attack_duration:1.0,  strike_count:4, strike_delay:0.5,  damage_multiplier:2.0, input_sequence:["ui_right","ui_left","ui_right","ui_left"] },
+      { key:"mula_galope_pattern",          group:"Mula",        label:"Mula — Galope",                   wind_up_duration:0.4,  attack_duration:0.85, strike_count:2, strike_delay:0.5,  damage_multiplier:1.5, input_sequence:[] },
+      { key:"mula_cabecada_pattern",        group:"Mula",        label:"Mula — Cabeçada",                 wind_up_duration:0.5,  attack_duration:0.85, strike_count:2, strike_delay:0.45, damage_multiplier:1.5, input_sequence:["ui_down","ui_up"] },
+      { key:"boitata_chama_pattern",        group:"Boitatá",     label:"Boitatá — Chama",                 wind_up_duration:0.2,  attack_duration:1.0,  strike_count:1, strike_delay:0.0,  damage_multiplier:1.0, input_sequence:[] },
+      { key:"boitata_labareda_pattern",     group:"Boitatá",     label:"Boitatá — Labareda",              wind_up_duration:0.4,  attack_duration:0.85, strike_count:2, strike_delay:0.4,  damage_multiplier:1.5, input_sequence:["ui_down","ui_up"] },
+      { key:"boitata_chama_falsa_pattern",  group:"Boitatá",     label:"Boitatá — Chama Falsa",           wind_up_duration:0.5,  attack_duration:0.75, strike_count:3, strike_delay:0.4,  damage_multiplier:2.0, input_sequence:["ui_up","ui_up","ui_down"] },
+      { key:"boitata_white_special_pattern",group:"Boitatá",     label:"Boitatá — Especial White",        wind_up_duration:0.5,  attack_duration:0.75, strike_count:4, strike_delay:0.35, damage_multiplier:3.0, input_sequence:["ui_up","ui_up","ui_down","ui_down"] },
+      { key:"curupira_mata_pattern",        group:"Curupira",    label:"Curupira — Mata",                 wind_up_duration:0.35, attack_duration:0.85, strike_count:2, strike_delay:0.4,  damage_multiplier:1.5, input_sequence:["ui_up","ui_right"] },
+      { key:"curupira_trilha_pattern",      group:"Curupira",    label:"Curupira — Trilha",               wind_up_duration:0.5,  attack_duration:0.75, strike_count:3, strike_delay:0.4,  damage_multiplier:2.0, input_sequence:["ui_left","ui_up","ui_right"] },
+      { key:"saci_assovio_pattern",         group:"Saci",        label:"Saci — Assobio",                  wind_up_duration:0.85, attack_duration:0.4,  strike_count:1, strike_delay:0.0,  damage_multiplier:2.5, input_sequence:[] },
+      { key:"saci_pula_pattern",            group:"Saci",        label:"Saci — Pula",                     wind_up_duration:0.4,  attack_duration:0.75, strike_count:3, strike_delay:0.3,  damage_multiplier:2.0, input_sequence:["ui_up","ui_down","ui_up"] },
+      { key:"saci_pirulito_pattern",        group:"Saci",        label:"Saci — Pirulito",                 wind_up_duration:0.5,  attack_duration:0.65, strike_count:4, strike_delay:0.3,  damage_multiplier:3.0, input_sequence:["ui_up","ui_right","ui_down","ui_left"] },
+      { key:"saci_rastro_pattern",          group:"Saci",        label:"Saci — Rastro",                   wind_up_duration:0.5,  attack_duration:0.65, strike_count:4, strike_delay:0.25, damage_multiplier:2.5, input_sequence:["ui_right","ui_left","ui_right","ui_left"] },
+      { key:"jesuita_cruz_pattern",         group:"Jesuíta",     label:"Jesuíta — Cruz",                  wind_up_duration:0.35, attack_duration:0.7,  strike_count:3, strike_delay:0.3,  damage_multiplier:2.5, input_sequence:["ui_up","ui_down","ui_right"] },
+      { key:"jesuita_espada_pattern",       group:"Jesuíta",     label:"Jesuíta — Espada",                wind_up_duration:0.4,  attack_duration:0.65, strike_count:4, strike_delay:0.25, damage_multiplier:3.5, input_sequence:["ui_up","ui_right","ui_down","ui_right"] },
+      { key:"cacador_special_pattern",      group:"Caçador",     label:"Caçador — Especial",              wind_up_duration:0.4,  attack_duration:0.85, strike_count:2, strike_delay:0.45, damage_multiplier:1.5, input_sequence:["ui_down","ui_up"] },
+    ];
+
+    // Janela de reação por fase (espelhado de TimingSystem / ArenaManager):
+    // max(attack_duration - reduction[phase], 0.2) + 0.2
+    const PHASE_REDUCTION = {1:0, 2:0.1, 3:0.15, 4:0.3, 5:0.3};
+    function reactionWindow(attackDuration, phase) {
+      return (Math.max(attackDuration - (PHASE_REDUCTION[phase] || 0), 0.2) + 0.2).toFixed(2);
+    }
+    function windowsLabel(attackDuration) {
+      return [1,2,3,4,5].map(p => "P" + p + ":" + reactionWindow(attackDuration, p) + "s").join(" · ");
+    }
+
+    let sessionHash = null;
+    // sequences atuais por card key (mutado pela UI antes de salvar)
+    const seqState = {};
+
+    async function sha256hex(s) {
+      const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+      return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,"0")).join("");
+    }
+
+    async function api(action, extra) {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + ANON, "apikey": ANON },
+        body: JSON.stringify(Object.assign({ action }, extra || {})),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    // ---- login ----
+    function showApp() {
+      document.getElementById("login").classList.add("hide");
+      document.getElementById("app").classList.remove("hide");
+      loadPatterns();
+    }
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("loginErr");
+      err.textContent = "";
+      const user = document.getElementById("user").value.trim();
+      const pass = document.getElementById("pass").value;
+      if (user !== ADMIN_USER) { err.textContent = "Usuário ou senha inválidos."; return; }
+      sessionHash = await sha256hex(pass);
+      if (document.getElementById("remember").checked) localStorage.setItem(LS_KEY, sessionHash);
+      showApp();
+    });
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem(LS_KEY); location.reload();
+    });
+
+    // ---- chip helpers ----
+    function renderChips(chipsEl, key) {
+      chipsEl.innerHTML = "";
+      for (let i = 0; i < seqState[key].length; i++) {
+        const dir = seqState[key][i];
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.innerHTML = DIR_GLYPH[dir] + ' <button class="rm" title="remover">×</button>';
+        chip.querySelector(".rm").addEventListener("click", () => {
+          seqState[key].splice(i, 1);
+          renderChips(chipsEl, key);
+        });
+        chipsEl.appendChild(chip);
+      }
+    }
+
+    // ---- cards ----
+    function render(values) {
+      const groups = {};
+      for (const p of PATTERNS) (groups[p.group] = groups[p.group] || []).push(p);
+      const host = document.getElementById("groups");
+      host.innerHTML = "";
+
+      for (const groupName of Object.keys(groups)) {
+        const h = document.createElement("h2");
+        h.className = "group-title";
+        h.textContent = groupName.toUpperCase();
+        host.appendChild(h);
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        for (const p of groups[groupName]) {
+          const sv = values[p.key] || {};
+          const label    = sv.label            || p.label;
+          const windUp   = sv.wind_up_duration  !== undefined ? sv.wind_up_duration  : p.wind_up_duration;
+          const atkDur   = sv.attack_duration   !== undefined ? sv.attack_duration   : p.attack_duration;
+          const strCount = sv.strike_count      !== undefined ? sv.strike_count      : p.strike_count;
+          const strDelay = sv.strike_delay      !== undefined ? sv.strike_delay      : p.strike_delay;
+          const dmgMult  = sv.damage_multiplier !== undefined ? sv.damage_multiplier : p.damage_multiplier;
+          const seqArr   = (sv.input_sequence   !== undefined ? sv.input_sequence    : p.input_sequence).slice();
+
+          seqState[p.key] = seqArr;
+
+          const card = document.createElement("div");
+          card.className = "card";
+          card.dataset.key = p.key;
+
+          // label
+          const labelRow = document.createElement("div");
+          labelRow.className = "label-row";
+          labelRow.innerHTML = '<label>Nome</label><input type="text" data-field="label" value="">';
+          labelRow.querySelector("input").value = label;
+          card.appendChild(labelRow);
+
+          // windows display (updated dynamically when attack_duration changes)
+          const winDiv = document.createElement("div");
+          winDiv.className = "windows";
+          winDiv.textContent = windowsLabel(atkDur);
+          card.appendChild(winDiv);
+
+          // row: wind_up + attack_duration
+          const row1 = document.createElement("div");
+          row1.className = "row2";
+          row1.innerHTML =
+            '<div class="f"><label>Wind-up (s)</label><input type="number" data-field="wind_up_duration" min="0.05" step="0.05" value="' + windUp + '"></div>' +
+            '<div class="f"><label>Janela base (s)</label><input type="number" data-field="attack_duration" min="0.1" step="0.05" value="' + atkDur + '" class="atk-dur-input"></div>';
+          card.appendChild(row1);
+
+          // live update windows on attack_duration change
+          row1.querySelector(".atk-dur-input").addEventListener("input", function() {
+            const v = parseFloat(this.value);
+            if (Number.isFinite(v) && v >= 0.1) winDiv.textContent = windowsLabel(v);
+          });
+
+          // row: strike_count + strike_delay
+          const row2 = document.createElement("div");
+          row2.className = "row2";
+          row2.innerHTML =
+            '<div class="f"><label>Golpes</label><input type="number" data-field="strike_count" min="1" max="6" step="1" value="' + strCount + '"></div>' +
+            '<div class="f"><label>Intervalo (s)</label><input type="number" data-field="strike_delay" min="0" step="0.05" value="' + strDelay + '"></div>';
+          card.appendChild(row2);
+
+          // row: damage_multiplier
+          const row3 = document.createElement("div");
+          row3.className = "row3";
+          row3.innerHTML =
+            '<div class="f"><label>Mult. dano</label><input type="number" data-field="damage_multiplier" min="0.1" step="0.1" value="' + dmgMult + '"></div>';
+          card.appendChild(row3);
+
+          // sequence area
+          const seqArea = document.createElement("div");
+          seqArea.className = "seq-area";
+          const seqLabel = document.createElement("label");
+          seqLabel.textContent = "Sequência (máx. 4)";
+          seqArea.appendChild(seqLabel);
+
+          const chipsEl = document.createElement("div");
+          chipsEl.className = "seq-chips";
+          seqArea.appendChild(chipsEl);
+
+          const btns = document.createElement("div");
+          btns.className = "seq-btns";
+          for (const [dir, glyph] of Object.entries(DIR_GLYPH)) {
+            const btn = document.createElement("button");
+            btn.className = "arrow-btn";
+            btn.type = "button";
+            btn.textContent = glyph;
+            btn.title = dir;
+            btn.addEventListener("click", () => {
+              if (seqState[p.key].length >= 4) return;
+              seqState[p.key].push(dir);
+              renderChips(chipsEl, p.key);
+            });
+            btns.appendChild(btn);
+          }
+          seqArea.appendChild(btns);
+
+          const hint = document.createElement("div");
+          hint.className = "seq-hint";
+          hint.textContent = "Vazio = padrão não-especial (sem sequência de defesa)";
+          seqArea.appendChild(hint);
+
+          card.appendChild(seqArea);
+          renderChips(chipsEl, p.key);
+          grid.appendChild(card);
+        }
+        host.appendChild(grid);
+      }
+    }
+
+    async function loadPatterns() {
+      const status = document.getElementById("loadStatus");
+      const r = await api("get_attack_patterns");
+      if (!r.ok) { status.textContent = "Falha ao carregar (" + r.status + ")."; status.className = "status bad"; return; }
+      render(r.data.data || {});
+      status.classList.add("hide");
+      document.getElementById("versionTag").textContent = "versão atual: " + (r.data.version ?? "?");
+      document.getElementById("save").disabled = false;
+    }
+
+    function collect() {
+      const data = {};
+      document.querySelectorAll(".card[data-key]").forEach((card) => {
+        const k = card.dataset.key;
+        const entry = {};
+        card.querySelectorAll("input[data-field]").forEach((el) => {
+          const field = el.dataset.field;
+          if (field === "label") {
+            entry[field] = el.value.trim();
+          } else if (field === "strike_count") {
+            entry[field] = el.value.trim() === "" ? NaN : Math.round(Number(el.value));
+          } else {
+            entry[field] = el.value.trim() === "" ? NaN : Number(el.value);
+          }
+        });
+        entry["input_sequence"] = seqState[k] ? seqState[k].slice() : [];
+        data[k] = entry;
+      });
+      return data;
+    }
+
+    document.getElementById("save").addEventListener("click", async () => {
+      const st = document.getElementById("saveStatus");
+      const btn = document.getElementById("save");
+      const data = collect();
+
+      if (Object.keys(data).length === 0) {
+        st.textContent = "Nenhum dado carregado — recarregue a página."; st.className = "status bad"; return;
+      }
+
+      for (const k in data) {
+        const d = data[k];
+        if (!Number.isFinite(d.attack_duration) || d.attack_duration < 0.1) {
+          st.textContent = "Janela base inválida em " + k + " (mínimo 0.1s)."; st.className = "status bad"; return;
+        }
+        if (!Number.isFinite(d.strike_count) || d.strike_count < 1) {
+          st.textContent = "Golpes inválido em " + k + " (mínimo 1)."; st.className = "status bad"; return;
+        }
+        if (!Number.isFinite(d.damage_multiplier) || d.damage_multiplier <= 0) {
+          st.textContent = "Mult. dano inválido em " + k + " (deve ser > 0)."; st.className = "status bad"; return;
+        }
+        if (!Number.isFinite(d.wind_up_duration) || d.wind_up_duration < 0) {
+          st.textContent = "Wind-up inválido em " + k + "."; st.className = "status bad"; return;
+        }
+      }
+
+      btn.disabled = true; st.textContent = "Salvando…"; st.className = "status";
+      try {
+        const r = await api("set_attack_patterns", { admin_pass_hash: sessionHash, data });
+        btn.disabled = false;
+        if (r.status === 401) {
+          st.textContent = "Senha incorreta — faça login de novo."; st.className = "status bad";
+          localStorage.removeItem(LS_KEY); return;
+        }
+        if (!r.ok) { st.textContent = "Erro: " + (r.data.error || r.status); st.className = "status bad"; return; }
+        st.textContent = "Publicado! Os jogadores verão o banner de atualização no próximo boot."; st.className = "status ok";
+        document.getElementById("versionTag").textContent = "versão atual: " + r.data.version;
+      } catch (_err) {
+        btn.disabled = false;
+        st.textContent = "Erro de rede — verifique a conexão e tente de novo."; st.className = "status bad";
+      }
+    });
+
+    // sessão salva?
+    (function boot() {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) { sessionHash = saved; showApp(); }
+    })();
+  </script>
+</body>
+</html>
