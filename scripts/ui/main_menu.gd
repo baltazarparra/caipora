@@ -227,15 +227,11 @@ func _setup_lang_toggle() -> void:
 	_lang_row.add_child(_btn_pt)
 	_lang_row.add_child(_btn_en)
 
-	_btn_pt.pressed.connect(func() -> void:
-		AudioDirector.play_ui_hover()
-		Lang.set_language(Lang.LANG_PT))
-	_btn_en.pressed.connect(func() -> void:
-		AudioDirector.play_ui_hover()
-		Lang.set_language(Lang.LANG_EN))
+	_btn_pt.pressed.connect(_on_select_pt)
+	_btn_en.pressed.connect(_on_select_en)
 
 	_refresh_lang_flags()
-	Lang.language_changed.connect(func(_l: StringName) -> void: _refresh_lang_flags())
+	Lang.language_changed.connect(_on_language_changed)
 
 func _make_flag_btn(label: String) -> Button:
 	var btn := Button.new()
@@ -248,6 +244,19 @@ func _make_flag_btn(label: String) -> Button:
 	btn.focus_entered.connect(AudioDirector.play_ui_hover)
 	btn.mouse_entered.connect(AudioDirector.play_ui_hover)
 	return btn
+
+func _on_select_pt() -> void:
+	AudioDirector.play_ui_hover()
+	Lang.set_language(Lang.LANG_PT)
+
+func _on_select_en() -> void:
+	AudioDirector.play_ui_hover()
+	Lang.set_language(Lang.LANG_EN)
+
+func _on_language_changed(_lang: StringName) -> void:
+	_start_button.text = Lang.t(&"menu.start")
+	_quit_button.text = Lang.t(&"menu.quit")
+	_refresh_lang_flags()
 
 func _refresh_lang_flags() -> void:
 	if not is_instance_valid(_btn_pt):
