@@ -135,8 +135,6 @@ static func caipora_base_damage_for_phase(_phase: int) -> int:
 # 2 kills, via acúmulo em GameState.caipora_max_hp); boss dá +1 HP máx. como marco.
 const COMMON_KILL_HP_GROWTH := 0.5
 const BOSS_KILL_HP_GROWTH := 1.0
-const COMMON_KILL_HEAL := 1.0
-const BOSS_KILL_HEAL := 2.0
 # Fragmentos inteiros, escalando com a profundidade (chave 1..4 = fase).
 const COMMON_FRAGMENT_REWARD := { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }
 const BOSS_FRAGMENT_BOUNTY := { 1: 3, 2: 5, 3: 8, 4: 12, 5: 20 }

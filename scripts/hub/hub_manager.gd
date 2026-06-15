@@ -70,7 +70,9 @@ func _compute_layout() -> void:
 	_clearing = Rect2i(ox, oy, CLEARING_WIDTH, CLEARING_HEIGHT)
 	var mid_y: int = oy + CLEARING_HEIGHT / 2
 	_spawn_pos = Vector2i(ox + 1, mid_y)
-	_exit_pos = Vector2i(ox + CLEARING_WIDTH - 2, mid_y)
+	# Saída recuada 1 tile pra dentro: a clareira 5×5 ao redor dela (a área útil da saída)
+	# cabe inteira no chão do acampamento, sem encostar na mata.
+	_exit_pos = Vector2i(ox + CLEARING_WIDTH - 3, mid_y)
 	_fire_pos = Vector2i(ox + CLEARING_WIDTH / 2, mid_y)
 
 func _is_floor(pos: Vector2i) -> bool:
@@ -127,15 +129,15 @@ func _trigger_exit() -> void:
 func _exit_destination() -> SignalBus.Screen:
 	return GameState.pending_exploration if GameState.run_active else SignalBus.Screen.EXPLORATION
 
-# ─── Marcador de saída (boca de toca coberta de folhas) ───
+# ─── Marcador de saída (passagem ritual) ───
 func _spawn_exit_marker() -> void:
 	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	var center := Vector2(_exit_pos) * Constants.TILE_SIZE + half
-	# Boca de toca com folhas (MapObject.BURROW): simboliza a saída pra mata melhor que o
-	# tile âmbar — e centra no tile (o Sprite2D antigo ficava meio tile fora do lugar).
-	var burrow := MapObject.new()
-	_objects.add_child(burrow)
-	burrow.setup(MapObject.Type.BURROW, _exit_pos)
+	# Passagem ritual (MapObject.EXIT_PASSAGE): o mesmo portão da saída das fases — unifica o
+	# rastro do acampamento com a mata e lê melhor que o tile âmbar antigo.
+	var passage := MapObject.new()
+	_objects.add_child(passage)
+	passage.setup(MapObject.Type.EXIT_PASSAGE, _exit_pos)
 	# Luz âmbar pulsante: marca a saída na penumbra sem texto (mesma leitura da exploração).
 	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.8)
 	light.position = center

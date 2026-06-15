@@ -314,26 +314,19 @@ func _nearest_walkable(pos: Vector2i) -> Vector2i:
 
 func _spawn_exit_marker() -> void:
 	var pos := _map.exit_pos
-	if _profile["exit_marker"] == ExitMarker.SIMPLE:
-		var marker := Sprite2D.new()
-		marker.texture = preload("res://assets/sprites/tile_floor.png")
-		marker.modulate = Constants.COLOR_EXIT
-		marker.position = Vector2(pos) * Constants.TILE_SIZE
-		add_child(marker)
-	elif _profile["exit_marker"] == ExitMarker.PULSING:
-		var center := Vector2(pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
-		var marker := Sprite2D.new()
-		marker.texture = preload("res://assets/sprites/tile_floor.png")
-		marker.modulate = Constants.COLOR_EXIT
-		marker.position = center - Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
-		add_child(marker)
-		# Luz âmbar pulsante: marca a saída na escuridão sem texto.
-		var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.0)
-		light.position = center
-		add_child(light)
-		var tween := create_tween().set_loops()
-		tween.tween_property(light, "energy", 1.4, 1.1).set_trans(Tween.TRANS_SINE)
-		tween.tween_property(light, "energy", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
+	var center := Vector2(pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	# Passagem ritual (MapObject.EXIT_PASSAGE) no centro da clareira da saída: o portão por
+	# onde a Caipora mergulha de volta na mata — mesma leitura forte em toda fase com saída.
+	var passage := MapObject.new()
+	_objects_container.add_child(passage)
+	passage.setup(MapObject.Type.EXIT_PASSAGE, pos)
+	# Luz âmbar pulsante: marca a saída na escuridão sem texto.
+	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.0)
+	light.position = center
+	_objects_container.add_child(light)
+	var tween := create_tween().set_loops()
+	tween.tween_property(light, "energy", 1.4, 1.1).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(light, "energy", 0.7, 1.1).set_trans(Tween.TRANS_SINE)
 
 func _spawn_ambient_life() -> void:
 	# Vaga-lumes + insetos + neblina/esporos/god rays sobre a área interna.

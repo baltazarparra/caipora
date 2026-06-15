@@ -5,7 +5,8 @@ const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
 enum Type { FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
-	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW, BURROW }
+	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW, BURROW,
+	EXIT_PASSAGE }
 
 const T: int = Constants.TILE_SIZE  # 32
 
@@ -56,6 +57,7 @@ func _draw() -> void:
 		Type.CANDLE:     _draw_candle(cx, cy)
 		Type.PEW:        _draw_pew(cx, cy)
 		Type.BURROW:     _draw_burrow(cx, cy)
+		Type.EXIT_PASSAGE: _draw_exit_passage(cx, cy)
 
 func _draw_fire(cx: float, cy: float) -> void:
 	# CHAMA da mata: base preta, silhueta triangular e miolo quente chapado.
@@ -344,6 +346,62 @@ func _draw_burrow(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx - 5, cy + 9), 2.0, leaf_dark)
 	draw_circle(Vector2(cx + 7, cy + 8), 1.8, leaf)
 	draw_circle(Vector2(cx + 2, cy + 1), 1.6, leaf_dark)
+
+func _draw_exit_passage(cx: float, cy: float) -> void:
+	# Passagem ritual: portal de pedra-osso aberto na terra escura, por onde a Caipora
+	# mergulha de volta na caçada. Halo âmbar (a marca laranja), boca acesa, vazio preto
+	# total, ladeado por dois menires de osso com marca ritual de sangue e brasas âmbar
+	# subindo do breu — leitura distinta da toca (folhas) e mais "portão" de saída.
+	var night := Constants.COLOR_NIGHT
+	var earth := Constants.COLOR_EARTH
+	var bark_dark := Constants.COLOR_BARK_DARK
+	var bone := Constants.COLOR_BONE
+	var bone_dark := Constants.COLOR_BONE_HOLLOW
+	var blood := Constants.COLOR_BLOOD
+	var amber := Constants.COLOR_AMBER
+	var ember := Constants.COLOR_FIRE_HOT
+	# halo âmbar de portal ativo: brilho que marca a saída contra o chão escuro
+	var glow := amber
+	glow.a = 0.40
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3), 16.0, 12.0), glow)
+	# aro de terra revolvida em volta da boca
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3), 14.0, 10.0), earth)
+	# anel âmbar fino: a boca acesa do portal
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3), 11.5, 8.0), amber)
+	# parede interna em sombra (profundidade do mergulho)
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3.5), 10.0, 6.8), bark_dark)
+	# o vão: escuridão total (mais fundo, pra o laranja virar só o aro aceso)
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3.5), 9.5, 6.3), night)
+	# menires de osso ladeando a passagem (gatepostes rituais): mais baixos e em pedra
+	# aquecida (osso puxado pra terra) pra emoldurar o portal sem roubar o laranja dominante.
+	var stone := bone.lerp(earth, 0.4)
+	for sx: float in [cx - 10.0, cx + 10.0]:
+		# outline/sombra do menir
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(sx - 3, cy + 8), Vector2(sx - 3, cy - 7),
+			Vector2(sx, cy - 10), Vector2(sx + 3, cy - 7), Vector2(sx + 3, cy + 8),
+		]), night)
+		# corpo do menir (pedra aquecida)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(sx - 2, cy + 7), Vector2(sx - 2, cy - 6),
+			Vector2(sx, cy - 9), Vector2(sx + 2, cy - 6), Vector2(sx + 2, cy + 7),
+		]), stone)
+		# face direita em sombra (volume chapado, 2 tons)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(sx, cy - 9), Vector2(sx + 2, cy - 6), Vector2(sx + 2, cy + 7), Vector2(sx, cy + 7),
+		]), bone_dark)
+		# fio claro de osso na face esquerda (acento, 1px)
+		draw_line(Vector2(sx - 2, cy - 5), Vector2(sx - 2, cy + 6), bone, 1.0)
+		# marca ritual de sangue gravada na pedra
+		draw_line(Vector2(sx - 1, cy - 4), Vector2(sx + 1, cy), blood, 1.0)
+	# brasas âmbar subindo do breu (o portal está vivo)
+	for e: Array in [[Vector2(cx - 3, cy - 1), 1.8, ember], [Vector2(cx + 2, cy - 4), 1.4, amber],
+			[Vector2(cx, cy + 2), 1.5, ember]]:
+		var p: Vector2 = e[0]
+		var r: float = e[1]
+		draw_colored_polygon(PackedVector2Array([
+			p + Vector2(0, -r), p + Vector2(r * 0.7, 0), p + Vector2(0, r), p + Vector2(-r * 0.7, 0),
+		]), e[2])
 
 # Elipse achatada (leitura top-down) como polígono — base de buracos e bocas de toca.
 func _ellipse(center: Vector2, rx: float, ry: float) -> PackedVector2Array:

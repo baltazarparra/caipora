@@ -20,6 +20,7 @@ const MAX_ATTEMPTS := 12
 const PILLAR_MIN_SPACING := 2
 const BOSS_ROOM_W := 7
 const BOSS_ROOM_H := 4
+const EXIT_CLEARING_RADIUS := 2      # raio Chebyshev da clareira da saída → 5×5 (área útil)
 const CORRIDOR_TURN_CHANCE := 0.28
 const CORRIDOR_JUNCTION_CHANCE := 0.18
 const CORRIDOR_MAX_STEPS := 4000
@@ -56,18 +57,20 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 	var player_start := Vector2i(1, 1)
 	var exit_pos := Vector2i(-1, -1)
 	var boss_cell := Vector2i(-1, -1)
-	var in_boss_room: Callable = func(_p: Vector2i) -> bool: return false
+	var clearing_rect := Rect2i(0, 0, 0, 0)   # clareira 5×5 da saída (vazia até definida)
 
 	if config.topology_mode == MapConfig.TopologyMode.OPEN:
 		var room := _carve_boss_room(tiles, w, h)
 		exit_pos = room["exit"]
 		boss_cell = room["boss_cell"]
-		var room_rect: Rect2i = room["rect"]
-		in_boss_room = func(p: Vector2i) -> bool: return room_rect.has_point(p)
+		clearing_rect = room["rect"]
 		if not drop_pillars:
 			var door_cell: Vector2i = room["door"]
-			var protect: Array[Vector2i] = [player_start, exit_pos, boss_cell, door_cell]
-			_scatter_pillars(tiles, config, rng, protect, room_rect)
+			# Protege a porta E o tile logo acima dela (a aproximação): um pilar ali isolaria
+			# a sala e a tentativa falharia na validação.
+			var protect: Array[Vector2i] = [player_start, exit_pos, boss_cell,
+				door_cell, door_cell + Vector2i(0, -1)]
+			_scatter_pillars(tiles, config, rng, protect, clearing_rect)
 	else:
 		_fill_interior(tiles, w, h, GeneratedMap.WALL)
 		_drunkard_walk(tiles, config, rng, player_start, w, h)
@@ -82,30 +85,52 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 
 	var dist := m.reachable_from(player_start)
 
-	# 'goal' é a célula profunda que precisa ser alcançável (saída no OPEN; ponta
-	# mais distante no CORRIDOR). É também o alvo do boss quando não há saída.
-	var goal := exit_pos
+	# CORRIDOR: a saída ganha uma clareira 5×5 SELADA (porta única) ancorada no beco mais
+	# fundo. Como isso abre tiles novos, recompute o flood-fill logo após — o placement de
+	# inimigos/decoração precisa enxergar a clareira. (No OPEN a sala já foi carvada antes
+	# do 1º flood-fill, então dist já a inclui.)
 	if config.topology_mode == MapConfig.TopologyMode.CORRIDOR:
-		# Com saída, a meta é o BECO mais fundo (um único vizinho de chão): o boss
-		# posta na única aproximação e o combate é inevitável — paridade com a
-		# porta única da sala do boss no OPEN.
-		goal = _farthest_dead_end(tiles, dist) if config.has_exit else _farthest(dist)
-		boss_cell = _near_exit_cell(dist, goal) if config.has_exit else goal
+		if config.has_exit:
+			var tip := _farthest_dead_end(tiles, dist)
+			if tip == Vector2i(-1, -1) or not dist.has(tip):
+				return null
+			var room := _carve_corridor_clearing(tiles, tip, w, h, dist)
+			if room.is_empty():
+				return null
+			exit_pos = room["exit"]
+			boss_cell = room["boss_cell"]
+			clearing_rect = room["rect"]
+			dist = m.reachable_from(player_start)
+		else:
+			boss_cell = _farthest(dist)
 
-	# Validação: a célula-alvo precisa ser alcançável. Senão, esta tentativa falhou.
+	# Célula que precisa ser alcançável: a saída (fases 1–4) ou o boss (fase FINAL, no OPEN
+	# boss_cell veio da porta da sala). Senão, esta tentativa falhou.
+	var goal := exit_pos if config.has_exit else boss_cell
 	if goal == Vector2i(-1, -1) or not dist.has(goal):
 		return null
 
 	# Fases sem saída (só a fase FINAL) progridem ao derrotar o boss — sem tile 'E'.
 	if config.has_exit:
-		_set_tile(tiles, goal, GeneratedMap.EXIT)
-		m.exit_pos = goal
+		_set_tile(tiles, exit_pos, GeneratedMap.EXIT)
+		m.exit_pos = exit_pos
 
-	# Pool de chão alcançável (exclui a saída, se houver).
+	# Tiles da clareira da saída → excluídos de hazard, pilar, inimigo e decoração: a área
+	# útil ao redor da saída é sempre chão limpo e SEM dano.
+	var clearing := {}
+	for cyy: int in range(clearing_rect.position.y, clearing_rect.end.y):
+		for cxx: int in range(clearing_rect.position.x, clearing_rect.end.x):
+			clearing[Vector2i(cxx, cyy)] = true
+	var in_boss_room: Callable = func(p: Vector2i) -> bool: return clearing.has(p)
+
+	# Pool de chão alcançável (exclui a saída e a clareira da saída).
 	var pool: Array[Vector2i] = []
 	for p: Vector2i in dist.keys():
-		if not config.has_exit or p != goal:
-			pool.append(p)
+		if config.has_exit and p == exit_pos:
+			continue
+		if clearing.has(p):
+			continue
+		pool.append(p)
 
 	var protected: Array[Vector2i] = [player_start, boss_cell, goal]
 	var hset := _place_hazards(tiles, config, rng, pool, protected)
@@ -148,31 +173,34 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 
 # ─── Topologia: OPEN ───────────────────────────────
 func _carve_boss_room(tiles: Array, w: int, h: int) -> Dictionary:
-	# Alcova retangular no canto inferior-direito, cercada por parede com porta
-	# única no topo. Saída no canto interno; boss postado logo dentro da porta.
-	var bw := mini(BOSS_ROOM_W, w - 4)
-	var bh := mini(BOSS_ROOM_H, h - 4)
-	var right := w - 2
-	var bottom := h - 2
-	var left := right - bw + 1
-	var top := bottom - bh + 1
-	# Parede em L que, com as bordas direita/inferior, fecha a sala.
+	# Sala-clareira no canto inferior-direito: quadrado 5×5 de chão (a área útil da saída)
+	# cercado por parede com PORTA única no topo. A saída fica no CENTRO da clareira e o boss
+	# posta NA porta — o portão. As bordas direita/inferior encostam na moldura do mapa (que
+	# segue parede por fora), então só a porta abre a sala: sem como contornar o boss.
+	var r := EXIT_CLEARING_RADIUS
+	var cx := w - 2 - r
+	var cy := h - 2 - r
+	var left := cx - r
+	var right := cx + r
+	var top := cy - r
+	var bottom := cy + r
+	# Parede em L (topo + esquerda); direita/baixo são a moldura do mapa.
 	for x: int in range(left - 1, right + 1):
 		tiles[top - 1][x] = GeneratedMap.WALL
 	for y: int in range(top - 1, bottom + 1):
 		tiles[y][left - 1] = GeneratedMap.WALL
-	# Interior da sala em chão.
+	# Clareira 5×5 em chão.
 	for y: int in range(top, bottom + 1):
 		for x: int in range(left, right + 1):
 			tiles[y][x] = GeneratedMap.FLOOR
-	# Porta única na parede de cima.
-	var door := Vector2i(left + int(bw / 2.0), top - 1)
+	# Porta única na parede de cima, alinhada à saída.
+	var door := Vector2i(cx, top - 1)
 	tiles[door.y][door.x] = GeneratedMap.FLOOR
 	return {
-		"exit": Vector2i(right, bottom),
-		"boss_cell": Vector2i(door.x, top),  # dentro, guardando a porta
+		"exit": Vector2i(cx, cy),
+		"boss_cell": door,                   # boss posta NA porta: o portão do portal
 		"door": door,
-		"rect": Rect2i(left, top, bw, bh),
+		"rect": Rect2i(left, top, right - left + 1, bottom - top + 1),
 	}
 
 func _scatter_pillars(tiles: Array, config: MapConfig, rng: RandomNumberGenerator,
@@ -465,12 +493,61 @@ func _floor_neighbors(tiles: Array, p: Vector2i) -> int:
 			n += 1
 	return n
 
-func _near_exit_cell(dist: Dictionary, exit_pos: Vector2i) -> Vector2i:
-	for d: Vector2i in CARDINALS:
-		var nb: Vector2i = exit_pos + d
-		if dist.has(nb):
-			return nb
-	return exit_pos
+# ─── Clareira da saída no CORRIDOR ─────────────────
+func _carve_corridor_clearing(tiles: Array, tip: Vector2i, w: int, h: int,
+		dist: Dictionary) -> Dictionary:
+	# Clareira 5×5 SELADA ancorada no beco mais fundo: carva o quadrado, sela TODAS as
+	# conexões com o resto MENOS uma (a porta, mais perto do spawn) e posta o boss nela —
+	# o Curupira guarda a única aproximação, sem como contornar (paridade com a porta do
+	# OPEN). Centro clampado pra o 5×5 caber no interior; como o desvio é ≤ r, a ponta
+	# original continua dentro da clareira, então a conexão que a tornava alcançável persiste.
+	var r := EXIT_CLEARING_RADIUS
+	var cx := clampi(tip.x, 1 + r, w - 2 - r)
+	var cy := clampi(tip.y, 1 + r, h - 2 - r)
+	var rect := Rect2i(cx - r, cy - r, 2 * r + 1, 2 * r + 1)
+	# Carva a clareira em chão.
+	for y: int in range(rect.position.y, rect.end.y):
+		for x: int in range(rect.position.x, rect.end.x):
+			tiles[y][x] = GeneratedMap.FLOOR
+	# Aberturas: TODO tile de chão fora da clareira, colado (cardeal) a ela. Inclui bolsos que
+	# a escavação reabriu — todos serão selados menos a porta, garantindo aproximação única.
+	var openings: Array[Vector2i] = []
+	var seen := {}
+	for y: int in range(rect.position.y, rect.end.y):
+		for x: int in range(rect.position.x, rect.end.x):
+			for d: Vector2i in CARDINALS:
+				var o: Vector2i = Vector2i(x, y) + d
+				if rect.has_point(o) or seen.has(o):
+					continue
+				if not _is_wall(tiles, o):
+					seen[o] = true
+					openings.append(o)
+	# Porta = abertura ALCANÇÁVEL do spawn mais perto dele (desempate determinístico por y, x).
+	var reachable: Array[Vector2i] = []
+	for o: Vector2i in openings:
+		if dist.has(o):
+			reachable.append(o)
+	if reachable.is_empty():
+		return {}
+	reachable.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var da := int(dist[a])
+		var db := int(dist[b])
+		if da != db:
+			return da < db
+		if a.y != b.y:
+			return a.y < b.y
+		return a.x < b.x)
+	var door: Vector2i = reachable[0]
+	# Sela TODA outra abertura (vira parede), deixando só a porta.
+	for o: Vector2i in openings:
+		if o != door:
+			tiles[o.y][o.x] = GeneratedMap.WALL
+	return {
+		"exit": Vector2i(cx, cy),
+		"boss_cell": door,
+		"door": door,
+		"rect": rect,
+	}
 
 # ─── Rota limpa de hazard ──────────────────────────
 func _ensure_clean_path(tiles: Array, hset: Dictionary, start: Vector2i, goal: Vector2i) -> void:

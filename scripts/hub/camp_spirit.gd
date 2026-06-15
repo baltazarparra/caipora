@@ -1,23 +1,35 @@
 class_name CampSpirit
 extends Node2D
 
+const ActorContrast := preload("res://scripts/entities/actor_contrast.gd")
+
 # Presença de um encantado libertado em repouso no acampamento (Santuário dos
 # Encantados — PRD-santuario-dos-encantados §4.3). NÃO é mascote: é uma entidade
-# antiga descansando — idle mais lento que o combate, respiração sutil, aura calma na
-# cor canônica do boss e leitura abatida, para a Caipora seguir dona da tela (lei de
-# marca). Montado por código (gotcha #7) e dirigido por DEFS (data-driven, uma entrada
-# por encantado). O Jesuíta (P5) não é encantado: não tem entrada aqui.
+# antiga descansando — idle mais lento que o combate, aura calma na cor canônica do
+# boss e leitura abatida, para a Caipora seguir dona da tela (lei de marca). Anda
+# ATERRADO (sombra de chão + quique de passo, igual às criaturas da exploração), não
+# pairando. Montado por código (gotcha #7) e dirigido por DEFS (data-driven, uma
+# entrada por encantado). O Jesuíta (P5) não é encantado: não tem entrada aqui.
 #
-# Contrato: add_child() ANTES de setup() — a aura e a respiração usam a árvore.
+# Contrato: add_child() ANTES de setup() — a aura e a sombra usam a árvore.
 
 # ─── Constants ─────────────────────────────────────
 # Repouso: leitura levemente abatida/fria (a dominância da Caipora vem dela estar no
 # centro, iluminada — não de apagar os espíritos na mata escura) e idle lento.
 const REST_MODULATE := Color(0.92, 0.92, 0.96)
 const REST_SPEED: float = 0.6
-# Respiração: pulso sutil de escala em loop — vivo, não estátua.
-const BREATH_SCALE: float = 1.02
-const BREATH_TIME: float = 1.6
+# Sombra de chão: âncora visual (mesmo sistema da exploração) pra ler aterrado, não
+# pairando. A baseline é a do chefe de mapa (sprite ~48px); aqui os frames premium
+# renderizam ~2× isso, então a escala é por porte real, e o FUDGE afina o padding
+# transparente da moldura.
+const SHADOW_BASE := Vector2(0.95, 0.34)
+const SHADOW_FUDGE: float = 0.7
+const SHADOW_BASELINE_PX: float = 48.0
+# Quique de passo: sem walk cycle nos frames, o pulinho vertical É a leitura de passo.
+# Sincronizado à distância andada (cadência), assenta no chão na pausa.
+const BOB_HEIGHT: float = 5.0
+const BOB_RATE: float = 0.20
+const BOB_SETTLE: float = 24.0
 # Aura calma: a sombra de combate virou cinza de pira — densidade/velocidade mínimas.
 const AURA_AMOUNT: int = 6
 const AURA_LIFETIME: float = 2.2
@@ -58,6 +70,7 @@ var _wandering: bool = false
 var _roam_bounds: Rect2
 var _roam_target: Vector2
 var _pause_timer: float = 0.0
+var _walk_phase: float = 0.0
 
 # ─── Public API ────────────────────────────────────
 ## Monta a presença do encantado da fase. Retorna false para fase sem espírito
@@ -79,7 +92,7 @@ func setup(spirit_phase: int) -> bool:
 	_sprite.play()
 	_spawn_calm_aura(def["aura"])
 	_spawn_glow(def["aura"])
-	_start_breathing()
+	_spawn_shadow(def["scale"])
 	return true
 
 ## Liga a perambulação livre dentro de `bounds` (a clareira). O espírito passa a derivar
@@ -90,7 +103,7 @@ func enable_wander(bounds: Rect2) -> void:
 	_roam_target = _pick_target()
 	set_process(true)
 
-# ─── Process: deriva lenta com pausas ──────────────
+# ─── Process: deriva lenta com pausas + quique de passo ─
 func _process(delta: float) -> void:
 	if not _wandering:
 		return
@@ -98,16 +111,26 @@ func _process(delta: float) -> void:
 		_pause_timer -= delta
 		if _pause_timer <= 0.0:
 			_roam_target = _pick_target()
+		_settle(delta)
 		return
 	var to := _roam_target - position
 	if to.length() <= WANDER_ARRIVE_DIST:
 		_pause_timer = randf_range(WANDER_PAUSE_MIN, WANDER_PAUSE_MAX)
+		_settle(delta)
 		return
 	var step := to.normalized() * WANDER_SPEED * delta
 	position += step
 	# Vira o sprite pela direção do passo (mantém o último rumo nos passos verticais).
 	if absf(step.x) > 0.01:
 		_sprite.flip_h = step.x < 0.0
+	# Quique sincronizado à distância andada: cadência de passo (só pra cima). Mexe só
+	# no sprite — a sombra (filha de self) fica ancorada no chão.
+	_walk_phase += step.length() * BOB_RATE
+	_sprite.position.y = -absf(sin(_walk_phase)) * BOB_HEIGHT
+
+# Assenta o sprite no chão na pausa/chegada (desce o quique, não congela no ar).
+func _settle(delta: float) -> void:
+	_sprite.position.y = move_toward(_sprite.position.y, 0.0, BOB_SETTLE * delta)
 
 # ─── Private ───────────────────────────────────────
 func _pick_target() -> Vector2:
@@ -134,9 +157,14 @@ func _spawn_calm_aura(color: Color) -> void:
 func _spawn_glow(color: Color) -> void:
 	add_child(ForestLight.make(color.lerp(Color.WHITE, GLOW_WHITEN), GLOW_ENERGY, GLOW_SCALE))
 
-func _start_breathing() -> void:
-	var tween := create_tween().set_loops()
-	tween.tween_property(_sprite, "scale:y", _sprite.scale.y * BREATH_SCALE, BREATH_TIME) \
-		.set_trans(Tween.TRANS_SINE)
-	tween.tween_property(_sprite, "scale:y", _sprite.scale.y, BREATH_TIME) \
-		.set_trans(Tween.TRANS_SINE)
+# Sombra de chão sob os pés. O sprite é centralizado, então os pés ficam meia-altura
+# abaixo da origem; a escala é por porte real (os frames premium são ~2× o chefe de
+# mapa que a SHADOW_BASE pressupõe). Filha de self → herda o fade do rito de chegada.
+func _spawn_shadow(scale: float) -> void:
+	var frame := _sprite.sprite_frames.get_frame_texture(&"idle", 0)
+	if frame == null:
+		return
+	var feet_y := frame.get_height() * 0.5 * scale
+	var foot_factor := frame.get_height() * scale / SHADOW_BASELINE_PX
+	var shadow_scale := SHADOW_BASE * foot_factor * SHADOW_FUDGE
+	ActorContrast.add_ground_shadow(self, shadow_scale, Vector2(0.0, feet_y))

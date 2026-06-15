@@ -22,5 +22,9 @@ func heal(amount: float) -> void:
 	current_health = clampf(current_health + amount, 0.0, float(max_health))
 	health_changed.emit(current_health, float(max_health))
 
+func full_heal() -> void:
+	current_health = float(max_health)
+	health_changed.emit(current_health, float(max_health))
+
 func is_alive() -> bool:
 	return current_health > 0
