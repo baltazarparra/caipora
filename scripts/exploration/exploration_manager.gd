@@ -210,7 +210,6 @@ func _spawn_skeleton_at(grid_pos: Vector2i) -> void:
 	var s := Sprite2D.new()
 	s.texture = SKELETON_TEXTURE
 	s.position = Vector2(grid_pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE * 0.5, Constants.TILE_SIZE * 0.5)
-	s.z_index = -1
 	_objects_container.add_child(s)
 
 func _spawn_objects() -> void:
