@@ -52,6 +52,8 @@ func start_run() -> void:
 	run_active = true
 	active_phase = 1
 	defeated_enemy_ids.clear()
+	MetaProgression.current_run_defeated_enemies.clear()
+	MetaProgression.save_progress()
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
 	active_combat_keeps_own_hp = false
