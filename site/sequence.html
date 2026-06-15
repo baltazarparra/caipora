@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Caipora — Detalhe da Sequência</title>
+  <link rel="icon" type="image/png" href="assets/sprites/brand_mark.png">
+  <style>
+    @font-face {
+      font-family: "PressStart2P";
+      src: url("assets/fonts/PressStart2P.ttf") format("truetype");
+      font-display: swap;
+    }
+    :root {
+      --bg: #050505; --panel: #0e0d0d; --line: #2a1414; --blood: #b41818;
+      --ember: #e8731f; --ink: #d8cfca; --muted: #7e7470; --green: #4fae54;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Courier New", monospace; line-height: 1.4;
+      background-image: radial-gradient(circle at 50% -10%, #1a0808 0%, #050505 60%);
+      min-height: 100vh;
+    }
+    h1, h2, .pix { font-family: "PressStart2P", monospace; }
+    a { color: var(--ember); }
+    header {
+      padding: 22px 18px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    header h1 { font-size: 13px; margin: 0; color: var(--blood); letter-spacing: 1px; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 18px; }
+
+    #login {
+      position: fixed; inset: 0; background: rgba(5,5,5,.96);
+      display: flex; align-items: center; justify-content: center; z-index: 50;
+    }
+    #login .box { width: min(360px, 92vw); background: var(--panel); border: 1px solid var(--line); padding: 26px; }
+    #login h2 { font-size: 12px; color: var(--blood); margin: 0 0 18px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+    input[type=text], input[type=password], input[type=number] {
+      width: 100%; background: #000; color: var(--ink);
+      border: 1px solid var(--line); padding: 8px 9px; font-family: inherit; font-size: 13px;
+    }
+    input:focus { outline: none; border-color: var(--ember); }
+    .chk { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 12px; }
+    button {
+      font-family: "PressStart2P", monospace; font-size: 10px; cursor: pointer;
+      background: var(--blood); color: #fff; border: none; padding: 11px 13px; letter-spacing: 1px;
+    }
+    button:hover { background: var(--ember); }
+    button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    button.ghost:hover { color: var(--ink); border-color: var(--ember); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .err { color: var(--blood); font-size: 12px; margin-top: 12px; min-height: 16px; }
+
+    .section { background: var(--panel); border: 1px solid var(--line); padding: 16px; margin-bottom: 16px; }
+    .section h2 { font-size: 11px; color: var(--ember); margin: 0 0 14px; }
+    .section .hint { font-size: 11px; color: var(--muted); margin: -8px 0 12px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row .f { flex: 1; min-width: 130px; }
+    .grid-phases { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+
+    /* chips */
+    .seq-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; background: #000; border: 1px solid var(--line); padding: 6px; margin-bottom: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--blood); color: #fff; padding: 3px 8px; font-size: 15px; border-radius: 2px; }
+    .chip .rm { font-size: 12px; cursor: pointer; opacity: .7; background: none; border: none; color: inherit; padding: 0; }
+    .chip .rm:hover { opacity: 1; }
+    .seq-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .arrow-btn { background: #111; color: var(--ink); border: 1px solid var(--line); padding: 6px 14px; font-size: 16px; cursor: pointer; }
+    .arrow-btn:hover { border-color: var(--ember); color: var(--ember); background: #000; }
+
+    .bar {
+      position: sticky; bottom: 0; background: rgba(5,5,5,.95); border-top: 1px solid var(--line);
+      padding: 14px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .status { font-size: 12px; color: var(--muted); }
+    .status.ok { color: var(--green); }
+    .status.bad { color: var(--blood); }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="login">
+    <div class="box">
+      <h2>ACESSO — SEQUÊNCIAS</h2>
+      <form id="loginForm">
+        <label for="user">Usuário</label>
+        <input type="text" id="user" autocomplete="username" autocapitalize="none" spellcheck="false">
+        <label for="pass">Senha</label>
+        <input type="password" id="pass" autocomplete="current-password">
+        <div class="chk">
+          <input type="checkbox" id="remember" checked>
+          <label for="remember" style="margin:0;text-transform:none;letter-spacing:0;">Salvar sessão (encriptada) neste aparelho</label>
+        </div>
+        <div class="err" id="loginErr"></div>
+        <button type="submit" style="width:100%;margin-top:6px;">ENTRAR</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="app" class="hide">
+    <header>
+      <h1 id="title">⚔ SEQUÊNCIA</h1>
+      <a href="sequences.html" class="ghost" style="font-size:10px;font-family:'PressStart2P',monospace;color:var(--muted);text-decoration:none;">◂ VOLTAR</a>
+    </header>
+    <div class="wrap">
+      <p class="status" id="loadStatus">Carregando…</p>
+      <div id="form" class="hide">
+        <!-- GERAL -->
+        <div class="section">
+          <h2>GERAL</h2>
+          <label>Nome da sequência</label>
+          <input type="text" id="f_label">
+          <div class="row" style="margin-top:10px;">
+            <div class="f"><label>Wind-up (s)</label><input type="number" id="f_wind_up" min="0" step="0.05"></div>
+            <div class="f"><label>Duração do golpe (s)</label><input type="number" id="f_attack" min="0.1" step="0.05"></div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div class="f"><label>Nº de golpes</label><input type="number" id="f_strikes" min="1" max="6" step="1"></div>
+            <div class="f"><label>Mult. dano</label><input type="number" id="f_damage" min="0.1" step="0.1"></div>
+          </div>
+        </div>
+
+        <!-- INTERVALOS ENTRE HITS -->
+        <div class="section">
+          <h2>INTERVALOS ENTRE HITS</h2>
+          <div class="hint">Intervalo independente antes de cada golpe seguinte. Nº de campos = golpes − 1.</div>
+          <div class="row" id="intervals"></div>
+        </div>
+
+        <!-- ÚLTIMO HIT → PRÓXIMO TURNO -->
+        <div class="section">
+          <h2>ÚLTIMO HIT → PRÓXIMO TURNO</h2>
+          <div class="hint">Intervalo entre o último golpe da sequência e o início do próximo turno.</div>
+          <div class="row"><div class="f"><label>Intervalo (s)</label><input type="number" id="f_next_turn" min="0" step="0.05"></div></div>
+        </div>
+
+        <!-- JANELA DE AÇÃO POR FASE -->
+        <div class="section">
+          <h2>JANELA DE AÇÃO POR FASE</h2>
+          <div class="hint">Tempo de reação do jogador (em segundos), explícito por fase. Mínimo 0.20s.</div>
+          <div class="grid-phases" id="phases"></div>
+        </div>
+
+        <!-- SEQUÊNCIA DE DEFESA -->
+        <div class="section" id="defenseSection">
+          <h2>SEQUÊNCIA DE DEFESA</h2>
+          <div class="hint" id="defenseHint"></div>
+          <div class="seq-chips" id="chips"></div>
+          <div class="seq-btns" id="seqBtns"></div>
+        </div>
+      </div>
+    </div>
+    <div class="bar">
+      <button id="save" disabled>SALVAR E PUBLICAR</button>
+      <span class="status" id="saveStatus"></span>
+      <span class="status" style="margin-left:auto;" id="versionTag"></span>
+    </div>
+  </div>
+
+  <script src="js/sequences_shared.js"></script>
+  <script>
+    let sessionHash = null;
+    const KEY = new URLSearchParams(location.search).get("key") || "";
+    const pattern = patternByKey(KEY);
+    let entry = null;          // entry resolvido em edição
+    let seq = [];              // sequência de defesa mutável
+
+    function showApp() {
+      document.getElementById("login").classList.add("hide");
+      document.getElementById("app").classList.remove("hide");
+      loadDetail();
+    }
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("loginErr");
+      err.textContent = "";
+      const user = document.getElementById("user").value.trim();
+      const pass = document.getElementById("pass").value;
+      if (user !== ADMIN_USER) { err.textContent = "Usuário ou senha inválidos."; return; }
+      sessionHash = await sha256hex(pass);
+      if (document.getElementById("remember").checked) localStorage.setItem(LS_KEY, sessionHash);
+      showApp();
+    });
+
+    // ---- intervalos entre hits ----
+    function renderIntervals() {
+      const host = document.getElementById("intervals");
+      const n = Math.max(0, entry.strike_count - 1);
+      // preserva valores atuais dos inputs
+      const cur = [...host.querySelectorAll("input")].map((i) => i.value);
+      entry.strike_intervals = fitIntervals(
+        cur.length ? cur : entry.strike_intervals, n, entry.strike_delay);
+      host.innerHTML = "";
+      if (n === 0) {
+        host.innerHTML = '<div class="hint" style="margin:0;">Golpe único — sem intervalos.</div>';
+        return;
+      }
+      for (let i = 0; i < n; i++) {
+        const f = document.createElement("div");
+        f.className = "f";
+        f.innerHTML = '<label>Golpe ' + (i + 1) + ' → ' + (i + 2) + ' (s)</label>' +
+          '<input type="number" min="0" step="0.05" value="' + entry.strike_intervals[i] + '">';
+        host.appendChild(f);
+      }
+    }
+
+    // ---- janela de ação por fase ----
+    function renderPhases() {
+      const host = document.getElementById("phases");
+      host.innerHTML = "";
+      for (const ph of PHASES) {
+        const f = document.createElement("div");
+        f.className = "f";
+        const v = entry.action_windows[String(ph)];
+        f.innerHTML = '<label>Fase ' + ph + ' (s)</label>' +
+          '<input type="number" data-phase="' + ph + '" min="0.2" step="0.05" value="' + Number(v).toFixed(2) + '">';
+        host.appendChild(f);
+      }
+    }
+
+    // ---- sequência de defesa (chips) ----
+    function renderChips() {
+      const host = document.getElementById("chips");
+      host.innerHTML = "";
+      seq.forEach((dir, i) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.innerHTML = (DIR_GLYPH[dir] || "?") + ' <button class="rm" title="remover">×</button>';
+        chip.querySelector(".rm").addEventListener("click", () => { seq.splice(i, 1); renderChips(); });
+        host.appendChild(chip);
+      });
+    }
+    function buildSeqButtons() {
+      const host = document.getElementById("seqBtns");
+      host.innerHTML = "";
+      for (const [dir, glyph] of Object.entries(DIR_GLYPH)) {
+        const b = document.createElement("button");
+        b.className = "arrow-btn"; b.type = "button"; b.textContent = glyph; b.title = dir;
+        b.addEventListener("click", () => { if (seq.length >= 4) return; seq.push(dir); renderChips(); });
+        host.appendChild(b);
+      }
+    }
+
+    async function loadDetail() {
+      const status = document.getElementById("loadStatus");
+      if (!pattern) { status.textContent = "Sequência desconhecida: " + KEY; status.className = "status bad"; return; }
+      const r = await api("get_attack_patterns");
+      if (!r.ok) { status.textContent = "Falha ao carregar (" + r.status + ")."; status.className = "status bad"; return; }
+      const sv = (r.data.data || {})[KEY];
+      entry = resolveEntry(pattern, sv);
+      seq = entry.input_sequence.slice();
+
+      document.getElementById("title").textContent = "⚔ " + entry.label;
+      document.getElementById("f_label").value = entry.label;
+      document.getElementById("f_wind_up").value = entry.wind_up_duration;
+      document.getElementById("f_attack").value = entry.attack_duration;
+      document.getElementById("f_strikes").value = entry.strike_count;
+      document.getElementById("f_damage").value = entry.damage_multiplier;
+      document.getElementById("f_next_turn").value = entry.next_turn_delay;
+
+      renderIntervals();
+      renderPhases();
+
+      // Defesa só importa para padrões especiais (RemotePatterns não ativa is_special).
+      if (pattern.is_special) {
+        document.getElementById("defenseHint").textContent = "Direções esperadas para defesa perfeita (máx. 4).";
+        buildSeqButtons();
+        renderChips();
+      } else {
+        document.getElementById("defenseSection").classList.add("hide");
+      }
+
+      // strike_count muda → re-renderiza os intervalos
+      document.getElementById("f_strikes").addEventListener("input", () => {
+        const n = Math.max(1, intOr(document.getElementById("f_strikes").value, entry.strike_count));
+        entry.strike_count = n;
+        renderIntervals();
+      });
+
+      status.classList.add("hide");
+      document.getElementById("form").classList.remove("hide");
+      document.getElementById("versionTag").textContent = "versão atual: " + (r.data.version ?? "?");
+      document.getElementById("save").disabled = false;
+    }
+
+    function collect() {
+      const attack = num(document.getElementById("f_attack").value, NaN);
+      const strikes = Math.max(1, intOr(document.getElementById("f_strikes").value, 1));
+      const intervals = [...document.getElementById("intervals").querySelectorAll("input")]
+        .map((i) => num(i.value, NaN));
+      const aw = {};
+      document.getElementById("phases").querySelectorAll("input[data-phase]").forEach((i) => {
+        aw[i.dataset.phase] = num(i.value, NaN);
+      });
+      return {
+        label: document.getElementById("f_label").value.trim(),
+        wind_up_duration: num(document.getElementById("f_wind_up").value, NaN),
+        attack_duration: attack,
+        strike_count: strikes,
+        strike_delay: intervals.length ? intervals[0] : entry.strike_delay,
+        strike_intervals: intervals,
+        next_turn_delay: num(document.getElementById("f_next_turn").value, NaN),
+        damage_multiplier: num(document.getElementById("f_damage").value, NaN),
+        input_sequence: pattern.is_special ? seq.slice() : entry.input_sequence.slice(),
+        action_windows: aw,
+      };
+    }
+
+    function validate(d) {
+      if (!Number.isFinite(d.attack_duration) || d.attack_duration < 0.1) return "Duração do golpe inválida (mínimo 0.1s).";
+      if (!Number.isFinite(d.strike_count) || d.strike_count < 1) return "Nº de golpes inválido.";
+      if (!Number.isFinite(d.damage_multiplier) || d.damage_multiplier <= 0) return "Mult. dano deve ser > 0.";
+      if (!Number.isFinite(d.wind_up_duration) || d.wind_up_duration < 0) return "Wind-up inválido.";
+      if (!Number.isFinite(d.next_turn_delay) || d.next_turn_delay < 0) return "Intervalo do próximo turno inválido.";
+      for (const v of d.strike_intervals) if (!Number.isFinite(v) || v < 0) return "Intervalo entre hits inválido.";
+      for (const ph of PHASES) {
+        const v = d.action_windows[String(ph)];
+        if (!Number.isFinite(v) || v < TIMING_WINDOW_MIN) return "Janela de ação da fase " + ph + " inválida (mínimo " + TIMING_WINDOW_MIN + "s).";
+      }
+      return "";
+    }
+
+    document.getElementById("save").addEventListener("click", async () => {
+      const st = document.getElementById("saveStatus");
+      const btn = document.getElementById("save");
+      const d = collect();
+      const errMsg = validate(d);
+      if (errMsg) { st.textContent = errMsg; st.className = "status bad"; return; }
+
+      btn.disabled = true; st.textContent = "Salvando…"; st.className = "status";
+      try {
+        // Carrega o blob atual e funde só esta sequência — preserva as demais.
+        const cur = await api("get_attack_patterns");
+        const data = (cur.data && cur.data.data) || {};
+        data[KEY] = d;
+        const r = await api("set_attack_patterns", { admin_pass_hash: sessionHash, data });
+        btn.disabled = false;
+        if (r.status === 401) { st.textContent = "Senha incorreta — faça login de novo."; st.className = "status bad"; localStorage.removeItem(LS_KEY); return; }
+        if (!r.ok) { st.textContent = "Erro: " + (r.data.error || r.status); st.className = "status bad"; return; }
+        st.textContent = "Publicado! Os jogadores verão o banner de atualização no próximo boot."; st.className = "status ok";
+        document.getElementById("versionTag").textContent = "versão atual: " + r.data.version;
+      } catch (_err) {
+        btn.disabled = false;
+        st.textContent = "Erro de rede — tente de novo."; st.className = "status bad";
+      }
+    });
+
+    (function boot() {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) { sessionHash = saved; showApp(); }
+    })();
+  </script>
+</body>
+</html>

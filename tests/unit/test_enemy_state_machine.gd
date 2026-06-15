@@ -45,3 +45,34 @@ func test_multi_strike_opens_multiple_attacks():
     # idle(0.1) + 3x [windup(0.1) + attack(0.1)] + cooldown — folga generosa
     await get_tree().create_timer(0.9).timeout
     assert_eq(attacks[0], 3)
+
+# ─── Intervalos independentes por hit (strike_intervals) ───
+func test_strike_interval_falls_back_to_strike_delay():
+    _pattern.strike_delay = 0.33
+    _sm._attack_pattern = _pattern
+    assert_almost_eq(_sm._strike_interval_at(0), 0.33, 0.001)
+
+func test_strike_interval_uses_independent_array():
+    _pattern.strike_intervals = [0.2, 0.5] as Array[float]
+    _sm._attack_pattern = _pattern
+    assert_almost_eq(_sm._strike_interval_at(0), 0.2, 0.001)
+    assert_almost_eq(_sm._strike_interval_at(1), 0.5, 0.001)
+
+func test_strike_interval_out_of_range_falls_back():
+    _pattern.strike_intervals = [0.2] as Array[float]
+    _pattern.strike_delay = 0.33
+    _sm._attack_pattern = _pattern
+    assert_almost_eq(_sm._strike_interval_at(5), 0.33, 0.001)
+
+# ─── Intervalo último-golpe → próximo turno (next_turn_delay) ───
+func test_next_turn_delay_sentinel_uses_cooldown():
+    _pattern.next_turn_delay = -1.0
+    _pattern.cooldown_duration = 1.7
+    _sm._attack_pattern = _pattern
+    assert_almost_eq(_sm._next_turn_delay(), 1.7, 0.001)
+
+func test_next_turn_delay_override_wins():
+    _pattern.next_turn_delay = 0.4
+    _pattern.cooldown_duration = 1.7
+    _sm._attack_pattern = _pattern
+    assert_almost_eq(_sm._next_turn_delay(), 0.4, 0.001)
