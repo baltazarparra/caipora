@@ -4,7 +4,7 @@ extends Node2D
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
 
-enum Type { CHEST, KEY, FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
+enum Type { FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
 	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW, BURROW }
 
 const T: int = Constants.TILE_SIZE  # 32
@@ -35,8 +35,6 @@ func _draw() -> void:
 	var cx: float = T / 2.0
 	var cy: float = T / 2.0
 	match _type:
-		Type.CHEST:      _draw_chest(cx, cy)
-		Type.KEY:        _draw_key(cx, cy)
 		Type.FIRE:       _draw_fire(cx, cy)
 		Type.SPIKE:      _draw_spike(cx, cy)
 		Type.DEAD_TREE:  _draw_dead_tree(cx, cy)
@@ -102,40 +100,6 @@ func _draw_spike(cx: float, cy: float) -> void:
 			Vector2(bx + 3, cy + 8),
 		]), spike_color)
 		draw_line(Vector2(bx - 1, cy + 7), Vector2(bx, cy - 5), Constants.COLOR_BONE_HOLLOW, 1.0)
-
-func _draw_key(cx: float, cy: float) -> void:
-	var gold := Constants.COLOR_GOLD
-	var dark_gold := Constants.COLOR_GOLD_DARK
-	draw_circle(Vector2(cx - 4, cy - 3), 6.5, gold)
-	draw_circle(Vector2(cx - 4, cy - 3), 3.5, dark_gold)
-	draw_rect(Rect2(cx - 4, cy - 4, 13, 3), gold)
-	draw_rect(Rect2(cx + 4, cy - 1, 3, 3), gold)
-	draw_rect(Rect2(cx + 8, cy - 1, 2, 2), gold)
-
-func _draw_chest(cx: float, cy: float) -> void:
-	var wood      := Constants.COLOR_WOOD
-	var dark_wood := Constants.COLOR_WOOD_DARK
-	var metal     := Constants.COLOR_METAL
-	var penta     := Constants.COLOR_PENTAGRAM
-
-	draw_rect(Rect2(cx - 13, cy - 1,  26, 12), dark_wood)
-	draw_rect(Rect2(cx - 12, cy,       24, 10), wood)
-	draw_rect(Rect2(cx - 13, cy - 11, 26,  10), dark_wood)
-	draw_rect(Rect2(cx - 12, cy - 10, 24,  8), wood)
-	draw_rect(Rect2(cx - 13, cy - 1,  26,  2), metal)
-	draw_rect(Rect2(cx - 3,  cy - 4,   6,  4), metal)
-	draw_circle(Vector2(cx, cy - 2), 2.0, dark_wood)
-
-	_draw_inverted_pentagram(Vector2(cx, cy - 6), 4.5, penta)
-
-func _draw_inverted_pentagram(center: Vector2, radius: float, color: Color) -> void:
-	var inner_r: float = radius * 0.382
-	var pts: PackedVector2Array = []
-	for i: int in 10:
-		var angle: float = PI / 2.0 + i * PI / 5.0
-		var r: float = radius if i % 2 == 0 else inner_r
-		pts.append(center + Vector2(cos(angle), sin(angle)) * r)
-	draw_colored_polygon(pts, color)
 
 # ─── Decorações (ambientação folk-horror, não-bloqueantes) ──
 func _draw_dead_tree(cx: float, cy: float) -> void:

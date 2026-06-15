@@ -64,7 +64,7 @@ func _ready() -> void:
 	SignalBus.enemy_health_changed.connect(_on_enemy_health_changed)
 	SignalBus.fragment_gained.connect(_on_fragment_gained)
 	SignalBus.chama_gained.connect(_on_chama_gained)
-	SignalBus.chest_opened.connect(_on_chest_opened)
+	SignalBus.herb_collected.connect(_on_herb_collected)
 
 # ─── Layout responsivo ─────────────────────────────
 func _font_size() -> int:
@@ -139,8 +139,8 @@ func _on_chama_gained() -> void:
 	# A CHAMA substitui o fragmento daquela morte; este popup é o feedback da conquista.
 	_show_popup(Lang.t(&"hud.chama"), Constants.COLOR_FIRE_HOT)
 
-func _on_chest_opened() -> void:
-	_show_popup(Lang.t(&"hud.chest"), Constants.COLOR_BLOOD)
+func _on_herb_collected(bonus: int) -> void:
+	_show_popup("+%d %s" % [bonus, Lang.t(&"hud.herb")], Constants.COLOR_HERB_GLOW)
 
 func _on_music_toggle() -> void:
 	AudioDirector.toggle_music_ambience()

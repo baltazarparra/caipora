@@ -52,8 +52,7 @@ enum TopologyMode {
 @export var boss_freed: bool = false
 
 # ─── Conteúdo opcional ─────────────────────────────
-@export var has_chest: bool = false
-@export var has_key: bool = false
+@export var has_herb: bool = false          # Erva da Vida (pickup de HP máx. por fase)
 @export var has_fog: bool = false
 @export var has_exit: bool = true           # false → sem tile 'E' (só a fase FINAL: boss → FINAL_CHOICE)
 @export var decoration_count: int = 0       # ambientação visual espalhada no chão
@@ -71,8 +70,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R", "S"])
 			c.hazard_density = 0.04
 			c.pillar_density = 0.06
-			c.has_chest = true
-			c.has_key = true
+			c.has_herb = true
 			c.decoration_count = 60
 		2:
 			c.topology_mode = TopologyMode.OPEN
@@ -81,8 +79,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.12
 			c.pillar_density = 0.05
-			c.has_chest = true
-			c.has_key = true
+			c.has_herb = true
 			c.decoration_count = 44
 		3:
 			c.topology_mode = TopologyMode.CORRIDOR
@@ -99,8 +96,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.corridor_openness = 0.44
 			c.corridor_width = 1
 			c.has_fog = true
-			c.has_chest = true
-			c.has_key = true
+			c.has_herb = true
 			# has_exit default (true): a saída fica no beco mais fundo, guardada pelo Curupira.
 			c.decoration_count = 30
 		4:
@@ -110,8 +106,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])
 			c.hazard_density = 0.16
 			c.pillar_density = 0.05
-			c.has_chest = true
-			c.has_key = true
+			c.has_herb = true
 			# has_exit default (true): saída na alcova do boss, guardada pelo Saci.
 			c.decoration_count = 44
 		5:
@@ -124,8 +119,7 @@ static func for_phase(target_phase: int) -> MapConfig:
 			c.hazard_chars = PackedStringArray(["R"])  # fogo votivo / círios
 			c.hazard_density = 0.05
 			c.pillar_density = 0.06
-			c.has_chest = true
-			c.has_key = true
+			c.has_herb = true
 			c.has_exit = false  # progride ao derrotar o Jesuíta → FINAL_CHOICE
 			c.decoration_count = 44
 	c.common_types = _common_mix(target_phase)
