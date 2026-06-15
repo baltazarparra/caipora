@@ -2,7 +2,8 @@ extends GutTest
 
 ## Santuário dos Encantados (Etapa 2): a presença de um encantado libertado em repouso
 ## no acampamento. Contrato visual: idle mais lento que o combate, leitura abatida,
-## respiração e aura calma na cor canônica — e NENHUM espírito para o Jesuíta (P5).
+## aura calma na cor canônica e andar aterrado (sombra + quique de passo, não pairando)
+## — e NENHUM espírito para o Jesuíta (P5).
 
 const ENCANTADO_PHASES := [1, 2, 3, 4]
 
