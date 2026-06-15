@@ -27,3 +27,11 @@ func test_heal_caps_at_max():
 func test_is_alive_returns_false_when_dead():
     _health.take_damage(100)
     assert_false(_health.is_alive())
+
+func test_full_heal_restores_to_max():
+    var changed: Array = [false]
+    _health.health_changed.connect(func(_n, _m): changed[0] = true)
+    _health.take_damage(70)
+    _health.full_heal()
+    assert_eq(_health.current_health, float(_health.max_health))
+    assert_true(changed[0])

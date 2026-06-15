@@ -682,13 +682,14 @@ func _on_actor_died(actor: CombatActor) -> void:
 		# pela fase). Antes dos awaits — a emissão não pode se perder no teardown.
 		if GameState.active_combat_is_boss:
 			SignalBus.boss_died.emit(GameState.active_phase)
-		# Snowball pela metade (PRD-economia-v2): boss é marco (+1 HP máx., cura 2);
-		# comum dá meio HP máx. (acumulado em caipora_max_hp, materializa +1 a cada 2) e
-		# cura 1. GameState.caipora_max_hp (float) é a verdade; a componente usa floori.
+		# Snowball pela metade (PRD-economia-v2): boss é marco (+1 HP máx.); comum dá
+		# meio HP máx. (acumulado em caipora_max_hp, materializa +1 a cada 2).
+		# GameState.caipora_max_hp (float) é a verdade; a componente usa floor. Conceito:
+		# ao vencer, o HP volta SEMPRE ao máximo (full_heal) — depois de crescer o teto.
 		if GameState.active_combat_is_boss:
 			GameState.caipora_max_hp += Constants.BOSS_KILL_HP_GROWTH
 			_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
-			_caipora.health.heal(Constants.BOSS_KILL_HEAL)
+			_caipora.health.full_heal()
 			# Boss bounty: bolada de fragmentos que financia as ervas caras (antes boss = 0).
 			var _drop_boss := EnemyStats.fragment_drop_for(EnemyStats.id_for(_enemy), GameState.active_phase)
 			MetaProgression.add_fragments(_drop_boss if _drop_boss >= 0.0 else float(Constants.BOSS_FRAGMENT_BOUNTY.get(GameState.active_phase, 0)))
@@ -699,7 +700,7 @@ func _on_actor_died(actor: CombatActor) -> void:
 		else:
 			GameState.caipora_max_hp += Constants.COMMON_KILL_HP_GROWTH
 			_caipora.health.max_health = int(floor(GameState.caipora_max_hp))
-			_caipora.health.heal(Constants.COMMON_KILL_HEAL)
+			_caipora.health.full_heal()
 			# A cada 10 monstros (após a espada/forca_3) há um sorteio de CHAMA; se ganhar,
 			# a recompensa é a CHAMA no lugar do fragmento desta morte.
 			if not MetaProgression.register_kill_for_chama():
