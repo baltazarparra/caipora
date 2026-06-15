@@ -200,6 +200,9 @@ const COLOR_CHAMA_CORE := Color("#ffefb2")
 # Cristal do cajado da Caipora (acento frio da protagonista).
 const COLOR_CRYSTAL := Color("#1da75c")                  # esmeralda (= CR do gen_caipora.py)
 const COLOR_CRYSTAL_GLOW := Color(0.55, 1.7, 0.9, 1.0)   # overbright p/ glow aditivo
+# Erva da Vida: verde neon FORTE (overbright p/ glow aditivo) — pickup de HP máx. por fase.
+# Exceção deliberada à regra de marca (verde = acento mínimo do cristal); escolha do dono.
+const COLOR_HERB_GLOW := Color(0.35, 1.9, 0.55, 1.0)
 
 # Materiais de props/decoração (derivados intencionais da paleta).
 const COLOR_GOLD := Color(0.92, 0.78, 0.12)

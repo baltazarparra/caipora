@@ -62,10 +62,8 @@ func _dump(cfg: MapConfig, phase: int, s: int) -> void:
 	_stamp(glyphs, m.player_start, "@")
 	if m.exit_pos != Vector2i(-1, -1):
 		_stamp(glyphs, m.exit_pos, ">")
-	if m.chest_pos != Vector2i(-1, -1):
-		_stamp(glyphs, m.chest_pos, "C")
-	if m.key_pos != Vector2i(-1, -1):
-		_stamp(glyphs, m.key_pos, "k")
+	if m.herb_pos != Vector2i(-1, -1):
+		_stamp(glyphs, m.herb_pos, "H")
 	for e: Dictionary in m.enemies:
 		_stamp(glyphs, Vector2i(e["x"], e["y"]), "B" if e["boss"] else "e")
 

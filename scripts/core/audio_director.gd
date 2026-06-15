@@ -89,7 +89,6 @@ const STING_DIR: String = "res://assets/audio/stingers/"
 const STING_ARENA: String = "sting_arena_enter"
 const STING_VICTORY: String = "sting_victory"
 const STING_GAME_OVER: String = "sting_game_over"
-const STING_CHEST: String = "sting_chest"
 const STING_BOSS_INTRO: String = "sting_boss_intro"
 const STING_CHAMA: String = "sting_chama"
 # Fase 5 (A Igreja): sino de torre na revelação do Jesuíta, sibilo de água benta
@@ -190,7 +189,6 @@ func _ready() -> void:
 	_apply_all_volumes()
 
 	SignalBus.screen_changed.connect(_on_screen_changed)
-	SignalBus.chest_opened.connect(_on_chest_opened)
 	SignalBus.boss_intro_started.connect(_on_boss_intro)
 	SignalBus.chama_gained.connect(_on_chama)
 	SignalBus.boss_special_telegraph.connect(_on_boss_special_telegraph)
@@ -303,9 +301,6 @@ func _apply_screen_audio(screen: int) -> void:
 		_:
 			set_music_intensity(0)
 
-func _on_chest_opened() -> void:
-	if _audio_unlocked:
-		_play_stinger(STING_CHEST)
 
 ## A revelação do boss (overlay durante a exploração) já dispara o tema do boss, que
 ## atravessa para a arena sem corte (o _play_music no-opa quando a faixa é a mesma).

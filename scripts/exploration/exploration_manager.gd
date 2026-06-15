@@ -57,6 +57,13 @@ const WALL_TEXTURE_CHURCH := preload("res://assets/sprites/tile_wall_church.png"
 const SHADE_TEXTURE := preload("res://assets/sprites/tile_shade.png")
 const SKELETON_TEXTURE := preload("res://assets/sprites/skeleton_map.png")
 
+# Erva da Vida (pickup de HP máx.): sprite premium por fase (load em runtime) + brilho
+# verde neon aditivo que pulsa. Textura: assets/sprites/erva_vida_p<fase>.png.
+const HERB_TEXTURE_FMT := "res://assets/sprites/erva_vida_p%d.png"
+const HERB_GLOW_ENERGY: float = 1.4
+const HERB_GLOW_SCALE: float = 0.7
+const HERB_PULSE_TIME: float = 0.9
+
 # Aura da Caipora pela névoa/casa (= sprite.offset.y(-12) × scale(0.8); x=0).
 const CAIPORA_AURA_OFFSET := Vector2(0, -10)
 const CAIPORA_AURA_LIGHT_SCALE: float = 1.5
@@ -126,8 +133,7 @@ var _map: GeneratedMap
 var _map_enemies: Array[MapEnemy] = []
 var _player_grid_pos: Vector2i = Vector2i.ZERO
 var _locked: bool = false
-var _key_node: Node2D = null
-var _chest_node: Node2D = null
+var _herb_node: Node2D = null
 var _fog: FogOfWar
 # Bolsa de fragmentos (souls-like): nó caído + tile onde a Caipora a recupera ao pisar.
 var _bag_node: Node2D = null
@@ -212,6 +218,26 @@ func _spawn_skeleton_at(grid_pos: Vector2i) -> void:
 	s.position = Vector2(grid_pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE * 0.5, Constants.TILE_SIZE * 0.5)
 	_objects_container.add_child(s)
 
+func _spawn_herb(grid_pos: Vector2i) -> Node2D:
+	# Erva da Vida: sprite premium da fase + brilho verde neon que respira. Coletada ao pisar.
+	var root := Node2D.new()
+	root.position = Vector2(grid_pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE * 0.5, Constants.TILE_SIZE * 0.5)
+	_objects_container.add_child(root)
+
+	var glow := ForestLight.make(Constants.COLOR_HERB_GLOW, HERB_GLOW_ENERGY, HERB_GLOW_SCALE)
+	root.add_child(glow)
+
+	var sprite := Sprite2D.new()
+	sprite.texture = load(HERB_TEXTURE_FMT % phase)
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	root.add_child(sprite)
+
+	# Pulso suave do brilho — a erva "respira" viva contra o chão escuro.
+	var tween := root.create_tween().set_loops()
+	tween.tween_property(glow, "energy", HERB_GLOW_ENERGY * 1.3, HERB_PULSE_TIME).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(glow, "energy", HERB_GLOW_ENERGY, HERB_PULSE_TIME).set_trans(Tween.TRANS_SINE)
+	return root
+
 func _spawn_objects() -> void:
 	# Decoração temática (tipos determinísticos da paleta da fase).
 	var deco_rng := RandomNumberGenerator.new()
@@ -226,10 +252,8 @@ func _spawn_objects() -> void:
 	if _map.peace_pos != Vector2i(-1, -1):
 		_make_object(MapObject.Type.TOTEM, _map.peace_pos)
 
-	if _config.has_chest and not GameState.chest_opened and _map.chest_pos != Vector2i(-1, -1):
-		_chest_node = _make_object(MapObject.Type.CHEST, _map.chest_pos)
-	if _config.has_key and not GameState.has_key and _map.key_pos != Vector2i(-1, -1):
-		_key_node = _make_object(MapObject.Type.KEY, _map.key_pos)
+	if _config.has_herb and not GameState.herb_taken and _map.herb_pos != Vector2i(-1, -1):
+		_herb_node = _spawn_herb(_map.herb_pos)
 
 	# Hazards do mapa
 	for y: int in _map.tiles.size():
@@ -353,16 +377,9 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	if _bag_node != null and new_grid_pos == _bag_pos:
 		_recover_fragment_bag()
 
-	# Chave
-	if _config.has_key and new_grid_pos == _map.key_pos and not GameState.has_key:
-		GameState.has_key = true
-		if _key_node != null:
-			_key_node.visible = false
-
-	# Baú
-	if _config.has_chest and new_grid_pos == _map.chest_pos and not GameState.chest_opened:
-		if GameState.has_key:
-			_open_chest()
+	# Erva da Vida: basta pisar nela.
+	if _config.has_herb and new_grid_pos == _map.herb_pos and not GameState.herb_taken:
+		_take_herb()
 
 	# Colisão com inimigo
 	for enemy in _map_enemies:
@@ -379,14 +396,16 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 
 	_run_enemy_turns()
 
-func _open_chest() -> void:
-	GameState.chest_opened = true
-	GameState.caipora_max_hp += 1
-	GameState.caipora_current_hp = mini(GameState.caipora_current_hp + 1, GameState.caipora_max_hp)
+func _take_herb() -> void:
+	GameState.herb_taken = true
+	var bonus: int = phase  # Fase 1 → +1, Fase 2 → +2, ... escala com a fase atual
+	GameState.caipora_max_hp += bonus
+	GameState.caipora_current_hp = mini(GameState.caipora_current_hp + bonus, GameState.caipora_max_hp)
+	_sfx.play_named("erva_vida")
 	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
-	SignalBus.chest_opened.emit()
-	if _chest_node != null:
-		_chest_node.visible = false
+	SignalBus.herb_collected.emit(bonus)
+	if _herb_node != null:
+		_herb_node.queue_free()
 
 func _apply_hazard_damage() -> void:
 	var dmg: int = _profile["hazard_damage"]

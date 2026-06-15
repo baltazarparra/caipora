@@ -27,8 +27,7 @@ func test_determinism_identical_for_same_seed() -> void:
 		assert_eq(a.exit_pos, b.exit_pos, "saída idêntica (fase %d)" % phase)
 		assert_eq(a.player_start, b.player_start, "spawn idêntico (fase %d)" % phase)
 		assert_eq(_enemy_sig(a), _enemy_sig(b), "inimigos idênticos (fase %d)" % phase)
-		assert_eq(a.chest_pos, b.chest_pos, "baú idêntico (fase %d)" % phase)
-		assert_eq(a.key_pos, b.key_pos, "chave idêntica (fase %d)" % phase)
+		assert_eq(a.herb_pos, b.herb_pos, "erva idêntica (fase %d)" % phase)
 
 # ── Dimensões corretas e bordas sempre parede (sem vazamento off-grid) ──
 func test_dimensions_and_border_walls() -> void:
@@ -133,15 +132,11 @@ func test_seed_variation() -> void:
 		assert_ne(a.rows(), b.rows(),
 			"seeds diferentes → mapas diferentes (fase %d)" % phase)
 
-# ── Baú/chave só existem quando a config pede ──
-func test_chest_key_only_when_configured() -> void:
-	var m1 := _gen(1, 5)  # Fase 1 tem baú + chave
-	assert_ne(m1.chest_pos, Vector2i(-1, -1), "fase 1 tem baú")
-	assert_ne(m1.key_pos, Vector2i(-1, -1), "fase 1 tem chave")
-	for phase: int in [2, 3, 4]:
+# ── Toda fase (1–5) tem a Erva da Vida ──
+func test_herb_in_every_phase() -> void:
+	for phase: int in [1, 2, 3, 4, 5]:
 		var m := _gen(phase, 5)
-		assert_eq(m.chest_pos, Vector2i(-1, -1), "fase %d sem baú" % phase)
-		assert_eq(m.key_pos, Vector2i(-1, -1), "fase %d sem chave" % phase)
+		assert_ne(m.herb_pos, Vector2i(-1, -1), "fase %d tem erva" % phase)
 
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
@@ -203,17 +198,14 @@ func test_at_least_one_enemy_near_boss() -> void:
 					near += 1
 			assert_gte(near, 1, "ao menos 1 guarda perto do boss (fase %d seed %d)" % [phase, s])
 
-# ── Baú e chave: longe do jogador e longe um do outro ──
-func test_chest_key_distant() -> void:
-	for s: int in SEEDS:
-		var m := _gen(1, s)  # só a fase 1 tem baú/chave
-		var dist := m.reachable_from(m.player_start)
-		assert_gte(int(dist.get(m.chest_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
-			"baú longe do spawn (seed %d)" % s)
-		assert_gte(int(dist.get(m.key_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
-			"chave longe do spawn (seed %d)" % s)
-		assert_gte(_manhattan(m.chest_pos, m.key_pos), MapGenerator.CHEST_KEY_MIN_SEPARATION,
-			"baú e chave separados (seed %d)" % s)
+# ── Erva da Vida: sempre longe do jogador (toda fase, toda topologia) ──
+func test_herb_distant() -> void:
+	for phase: int in [1, 2, 3, 4, 5]:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var dist := m.reachable_from(m.player_start)
+			assert_gte(int(dist.get(m.herb_pos, 0)), MapGenerator.HERB_MIN_PLAYER_DIST,
+				"erva longe do spawn (fase %d seed %d)" % [phase, s])
 
 # ── Decorações: quantidade certa, em chão livre, sem sobrepor entidades ──
 func test_decorations_valid() -> void:
@@ -224,7 +216,7 @@ func test_decorations_valid() -> void:
 			assert_eq(m.decorations.size(), expected,
 				"contagem de decorações (fase %d seed %d)" % [phase, s])
 			var occupied := {m.player_start: true, m.exit_pos: true,
-				m.chest_pos: true, m.key_pos: true}
+				m.herb_pos: true}
 			for e: Dictionary in m.enemies:
 				occupied[Vector2i(e["x"], e["y"])] = true
 			var seen := {}
@@ -379,8 +371,7 @@ func test_freed_map_identical_except_boss() -> void:
 			assert_eq(a.rows(), b.rows(), "grid idêntico (fase %d seed %d)" % [phase, s])
 			assert_eq(a.exit_pos, b.exit_pos, "saída idêntica (fase %d seed %d)" % [phase, s])
 			assert_eq(a.player_start, b.player_start, "spawn idêntico (fase %d)" % phase)
-			assert_eq(a.chest_pos, b.chest_pos, "baú idêntico (fase %d)" % phase)
-			assert_eq(a.key_pos, b.key_pos, "chave idêntica (fase %d)" % phase)
+			assert_eq(a.herb_pos, b.herb_pos, "erva idêntica (fase %d)" % phase)
 			assert_eq(a.decorations, b.decorations, "decorações idênticas (fase %d)" % phase)
 			assert_eq(_common_sig(a), _common_sig(b),
 				"comuns idênticos com/sem guardião (fase %d seed %d)" % [phase, s])

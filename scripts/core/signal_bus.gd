@@ -17,7 +17,7 @@ signal caipora_health_changed(new_health: float, max_health: float)
 signal enemy_health_changed(new_health: float, max_health: float)
 signal fragment_gained(total: float, amount: float)
 signal chama_gained
-signal chest_opened
+signal herb_collected(bonus: int)
 
 # ─── Apresentação de boss (estilo Mega Man) + diálogo pré-boss ──
 signal boss_intro_started

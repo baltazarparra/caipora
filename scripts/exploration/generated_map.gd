@@ -4,7 +4,7 @@ extends RefCounted
 # Resultado puro de uma geração procedural. Espelha exatamente a IR dos mapas
 # estáticos (char-grid W/F/E/R/S) para plugar nos managers sem fricção, mas
 # carrega como metadados separados o que os estáticos guardavam em constantes
-# (spawn, saída, inimigos, baú, chave). Sem dependência de SceneTree — testável
+# (spawn, saída, inimigos, erva). Sem dependência de SceneTree — testável
 # headless. Ver scripts/exploration/map_generator.gd.
 
 # ─── Tile Chars (mesma IR do MAP_LAYOUT estático) ──
@@ -20,8 +20,7 @@ var tiles: Array = []                       # tiles[y][x] = String (1 char)
 var player_start: Vector2i = Vector2i.ZERO
 var exit_pos: Vector2i = Vector2i(-1, -1)
 var enemies: Array = []                      # [{id, x, y, boss}]
-var chest_pos: Vector2i = Vector2i(-1, -1)
-var key_pos: Vector2i = Vector2i(-1, -1)
+var herb_pos: Vector2i = Vector2i(-1, -1)    # Erva da Vida: pickup que dá HP máx. (+fase)
 var decorations: Array[Vector2i] = []        # ambientação visual (não afeta walkability)
 # Santuário dos Encantados: cela onde o guardião libertado postaria (vira marca de paz).
 # (-1,-1) = boss presente no mapa (boss_freed=false).

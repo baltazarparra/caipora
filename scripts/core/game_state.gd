@@ -38,8 +38,7 @@ var active_combat_is_boss: bool = false
 # cerimonial), mas devem manter o HP de chefe da própria cena. Quando true, o
 # ArenaManager NÃO sobrescreve o HP pelo uniforme da banda de fase. Volátil.
 var active_combat_keeps_own_hp: bool = false
-var has_key: bool = false
-var chest_opened: bool = false
+var herb_taken: bool = false  # Erva da Vida desta fase já coletada
 var player_map_pos: Vector2i = Vector2i(-1, -1)
 
 # Snapshot das posições dos inimigos sobreviventes no instante do combate
@@ -55,8 +54,7 @@ func start_run() -> void:
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
 	active_combat_keeps_own_hp = false
-	has_key = false
-	chest_opened = false
+	herb_taken = false
 	player_map_pos = Vector2i(-1, -1)
 	map_enemy_positions.clear()
 	pending_exploration = SignalBus.Screen.EXPLORATION
@@ -73,6 +71,9 @@ func advance_phase_via_hub(next_exploration: SignalBus.Screen) -> void:
 	pending_exploration = next_exploration
 	player_map_pos = Vector2i(-1, -1)
 	map_enemy_positions.clear()
+	# Cada fase tem sua própria Erva da Vida: zera a posse para a fase nova spawnar
+	# e poder coletar de novo (sem isso o flag ficaria preso em true).
+	herb_taken = false
 	change_screen(SignalBus.Screen.HUB)
 
 ## Seed determinística do mapa de uma fase nesta run. Mesma run+fase → mesmo mapa,

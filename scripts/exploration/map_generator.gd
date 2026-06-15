@@ -30,8 +30,7 @@ const CARDINALS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0,
 const BOSS_GUARD_MIN := 1            # sempre 1 ou 2 monstros perto do boss
 const BOSS_GUARD_MAX := 2
 const BOSS_GUARD_RADIUS := 6         # raio que conta como "perto do boss"
-const CHEST_KEY_MIN_PLAYER_DIST := 10  # baú/chave sempre longe do spawn
-const CHEST_KEY_MIN_SEPARATION := 8    # ...e longe um do outro
+const HERB_MIN_PLAYER_DIST := 10  # a Erva da Vida nasce sempre longe do spawn
 
 # ─── Public API ────────────────────────────────────
 func generate(config: MapConfig, p_seed: int) -> GeneratedMap:
@@ -162,16 +161,11 @@ func _attempt(config: MapConfig, rng: RandomNumberGenerator, drop_pillars: bool)
 	# mapa deixa de ser idêntico ao gerado com boss (classe de bug do KI-007).
 	if config.boss_freed:
 		taken[m.peace_pos] = true
-	# Baú e chave: aleatórios, mas sempre longe do jogador e longe um do outro.
-	var others: Array[Vector2i] = []
-	if config.has_chest:
-		m.chest_pos = _pick_free_distant(rng, place_pool, taken, dist,
-			CHEST_KEY_MIN_PLAYER_DIST, others, CHEST_KEY_MIN_SEPARATION)
-		if m.chest_pos != Vector2i(-1, -1):
-			others.append(m.chest_pos)
-	if config.has_key:
-		m.key_pos = _pick_free_distant(rng, place_pool, taken, dist,
-			CHEST_KEY_MIN_PLAYER_DIST, others, CHEST_KEY_MIN_SEPARATION)
+	# Erva da Vida: aleatória, mas sempre longe do jogador.
+	var no_others: Array[Vector2i] = []
+	if config.has_herb:
+		m.herb_pos = _pick_free_distant(rng, place_pool, taken, dist,
+			HERB_MIN_PLAYER_DIST, no_others, 0)
 
 	m.decorations = _place_decorations(config, rng, place_pool, taken)
 

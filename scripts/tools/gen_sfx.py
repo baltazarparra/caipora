@@ -750,6 +750,27 @@ def hit_heavy_wav():
     return _normalize(biquad(body, "lowshelf", 120.0, gain_db=4.0), 0.97)
 
 
+def erva_vida_wav():
+    # Colher a Erva da Vida (pickup de HP máx.): som ORGÂNICO, agradável e ÚNICO —
+    # a planta cede (folha amassada + chocalho de ganzá subindo) sob um sopro
+    # ASPIRADO que floresce pra cima (a vida entrando), coroado por um agogô doce e
+    # abafado; cauda curta de reverb que "floresce". Nada de baque percussivo de
+    # combate — é acolhimento, não impacto. Distinto do herb_pickup do cachimbo.
+    n = int(SAMPLE_RATE * 0.10)
+    leaf = [_noise() * _env(i, n, 0.004, 0.6) for i in range(n)]
+    leaf = biquad(leaf, "lp", 1500.0, q=0.9)
+    rustle = ganza(0.16, rising=True)
+    breath = assovio(0.30, 480.0, freq_end=900.0, breath=0.05)  # a vida subindo
+    bloom = agogo(0.22, freq=1046.0, bend=0.06)                 # ding doce que floresce
+    body = _mix(
+        [s * 0.45 for s in leaf],
+        [s * 0.5 for s in rustle],
+        [s * 0.6 for s in breath],
+        [s * 0.5 for s in bloom],
+    )
+    return _normalize(schroeder(body, mix=0.18, decay=0.6, tail=0.35), 0.7)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -771,6 +792,7 @@ GENERATORS = {
     "dpad_tap": dpad_tap_wav,
     "combat_miss": combat_miss_wav,
     "hit_heavy": hit_heavy_wav,
+    "erva_vida": erva_vida_wav,
 }
 
 
