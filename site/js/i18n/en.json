@@ -8,8 +8,25 @@
   "nav.podio": "Leaderboard",
   "lang.toggle": "🇧🇷",
 
-  "hero.subtitle": "The forest's guardian woke the hell up. And the woods are collecting debts in blood.",
+  "hero.subtitle": "The forest's guardian woke the hell up, and the woods are collecting debts in blood. A folk-horror roguelike that runs right in your browser — no download.",
   "hero.cta.play": "Play now",
+
+  "clip.live": "Live",
+  "clip.combat.caption": "Real gameplay — timing-based combat, captured straight from the game.",
+  "clip.combat.short": "Arena combat",
+  "clip.explore.short": "Roaming the woods",
+  "clip.boss.short": "Face to face with the bosses",
+
+  "access.tag": "No barriers",
+  "access.title": "A roguelike that runs in your browser",
+  "access.lead": "No store, no download, no waiting. Open the link and the woods are already waiting for you — on your phone, tablet or computer.",
+  "access.b1.title": "Any browser",
+  "access.b1.body": "Chrome, Safari, Firefox. If it opens a page, it runs Caipora.",
+  "access.b2.title": "Mobile and desktop",
+  "access.b2.body": "Touch controls on mobile, keyboard on PC. Portrait or landscape.",
+  "access.b3.title": "No install",
+  "access.b3.body": "Zero download, no mandatory account. One click and you're in.",
+  "access.cta": "Play in the browser",
 
   "manifesto.title": "What was sleeping in the woods wasn't sleeping alone.",
   "manifesto.body": "Between twisted trails, dark rivers and abandoned chapels, the ancient pacts between humans, beasts, the dead and the enchanted all snapped. Hunters, priests, witches and corrupted creatures now patrol what was once sacred. Caipora woke up. And she didn't come to save anyone.",

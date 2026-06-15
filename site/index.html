@@ -61,18 +61,65 @@
       </div>
 
       <div class="hero-inner">
-        <div class="hero-mark" aria-hidden="true">
-          <img src="assets/sprites/brand_mark.png" alt="" width="72" height="72">
+        <div class="hero-caipora" aria-hidden="true">
+          <img src="assets/sprites/player_idle.png" alt="" class="hero-caipora-img">
         </div>
         <h1 class="hero-title">
           <img src="assets/sprites/logo_title.png" alt="Caipora" class="hero-title-img">
           <span class="hero-title-fallback">CAIPORA</span>
         </h1>
-        <p class="hero-subtitle" data-i18n="hero.subtitle">A guardiã da mata acordou. E a floresta cobra em sangue.</p>
+        <p class="hero-subtitle" data-i18n="hero.subtitle">A guardiã da mata acordou. E a floresta cobra em sangue. Rogue-like de horror folclórico que roda direto no navegador — sem baixar nada.</p>
         <div class="hero-ctas">
           <a href="play/" class="btn btn-primary btn-lg" data-i18n="hero.cta.play">Jogar agora</a>
           <a href="https://github.com/baltazarparra/caipora" class="btn btn-ghost" target="_blank" rel="noopener">GitHub</a>
         </div>
+
+        <figure class="hero-clip">
+          <div class="clip-frame">
+            <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
+            <div class="clip" data-clip="combat" role="img" aria-label="Combate real do jogo Caipora rodando no navegador"></div>
+          </div>
+          <figcaption class="clip-caption" data-i18n="clip.combat.caption">Gameplay real — combate por timing, capturado direto do jogo.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Acessibilidade: roguelike de navegador, sem instalar -->
+    <section class="access section-reveal" id="navegador">
+      <div class="access-inner">
+        <span class="section-tag" data-i18n="access.tag">Sem barreiras</span>
+        <h2 class="access-title" data-i18n="access.title">Um roguelike que roda no seu navegador</h2>
+        <p class="access-lead" data-i18n="access.lead">Nada de loja, nada de download, nada de espera. Abre o link e a mata já está te esperando — no celular, no tablet ou no computador.</p>
+        <div class="access-badges">
+          <div class="access-badge">
+            <div class="access-badge-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9Z"/>
+              </svg>
+            </div>
+            <h3 class="access-badge-title" data-i18n="access.b1.title">Qualquer navegador</h3>
+            <p class="access-badge-body" data-i18n="access.b1.body">Chrome, Safari, Firefox. Se abre uma página, roda Caipora.</p>
+          </div>
+          <div class="access-badge">
+            <div class="access-badge-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>
+              </svg>
+            </div>
+            <h3 class="access-badge-title" data-i18n="access.b2.title">Celular e desktop</h3>
+            <p class="access-badge-body" data-i18n="access.b2.body">Controles de toque no celular, teclado no PC. Retrato ou paisagem.</p>
+          </div>
+          <div class="access-badge">
+            <div class="access-badge-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
+              </svg>
+            </div>
+            <h3 class="access-badge-title" data-i18n="access.b3.title">Sem instalação</h3>
+            <p class="access-badge-body" data-i18n="access.b3.body">Zero download, zero conta obrigatória. Um clique e você está dentro.</p>
+          </div>
+        </div>
+        <a href="play/" class="btn btn-primary btn-lg" data-i18n="access.cta">Jogar no navegador</a>
       </div>
     </section>
 
@@ -202,7 +249,10 @@
     <section class="mechanics section-reveal" id="mecanicas">
       <div class="mechanics-inner">
         <div class="mechanics-visual">
-          <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Animações da Caipora" loading="lazy">
+          <figure class="clip-frame">
+            <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
+            <div class="clip" data-clip="combat" role="img" aria-label="Combate por timing: crítico e contra-ataque no frame exato"></div>
+          </figure>
         </div>
         <div class="mechanics-content">
           <span class="section-tag" data-i18n="mechanics.tag">Combate</span>
@@ -224,22 +274,34 @@
           <span class="section-tag" data-i18n="gallery.tag">Galeria</span>
           <h2 class="gallery-title" data-i18n="gallery.title">Fragmentos da floresta</h2>
         </header>
-        <div class="bento">
-          <div class="bento-cell bento-cell-large bento-cell-screenshot">
-            <img src="assets/screenshots/shot_arena.png" alt="Combate na arena de Caipora" loading="lazy">
-          </div>
-          <div class="bento-cell bento-cell-screenshot">
-            <img src="assets/screenshots/shot_menu.png" alt="Menu principal de Caipora" loading="lazy">
-          </div>
-          <div class="bento-cell bento-cell-sprite">
-            <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Sprites da protagonista Caipora" loading="lazy">
-          </div>
-          <div class="bento-cell bento-cell-wide bento-cell-screenshot">
-            <img src="assets/screenshots/shot_ending.png" alt="Ending cinematográfico de Caipora" loading="lazy">
-          </div>
-          <div class="bento-cell bento-cell-screenshot">
-            <img src="assets/screenshots/shot_explore.png" alt="Exploração na floresta" loading="lazy">
-          </div>
+        <div class="clips-grid">
+          <figure class="clip-card">
+            <div class="clip-frame">
+              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
+              <div class="clip" data-clip="combat" role="img" aria-label="Combate na arena de Caipora"></div>
+            </div>
+            <figcaption class="clip-caption" data-i18n="clip.combat.short">Combate na arena</figcaption>
+          </figure>
+          <figure class="clip-card">
+            <div class="clip-frame">
+              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
+              <div class="clip" data-clip="explore" role="img" aria-label="Exploração na mata corrompida"></div>
+            </div>
+            <figcaption class="clip-caption" data-i18n="clip.explore.short">Explorando a mata</figcaption>
+          </figure>
+          <figure class="clip-card">
+            <div class="clip-frame">
+              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
+              <div class="clip" data-clip="boss" role="img" aria-label="Encontro com chefe: a Mula sem Cabeça"></div>
+            </div>
+            <figcaption class="clip-caption" data-i18n="clip.boss.short">Frente a frente com os chefes</figcaption>
+          </figure>
+        </div>
+
+        <div class="gallery-stills">
+          <img src="assets/screenshots/shot_menu.png" alt="Menu principal de Caipora" loading="lazy">
+          <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Sprites da protagonista Caipora" loading="lazy" class="gallery-still-sprite">
+          <img src="assets/screenshots/shot_ending.png" alt="Ending cinematográfico de Caipora" loading="lazy">
         </div>
       </div>
     </section>

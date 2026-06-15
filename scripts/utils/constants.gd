@@ -56,6 +56,25 @@ const TIMING_TIER2_WINDOW := 0.85  # 2 botões — normal
 const TIMING_TIER3_WINDOW := 0.75  # 3 botões — médio
 const TIMING_TIER4_WINDOW := 0.65  # 4 botões — difícil
 
+# ─── Escada de combo (gatilho de recompensa) ───────
+# Quanto maior o streak de perfeitos, mais o combate "estoura": shake, hit-stop,
+# zoom e pitch da recompensa sobem juntos. Escala SÓ parâmetros já baratos (tween,
+# frames, pitch, duck) — NUNCA contagem de partículas/nós (orçamento 60fps Android).
+# O streak começa no passo 0 (1º perfeito) e satura em COMBO_MAX_STEP.
+const COMBO_MAX_STEP := 5
+const COMBO_SHAKE_BONUS_PER_STEP := 0.12   # +12% de amplitude de shake por passo
+const COMBO_HITSTOP_BONUS_AT_MAX := 2      # +N frames de hit-stop no topo do streak
+const COMBO_PITCH_STEP := 0.04             # +4% de pitch na camada de recompensa por passo
+const COMBO_ZOOM_BONUS_PER_STEP := 0.04    # aproximação extra no killing-blow por passo
+
+## Multiplicador de intensidade (>= 1.0) para o passo de combo. Satura no teto.
+static func combo_scale(step: int) -> float:
+	return 1.0 + clampi(step, 0, COMBO_MAX_STEP) * COMBO_SHAKE_BONUS_PER_STEP
+
+## Bônus inteiro de frames de hit-stop, proporcional ao passo (0 no início, máx no teto).
+static func combo_hitstop_bonus(step: int) -> int:
+	return int(round(float(clampi(step, 0, COMBO_MAX_STEP)) / float(COMBO_MAX_STEP) * COMBO_HITSTOP_BONUS_AT_MAX))
+
 ## Janela de acao real depois do tuning por fase. O bonus de touch e aplicado
 ## sempre — e a janela padrao unica para todas as plataformas.
 static func timing_window_for_phase(base: float, phase: int) -> float:

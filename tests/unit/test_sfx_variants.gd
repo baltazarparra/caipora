@@ -85,6 +85,20 @@ func test_play_outcome_routes_every_result():
 			players += 1
 	assert_gt(players, 0, "play_outcome deve ter criado players de SFX")
 
+func test_play_outcome_accepts_combo_step():
+	# Escada de combo: play_outcome ganhou combo_step opcional (default 0,
+	# retrocompatível). Com step alto, a camada de recompensa sobe de pitch — aqui só
+	# provamos que a assinatura roteia sem erro e cria players.
+	_sfx.dodge_sound = load("res://assets/audio/sfx/dodge.wav")
+	_sfx.timing_perfect_sound = load("res://assets/audio/sfx/timing_perfect.wav")
+	_sfx.play_outcome(SfxSystem.Outcome.CRIT, Constants.COMBO_MAX_STEP)
+	_sfx.play_outcome(SfxSystem.Outcome.DODGE, 3)
+	var players := 0
+	for child in _sfx.get_children():
+		if child is AudioStreamPlayer:
+			players += 1
+	assert_gt(players, 0, "play_outcome com combo_step deve criar players de SFX")
+
 func test_play_outcome_miss_falls_back_when_asset_missing():
 	# Se combat_miss não existir, o MISS cai no ui_click (sem quebrar) — o drop-in
 	# do asset apenas substitui o fallback.

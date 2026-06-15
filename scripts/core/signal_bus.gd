@@ -38,6 +38,13 @@ signal defense_result_perfect()
 ## Janela expirou sem input correto, ou input veio no timing errado.
 signal defense_result_miss()
 
+# ─── Resultado de ataque — háptico diferenciado no HUD ──
+## Jogador acertou o timing perfeito do ATAQUE (crítico). Espelha o de defesa para o
+## D-pad poder vibrar distinto por desfecho (a arena já dava feedback visual/sonoro).
+signal attack_result_perfect()
+## Jogador furou a janela do ataque.
+signal attack_result_miss()
+
 # ─── Balanceamento remoto (RemoteConfig / RemotePatterns) ─────────
 ## Há balanceamento de inimigo novo no servidor (version mais nova que a aplicada).
 ## O menu mostra o banner "Atualizar"; aplicar troca os overrides ativos.

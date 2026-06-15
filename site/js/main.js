@@ -146,6 +146,69 @@
   });
 
   // ----------------------------------------------------------
+  // Clips — sprite-strip player (gameplay real capturado do jogo)
+  // Lê assets/clips/clips.json e configura cada [data-clip]:
+  //  --frames / aspect-ratio na hora; a imagem (pesada) só entra quando
+  //  o elemento chega perto da viewport (lazy load).
+  // ----------------------------------------------------------
+  const clipEls = document.querySelectorAll('[data-clip]');
+
+  if (clipEls.length) {
+    fetch('./assets/clips/clips.json')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (manifest) {
+        if (!manifest) return;
+
+        const pending = [];
+        clipEls.forEach(function (el) {
+          const meta = manifest[el.dataset.clip];
+          if (!meta) return;
+          el.style.setProperty('--frames', meta.frames);
+          el.style.setProperty('--cell-w', meta.cell_w);
+          el.style.setProperty('--cell-h', meta.cell_h);
+          el.dataset.clipSrc = 'assets/clips/' + meta.file;
+          pending.push(el);
+        });
+
+        function applySrc(el) {
+          // background-image inline (no elemento), NÃO via custom property:
+          // url() dentro de var() resolve relativo ao .css (/css/), quebrando o
+          // caminho. Inline no elemento resolve relativo ao documento (e ao
+          // subpath do GitHub Pages).
+          el.style.backgroundImage = "url('" + el.dataset.clipSrc + "')";
+        }
+
+        // Clipes próximos da viewport carregam JÁ (não dependem do IO disparar);
+        // o resto fica lazy. Strips repetidos (ex. combat) compartilham 1 download.
+        function isNear(el) {
+          const r = el.getBoundingClientRect();
+          return r.top < window.innerHeight * 1.5;
+        }
+
+        if ('IntersectionObserver' in window) {
+          const clipObserver = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                  applySrc(entry.target);
+                  clipObserver.unobserve(entry.target);
+                }
+              });
+            },
+            { root: null, rootMargin: '300px 0px', threshold: 0 }
+          );
+          pending.forEach(function (el) {
+            if (isNear(el)) applySrc(el);
+            else clipObserver.observe(el);
+          });
+        } else {
+          pending.forEach(applySrc);
+        }
+      })
+      .catch(function () { /* sem clips: cai no fundo escuro da moldura */ });
+  }
+
+  // ----------------------------------------------------------
   // Hero parallax (mouse)
   // ----------------------------------------------------------
   const heroBackdrop = document.querySelector('.hero-backdrop');

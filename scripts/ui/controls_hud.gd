@@ -36,7 +36,16 @@ const COMBAT_LANDSCAPE_BOTTOM_MARGIN_FRACTION: float = 0.18
 # Margem de toque além do cluster visível e zona morta central (frações de `key`).
 const COMBAT_HIT_MARGIN_FRACTION: float = 0.35
 const COMBAT_DEAD_ZONE_FRACTION: float = 0.18
-const COMBAT_HAPTIC_MS: int = 12
+# Háptico de combate. O "tick" de confirmação fica acima de ~15-20ms (limiar de
+# muitos Androids — abaixo disso o motor nem dispara). Desfechos têm assinatura
+# tátil própria: perfeito/crítico/esquiva = pulso duplo (recompensa que "estala");
+# erro/dano = pulso único seco. Web usa navigator.vibrate(padrão em array); nativo
+# só aceita duração única (degrada para o pulso mais longo do padrão).
+const COMBAT_HAPTIC_MS: int = 18
+const HAPTIC_REWARD_WEB: String = "[14,36,26]"  # tap-pausa-tap, recompensa
+const HAPTIC_REWARD_NATIVE_MS: int = 30
+const HAPTIC_FAIL_WEB: String = "[26]"          # pulso único seco
+const HAPTIC_FAIL_NATIVE_MS: int = 26
 const TOUCH_SAFE_MARGIN: float = 28.0
 
 const MODE_EXPLORATION: int = 0
@@ -78,6 +87,8 @@ func _ready() -> void:
 	SignalBus.defense_window_closed.connect(_on_defense_window_closed)
 	SignalBus.defense_result_perfect.connect(_on_defense_result_perfect)
 	SignalBus.defense_result_miss.connect(_on_defense_result_miss)
+	SignalBus.attack_result_perfect.connect(_pulse_reward_haptic)
+	SignalBus.attack_result_miss.connect(_pulse_fail_haptic)
 
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
@@ -467,6 +478,7 @@ func _on_defense_window_closed() -> void:
 func _on_defense_result_perfect() -> void:
 	if _button_mode != MODE_COMBAT:
 		return
+	_pulse_reward_haptic()
 	for btn in _keys:
 		var b := btn as CombatArrowButton
 		if b._window_open:
@@ -476,6 +488,7 @@ func _on_defense_result_perfect() -> void:
 func _on_defense_result_miss() -> void:
 	if _button_mode != MODE_COMBAT:
 		return
+	_pulse_fail_haptic()
 	for btn in _keys:
 		var b := btn as CombatArrowButton
 		if b._window_open:
@@ -493,14 +506,36 @@ func _feed_event(action: String, pressed: bool) -> void:
 func _pulse_combat_haptic() -> void:
 	if _button_mode != MODE_COMBAT:
 		return
+	# Tick de confirmação do toque (qualquer ação na janela). Pulso único curto.
+	_vibrate(str(COMBAT_HAPTIC_MS), COMBAT_HAPTIC_MS)
+
+
+## Háptico de recompensa: pulso duplo distinto para perfeito/crítico/esquiva. Dispara
+## DEPOIS do tick de confirmação (o navigator.vibrate/vibrate_handheld substitui a
+## vibração corrente), reforçando o desfecho bom com uma assinatura tátil própria.
+func _pulse_reward_haptic() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	_vibrate(HAPTIC_REWARD_WEB, HAPTIC_REWARD_NATIVE_MS)
+
+
+## Háptico de falha: pulso único seco para erro de timing / dano levado.
+func _pulse_fail_haptic() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	_vibrate(HAPTIC_FAIL_WEB, HAPTIC_FAIL_NATIVE_MS)
+
+
+## `web_pattern` é o argumento literal de navigator.vibrate (ms único ou array
+## "[a,b,c]"); `native_ms` é a duração única usada fora do browser (degrada padrões).
+func _vibrate(web_pattern: String, native_ms: int) -> void:
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval(
-			"if (navigator.vibrate) navigator.vibrate(%d);" % COMBAT_HAPTIC_MS,
+			"if (navigator.vibrate) navigator.vibrate(%s);" % web_pattern,
 			false
 		)
 	else:
-		# Mobile nativo (fora do browser): mesma pulsação curta de confirmação.
-		Input.vibrate_handheld(COMBAT_HAPTIC_MS)
+		Input.vibrate_handheld(native_ms)
 
 
 ## Tick sonoro do toque no D-pad de combate (o visual fica no CombatArrowButton;

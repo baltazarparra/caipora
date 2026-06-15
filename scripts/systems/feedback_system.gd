@@ -242,6 +242,13 @@ func track_perfect(is_perfect: bool) -> void:
 		return  # Budget device: skip combo indicator
 	_update_combo_indicator()
 
+## Passo atual da escada de combo (0..COMBO_MAX_STEP). Fonte única de verdade da
+## intensidade escalada (shake/hit-stop/zoom/pitch). Streak 1 = passo 0; cresce daí.
+## Streak 0 (erro recente) também devolve 0. Os chamadores leem APÓS track_perfect
+## para que o golpe atual já conte na escada.
+func combo_step() -> int:
+	return clampi(_combo_streak - 1, 0, Constants.COMBO_MAX_STEP)
+
 func _update_combo_indicator() -> void:
 	if _combo_streak < 2:
 		if is_instance_valid(_combo_node):

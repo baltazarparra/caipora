@@ -64,7 +64,9 @@ func _register_variants(primary: AudioStream) -> void:
 	_rr_index[key] = 0
 
 # ─── Public API ────────────────────────────────────
-func play(sound: AudioStream, volume_db: float = 0.0) -> void:
+## `pitch_bonus` soma ao pitch base (além do jitter anti-repetição). Usado pela escada
+## de combo para fazer a camada de recompensa "subir" de tom a cada perfeito.
+func play(sound: AudioStream, volume_db: float = 0.0, pitch_bonus: float = 0.0) -> void:
 	if sound == null:
 		return
 	var to_play := _next_variant(sound)
@@ -72,7 +74,7 @@ func play(sound: AudioStream, volume_db: float = 0.0) -> void:
 	player.stream = to_play
 	player.bus = SFX_BUS
 	player.volume_db = volume_db + randf_range(-VOLUME_JITTER_DB, VOLUME_JITTER_DB)
-	player.pitch_scale = 1.0 + randf_range(-PITCH_JITTER, PITCH_JITTER)
+	player.pitch_scale = 1.0 + pitch_bonus + randf_range(-PITCH_JITTER, PITCH_JITTER)
 	player.finished.connect(player.queue_free)
 	add_child(player)
 	player.play()
@@ -98,7 +100,11 @@ func play_named(sound_name: String, volume_db: float = 0.0) -> bool:
 ## roteamento funciona mesmo antes dos assets existirem (drop-in depois).
 const PERFECT_LAYER_DB: float = -4.0  ## timing_perfect empilhado por cima do impacto
 const MISS_FALLBACK_DB: float = -6.0  ## fallback do "errou" enquanto não há combat_miss
-func play_outcome(outcome: Outcome) -> void:
+## `combo_step` (0..N) faz a camada de recompensa (timing_perfect) SUBIR de tom a cada
+## perfeito encadeado — o "ka-ching" que sobe, gatilho clássico de vício. O impacto
+## pesado (hit_heavy) mantém o pitch base: o peso é constante, só a recompensa escala.
+func play_outcome(outcome: Outcome, combo_step: int = 0) -> void:
+	var reward_pitch := combo_step * Constants.COMBO_PITCH_STEP
 	match outcome:
 		Outcome.MISS:
 			# O "furou a janela": som próprio, seco e negativo — NUNCA o clique de menu.
@@ -110,11 +116,11 @@ func play_outcome(outcome: Outcome) -> void:
 			# Crítico = topo da escada: impacto pesado + recompensa + o mundo cala.
 			if not play_named("hit_heavy"):
 				play(hit_sound)
-			play(timing_perfect_sound, PERFECT_LAYER_DB)
+			play(timing_perfect_sound, PERFECT_LAYER_DB, reward_pitch)
 			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
 		Outcome.DODGE:
 			play(dodge_sound)
-			play(timing_perfect_sound, PERFECT_LAYER_DB)
+			play(timing_perfect_sound, PERFECT_LAYER_DB, reward_pitch)
 			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
 		Outcome.HURT:
 			# A guardiã sangra: voz própria; hit_sound é o impacto NO inimigo.

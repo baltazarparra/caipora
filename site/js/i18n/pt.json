@@ -8,8 +8,25 @@
   "nav.podio": "Pódio",
   "lang.toggle": "🇺🇸",
 
-  "hero.subtitle": "A guardiã da mata acordou. E a floresta cobra em sangue.",
+  "hero.subtitle": "A guardiã da mata acordou. E a floresta cobra em sangue. Rogue-like de horror folclórico que roda direto no navegador — sem baixar nada.",
   "hero.cta.play": "Jogar agora",
+
+  "clip.live": "Ao vivo",
+  "clip.combat.caption": "Gameplay real — combate por timing, capturado direto do jogo.",
+  "clip.combat.short": "Combate na arena",
+  "clip.explore.short": "Explorando a mata",
+  "clip.boss.short": "Frente a frente com os chefes",
+
+  "access.tag": "Sem barreiras",
+  "access.title": "Um roguelike que roda no seu navegador",
+  "access.lead": "Nada de loja, nada de download, nada de espera. Abre o link e a mata já está te esperando — no celular, no tablet ou no computador.",
+  "access.b1.title": "Qualquer navegador",
+  "access.b1.body": "Chrome, Safari, Firefox. Se abre uma página, roda Caipora.",
+  "access.b2.title": "Celular e desktop",
+  "access.b2.body": "Controles de toque no celular, teclado no PC. Retrato ou paisagem.",
+  "access.b3.title": "Sem instalação",
+  "access.b3.body": "Zero download, zero conta obrigatória. Um clique e você está dentro.",
+  "access.cta": "Jogar no navegador",
 
   "manifesto.title": "O que dormia na mata não dormia só.",
   "manifesto.body": "Entre trilhas tortas, rios escuros e capelas abandonadas, os pactos antigos entre humanos, bichos, mortos e encantados se romperam. Caçadores, padres, bruxos e feras corrompidas patrulham o que um dia foi sagrado. A Caipora despertou. E ela não veio para salvar ninguém.",

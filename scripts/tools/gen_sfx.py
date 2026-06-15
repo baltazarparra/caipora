@@ -46,6 +46,9 @@ _SFX_PEAK_DB = -3.0          # alvo de pico dos SFX curtos
 _PEAK_CEIL_DB = -1.4         # teto de pico (margem sob o -1.2 do fiscal)
 _SFX_RMS_FLOOR_DB = -11.5    # RMS mínimo dos SFX (faixa -12..-9, com margem)
 _DRIVES = (1.0, 1.4, 2.0, 2.8, 4.0, 5.6, 8.0)
+# Passada escura: teto de low-pass por categoria (Hz). Abafa o agudo no funil único
+# _write. SFX um pouco mais aberto p/ não perder o ataque do feedback de combate.
+_GLOBAL_LP = {"sfx": 1600.0, "music": 1300.0, "ambience": 1300.0, "stingers": 1500.0}
 
 
 def _db_to_gain(db):
@@ -95,6 +98,12 @@ def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None, width=2):
     fiscal mede); `gain: float` aplica ganho linear direto (caminho dos stems).
     `width=1` grava PCM 8-bit unsigned: a música já é bitcrushada a 7 bits, então
     8-bit é quase lossless aqui — e corta o peso pela metade (browser-first)."""
+    # Passada escura: low-pass global por categoria. Catch-all "suave" que abafa o ruído
+    # agudo (chimbais NES, estouro de brasa, chiados) sem caçar cada filtro à mão.
+    # Aplicado AQUI (no SAMPLE_RATE, antes de resample/conform), o único funil de todos
+    # os assets — junto do teto de tom (grave_fold) entrega o "cavernoso".
+    if subdir in _GLOBAL_LP:
+        samples = biquad(samples, "lp", _GLOBAL_LP[subdir])
     out_dir = os.path.join(AUDIO_DIR, subdir)
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
@@ -219,6 +228,23 @@ def _resample(samples, src_rate, dst_rate):
 
 
 # ─── DSP v2: filtros, reverb e eco de síntese ──────
+# ─── Passada escura: teto de tom grave ─────────────
+# "Cavernoso": nenhum conteúdo TONAL passa do teto. Dobra oitavas pra baixo até caber,
+# preservando a classe de altura (escala/harmonia intactas) — só o registro desce.
+# Aplicado no topo dos osciladores (pulse/agogo/gongue/triangle/assovio), nunca em
+# note(): as notas de melodia já vivem <650 Hz; foldá-las só quebraria contorno. Os
+# ofensores são as frequências hardcoded dos osciladores (sinos agogô, whooshes).
+TONE_CEILING_HZ = 650.0
+
+
+def grave_fold(freq, ceiling=TONE_CEILING_HZ):
+    if freq <= 0.0:
+        return freq
+    while freq > ceiling:
+        freq *= 0.5
+    return freq
+
+
 def biquad(samples, kind, freq, q=0.707, gain_db=0.0, rate=SAMPLE_RATE):
     """Filtro biquad RBJ ("lp"/"hp"/"bp"/"lowshelf"/"highshelf"/"peak"). Dá corpo
     e foco aos timbres — o que osciladores nus + média móvel não alcançam."""
@@ -385,6 +411,7 @@ def _inharmonic(dur, freq, partials, decay, fm=0.0):
 def agogo(dur=0.2, freq=1320.0, bend=0.05):
     """Sino agudo de dois bocais: parciais inarmônicos brilhantes + leve bend
     ascendente. O 'ding' cultural da recompensa."""
+    freq = grave_fold(freq)
     freq *= _jit(0.02) * (1.0 + bend)
     return _inharmonic(
         dur, freq,
@@ -395,6 +422,7 @@ def agogo(dur=0.2, freq=1320.0, bend=0.05):
 
 def gongue(dur=0.16, freq=620.0):
     """Sino de ferro grave: parciais mais baixos e secos. Chamada metálica."""
+    freq = grave_fold(freq)
     freq *= _jit(0.02)
     return _inharmonic(
         dur, freq,
@@ -410,6 +438,9 @@ def assovio(dur=0.5, freq=900.0, freq_end=None, breath=0.05):
     `breath` controla o fiapo de ar (o dodge aspirado usa mais). Fase contínua
     (integrada): glide sem artefato de chirp."""
     n = int(SAMPLE_RATE * dur)
+    freq = grave_fold(freq)
+    if freq_end is not None:
+        freq_end = grave_fold(freq_end)
     freq *= _jit(0.02)
     end = freq if freq_end is None else freq_end * _jit(0.02)
     out = []
@@ -431,6 +462,7 @@ def assovio(dur=0.5, freq=900.0, freq_end=None, breath=0.05):
 def pulse(dur, freq, duty=0.5, vib=0.0, attack=0.005, release=0.25):
     """Onda de pulso (square com duty variável). duty 0.5=oco, 0.25/0.125=nasal/fino."""
     n = int(SAMPLE_RATE * dur)
+    freq = grave_fold(freq)
     freq *= _jit(0.004)  # micro-detune por variante, sem soar desafinado
     out = []
     phase = 0.0
@@ -447,6 +479,7 @@ def pulse(dur, freq, duty=0.5, vib=0.0, attack=0.005, release=0.25):
 def triangle(dur, freq, attack=0.004, release=0.2):
     """Onda triângulo: baixo/sub redondo do NES, sem o brilho áspero do pulso."""
     n = int(SAMPLE_RATE * dur)
+    freq = grave_fold(freq)
     freq *= _jit(0.004)
     out = []
     phase = 0.0
@@ -479,9 +512,14 @@ def nes_noise(dur, decay=40.0, lp=0.0, gain=0.5):
 # Tônica por contexto (Hz) + graus de escala (semitons) → notas chiptune coerentes.
 # Menor harmônica dá a cor "folk sombrio"; o ♭2 (frígio) entra nas fases mais densas.
 SEMI = 2.0 ** (1.0 / 12.0)
-MINOR_HARM = [0, 2, 3, 5, 7, 8, 11, 12]      # menor harmônica
-PHRYGIAN = [0, 1, 3, 5, 7, 8, 10, 12]        # frígio (♭2 = tensão/névoa)
-DORIAN = [0, 2, 3, 5, 7, 9, 10, 12]          # dórico (6ª maior + ♭7 = cor morna de bossa/samba)
+NATURAL_MINOR = [0, 2, 3, 5, 7, 8, 10, 12]   # menor natural (eólio): sem sensível, escura
+# Passada escura ("só escalas menores"): a menor harmônica (7ª maior sensível) e a
+# dórica (6ª maior, cor morna) foram rebaixadas para menor natural. Os nomes seguem
+# usados nos call-sites; só os GRAUS mudaram. Editado AQUI (antes de scale_note, l~510)
+# porque o default `scale=MINOR_HARM` faz binding na definição da função.
+MINOR_HARM = NATURAL_MINOR                   # antes: [0,2,3,5,7,8,11,12] (7ª sensível removida)
+PHRYGIAN = [0, 1, 3, 5, 7, 8, 10, 12]        # frígio (♭2 = tensão/névoa) — já escura, mantida
+DORIAN = NATURAL_MINOR                        # antes: [0,2,3,5,7,9,10,12] (6ª maior removida)
 
 
 def note(root_hz, semitones):
@@ -498,7 +536,7 @@ def scale_note(root_hz, degree, scale=MINOR_HARM):
 # ─── Composição dos 7 SFX ──────────────────────────
 def attack_wav():
     # Tensão antes do golpe: rufo curto de caixa + chiado de ganzá abrindo.
-    layer_caixa = caixa(0.12, bright=0.8)
+    layer_caixa = caixa(0.12, bright=0.3)
     layer_ganza = ganza(0.18, rising=True)
     return _normalize(_mix(layer_caixa, layer_ganza), 0.7)
 
@@ -506,7 +544,7 @@ def attack_wav():
 def hit_wav():
     # Impacto carnudo: alfaia grave + estalo de caixa por cima. O lowshelf (v2)
     # engorda o corpo do tambor sem turvar o estalo.
-    body = _mix(alfaia(0.18, base=64.0, punch=1.0), caixa(0.09, bright=1.0))
+    body = _mix(alfaia(0.18, base=64.0, punch=1.0), caixa(0.09, bright=0.4))
     return _normalize(biquad(body, "lowshelf", 110.0, gain_db=2.5), 0.95)
 
 
@@ -564,7 +602,7 @@ def death_wav():
 def ui_click_wav():
     # Micro-feedback: rim de caixa seco + blip de pulso curtíssimo (toque 8-bit de menu).
     blip = pulse(0.03, 1320.0, duty=0.125, attack=0.001, release=0.4)
-    return _normalize(bitcrush(_mix(caixa(0.045, bright=1.1), [s * 0.4 for s in blip]), bits=6), 0.5)
+    return _normalize(bitcrush(_mix(caixa(0.045, bright=0.35), [s * 0.4 for s in blip]), bits=6), 0.5)
 
 
 def step_grass_wav():
@@ -572,7 +610,7 @@ def step_grass_wav():
     # O nível "baixo" é dado no play (volume_db), não no asset (o fiscal normaliza).
     n = int(SAMPLE_RATE * 0.07)
     crush = [_noise() * _env(i, n, 0.004, 0.6) for i in range(n)]
-    crush = biquad(crush, "lp", 2600.0 * _jit(0.15), q=0.9)
+    crush = biquad(crush, "lp", 1600.0 * _jit(0.15), q=0.9)
     return _normalize(_mix(crush, [s * 0.35 for s in ganza(0.06, rising=False)]), 0.6)
 
 
@@ -580,7 +618,7 @@ def step_stone_wav():
     # Passo na laje da igreja: tock seco de caixa + nó grave curtíssimo. Sem cauda —
     # o espaço (reverb da igreja) vem do bus, não do asset.
     knock = pulse(0.035, 190.0 * _jit(0.1), duty=0.5, attack=0.001, release=0.5)
-    tock = caixa(0.04, bright=1.2)
+    tock = caixa(0.04, bright=0.45)
     return _normalize(biquad(_mix(tock, [s * 0.5 for s in knock]), "hp", 140.0), 0.6)
 
 
@@ -611,7 +649,7 @@ def herb_pickup_wav():
     # Colher a erva: chocalho de ganzá subindo + folha amassada (ruído LP curto).
     n = int(SAMPLE_RATE * 0.10)
     crush = [_noise() * _env(i, n, 0.006, 0.5) for i in range(n)]
-    crush = biquad(crush, "lp", 3400.0, q=0.8)
+    crush = biquad(crush, "lp", 1800.0, q=0.8)
     return _normalize(_mix(ganza(0.14, rising=True), [s * 0.6 for s in crush]), 0.6)
 
 
@@ -628,7 +666,7 @@ def pipe_smoke_wav():
     for i in range(n):
         pop = _noise() if random.random() < 0.004 else 0.0
         ember.append(pop * _env(i, n, 0.2, 0.4))
-    ember = biquad(ember, "hp", 2400.0)
+    ember = biquad(ember, "hp", 1200.0)
     return _normalize(_mix(breath, [s * 0.5 for s in ember]), 0.7)
 
 
@@ -704,11 +742,12 @@ def hit_heavy_wav():
     # Acima do hit normal na escada de impacto: o ouvido lê "este foi pesado".
     body = _mix(
         alfaia(0.26, base=52.0, punch=1.0),
-        caixa(0.11, bright=1.3),
+        caixa(0.11, bright=0.45),
         [s * 0.5 for s in gongue(0.14, freq=480.0)],
     )
-    body = biquad(body, "lowshelf", 120.0, gain_db=4.0)
-    return _normalize(biquad(body, "highshelf", 4200.0, gain_db=2.0), 0.97)
+    # Passada escura: peso vem só do corpo grave (lowshelf). O highshelf +2dB @4.2kHz
+    # que dava o "brilho" do crítico foi removido — era o agudo de combate mais audível.
+    return _normalize(biquad(body, "lowshelf", 120.0, gain_db=4.0), 0.97)
 
 
 GENERATORS = {

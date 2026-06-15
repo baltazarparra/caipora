@@ -453,6 +453,28 @@ a {
   filter: drop-shadow(0 0 24px rgba(255, 69, 0, 0.45));
 }
 
+/* A Caipora protagonista como peça-herói (ela é o hype). Sprite real do jogo,
+   ampliado em pixel-art, com clareira de chama e flutuar predatório. */
+.hero-caipora {
+  margin-bottom: 1.75rem;
+  /* entrada + flutuar definidos no grupo de entrada do hero (mais abaixo). */
+}
+
+.hero-caipora-img {
+  width: clamp(132px, 26vw, 248px);
+  height: auto;
+  image-rendering: pixelated;
+  filter:
+    drop-shadow(0 0 2px rgba(0, 0, 0, 0.9))
+    drop-shadow(0 0 38px rgba(255, 69, 0, 0.5))
+    drop-shadow(0 14px 26px rgba(0, 0, 0, 0.7));
+}
+
+@keyframes caiporaFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
 @keyframes markPulse {
   0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.35)); transform: scale(1); }
   50% { filter: drop-shadow(0 0 34px rgba(255, 107, 0, 0.55)); transform: scale(1.04); }
@@ -494,7 +516,7 @@ a {
 }
 
 /* Hero entrance animation */
-.hero-mark,
+.hero-caipora,
 .hero-title,
 .hero-subtitle,
 .hero-ctas {
@@ -503,7 +525,7 @@ a {
   animation: heroEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.hero-mark { animation-delay: 0.1s; }
+.hero-caipora { animation: heroEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards, caiporaFloat 4.5s ease-in-out 1s infinite; }
 .hero-title { animation-delay: 0.25s; }
 .hero-subtitle { animation-delay: 0.45s; }
 .hero-ctas { animation-delay: 0.65s; }
@@ -1203,6 +1225,237 @@ a {
 }
 
 /* --------------------------------------------------------------
+   Clips — sprite-strip player (gameplay REAL capturado do jogo)
+   A tira tem N células lado a lado; a animação rola background-position
+   com steps(N, jump-none) p/ alinhar exatamente na borda de cada célula
+   (jump-end "rasga" entre quadros). image-rendering: pixelated mantém o
+   pixel-art nítido ao ampliar. clips.json -> --frames / --clip-src via JS.
+   -------------------------------------------------------------- */
+.clip-frame {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-void);
+  border: 1px solid rgba(255, 69, 0, 0.22);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 24px 70px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(255, 69, 0, 0.06);
+}
+
+/* Scanlines + clareira de chama, igual ao hero, p/ moldura "tela do jogo". */
+.clip-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
+
+.clip {
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--cell-w, 480) / var(--cell-h, 270);
+  background-image: var(--clip-src, none);
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: calc(var(--frames, 30) * 100%) 100%;
+  image-rendering: pixelated;
+  animation: clipPlay calc(var(--frames, 30) / 12 * 1s)
+    steps(var(--frames, 30), jump-none) infinite;
+}
+
+@keyframes clipPlay {
+  from { background-position-x: 0%; }
+  to   { background-position-x: 100%; }
+}
+
+/* Selo "AO VIVO" — reforça que é o jogo de verdade rodando. */
+.clip-badge {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.42rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background: rgba(5, 5, 5, 0.7);
+  border: 1px solid rgba(255, 69, 0, 0.4);
+}
+
+.clip-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-flame);
+  box-shadow: 0 0 8px var(--accent-flame);
+  animation: clipBlink 1.4s steps(2, jump-none) infinite;
+}
+
+@keyframes clipBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.clip-caption {
+  margin-top: 0.85rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Galeria: showcase de clipes (1 -> 3 colunas). */
+.clips-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.clip-card { margin: 0; }
+
+.gallery-stills {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.gallery-stills img {
+  width: 100%;
+  border: 1px solid rgba(255, 69, 0, 0.12);
+  background: var(--bg-void);
+}
+
+.gallery-still-sprite {
+  image-rendering: pixelated;
+  object-fit: contain;
+  padding: 1rem;
+  background: radial-gradient(ellipse at center, rgba(13, 17, 23, 0.7) 0%, var(--bg-card) 70%);
+}
+
+@media (min-width: 640px) {
+  .clips-grid { grid-template-columns: repeat(3, 1fr); }
+  .gallery-stills { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Hero: a tela do jogo abaixo dos CTAs. */
+.hero-clip {
+  position: relative;
+  z-index: 2;
+  width: min(92vw, 680px);
+  margin-top: 2.75rem;
+  opacity: 0;
+  transform: translateY(24px);
+  animation: heroEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.85s forwards;
+}
+
+/* --------------------------------------------------------------
+   Acessibilidade — "roguelike de navegador, sem instalar"
+   -------------------------------------------------------------- */
+.access {
+  position: relative;
+  padding: var(--section-gap) 1.5rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 69, 0, 0.06) 0%, transparent 55%),
+    var(--bg-void);
+  border-top: 1px solid var(--blood-line);
+  text-align: center;
+}
+
+.access-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.access-title {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  color: var(--text-primary);
+  line-height: 1.4;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.access-lead {
+  font-size: 1.0625rem;
+  max-width: 50ch;
+  margin: 0 auto 2.75rem;
+  line-height: 1.7;
+}
+
+.access-badges {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.access-badge {
+  padding: 1.5rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 69, 0, 0.14);
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.access-badge:hover {
+  border-color: rgba(255, 69, 0, 0.35);
+  transform: translateY(-3px);
+}
+
+.access-badge-icon {
+  line-height: 1;
+  margin-bottom: 0.9rem;
+  color: var(--accent-flame);
+}
+
+.access-badge-icon svg {
+  width: 34px;
+  height: 34px;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 0 10px rgba(255, 69, 0, 0.35));
+}
+
+.access-badge-title {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-flame);
+  margin-bottom: 0.6rem;
+}
+
+.access-badge-body {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+@media (min-width: 640px) {
+  .access-badges { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 900px) {
+  /* Mecânicas: clip ocupa a coluna visual no layout de 2 colunas. */
+  .mechanics-visual .clip-frame { width: 100%; }
+}
+
+/* --------------------------------------------------------------
    Reduced Motion
    -------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
@@ -1216,4 +1469,9 @@ a {
 
   html { scroll-behavior: auto; }
   .section-reveal { opacity: 1; transform: none; }
+
+  /* Clip parado mostra o 1º quadro (== poster). hero-clip visível sem entrada. */
+  .clip { animation: none !important; background-position-x: 0% !important; }
+  .hero-clip { opacity: 1 !important; transform: none !important; }
+  .clip-badge::before { animation: none !important; }
 }
