@@ -102,7 +102,26 @@ func apply(pattern: AttackPattern) -> AttackPattern:
 		for s: Variant in (ov["input_sequence"] as Array):
 			seq.append(String(s))
 		p.input_sequence = seq
+	if ov.has("strike_intervals") and ov["strike_intervals"] is Array:
+		var intervals: Array[float] = []
+		for x: Variant in (ov["strike_intervals"] as Array):
+			intervals.append(float(x))
+		p.strike_intervals = intervals
+	if ov.has("next_turn_delay"):
+		p.next_turn_delay = float(ov["next_turn_delay"])
+	if ov.has("action_windows") and ov["action_windows"] is Dictionary:
+		p.action_windows = (ov["action_windows"] as Dictionary).duplicate(true)
 	return p
+
+## Janela de transição GLOBAL (início do combate → primeiro turno), editável em
+## site/sequences.html sob a chave reservada "__global__". Sem override → default.
+func transition_window(default_value: float) -> float:
+	var g: Variant = _overrides.get("__global__", null)
+	if g is Dictionary and (g as Dictionary).has("transition_window"):
+		var tw := float((g as Dictionary)["transition_window"])
+		if tw >= 0.0:
+			return tw
+	return default_value
 
 # ─── Seam de teste (sem rede) ──────────────────────
 func _set_overrides_for_test(d: Dictionary) -> void:
@@ -120,6 +139,12 @@ func _sanitize(raw: Dictionary) -> Dictionary:
 		if not (v is Dictionary):
 			continue
 		var d: Dictionary = v as Dictionary
+		# Chave reservada: config global (janela de transição), não é um pattern.
+		if String(k) == "__global__":
+			var tw := float(d.get("transition_window", -1.0))
+			if tw >= 0.0:
+				out["__global__"] = {"transition_window": tw}
+			continue
 		var attack_duration := float(d.get("attack_duration", 0.0))
 		var strike_count := int(d.get("strike_count", 0))
 		var damage_multiplier := float(d.get("damage_multiplier", 0.0))
@@ -137,6 +162,21 @@ func _sanitize(raw: Dictionary) -> Dictionary:
 			for s: Variant in (d["input_sequence"] as Array):
 				seq.append(String(s))
 			entry["input_sequence"] = seq
+		if d.has("strike_intervals") and d["strike_intervals"] is Array:
+			var intervals: Array = []
+			for x: Variant in (d["strike_intervals"] as Array):
+				intervals.append(maxf(0.0, float(x)))
+			entry["strike_intervals"] = intervals
+		if d.has("next_turn_delay"):
+			entry["next_turn_delay"] = maxf(0.0, float(d["next_turn_delay"]))
+		if d.has("action_windows") and d["action_windows"] is Dictionary:
+			var windows: Dictionary = {}
+			for pk: Variant in (d["action_windows"] as Dictionary):
+				var w := float((d["action_windows"] as Dictionary)[pk])
+				if w >= Constants.TIMING_WINDOW_MIN:
+					windows[String(pk)] = w
+			if not windows.is_empty():
+				entry["action_windows"] = windows
 		out[String(k)] = entry
 	return out
 

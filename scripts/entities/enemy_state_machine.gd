@@ -47,15 +47,31 @@ func _transition_to(new_state: State) -> void:
 		State.IDLE:
 			_start_timer(_attack_pattern.idle_duration)
 		State.WIND_UP:
-			# Golpes de follow-up usam o telegraph curto (strike_delay).
-			var is_first := _strikes_remaining == maxi(1, _attack_pattern.strike_count)
-			var windup: float = _attack_pattern.wind_up_duration if is_first else _attack_pattern.strike_delay
+			# Golpe 1 usa o wind-up; follow-ups usam o intervalo INDEPENDENTE do hit
+			# (strike_intervals[i]), com fallback no strike_delay único.
+			var total := maxi(1, _attack_pattern.strike_count)
+			var is_first := _strikes_remaining == total
+			var windup: float = _attack_pattern.wind_up_duration if is_first else _strike_interval_at(total - 1 - _strikes_remaining)
 			_start_timer(windup)
 		State.ATTACK:
 			attack_started.emit()
 			_start_timer(_attack_pattern.attack_duration)
 		State.COOLDOWN:
-			_start_timer(_attack_pattern.cooldown_duration)
+			_start_timer(_next_turn_delay())
+
+## Intervalo entre o golpe (idx+1) e o (idx+2). Cai no strike_delay quando o
+## array por-hit não cobre esse índice (compat com .tres antigos).
+func _strike_interval_at(idx: int) -> float:
+	var intervals: Array[float] = _attack_pattern.strike_intervals
+	if idx >= 0 and idx < intervals.size():
+		return intervals[idx]
+	return _attack_pattern.strike_delay
+
+## Intervalo último-golpe → próximo turno. Sentinela < 0 cai no cooldown_duration.
+func _next_turn_delay() -> float:
+	if _attack_pattern.next_turn_delay >= 0.0:
+		return _attack_pattern.next_turn_delay
+	return _attack_pattern.cooldown_duration
 
 func _start_timer(duration: float) -> void:
 	_state_timer.wait_time = maxf(0.01, duration)

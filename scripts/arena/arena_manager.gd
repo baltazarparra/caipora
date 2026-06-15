@@ -153,7 +153,9 @@ func _run_combat_loader() -> void:
 		label.text = "Pelejar"
 		AudioDirector.play_syllable_beat(2)
 	)
-	tween.tween_interval(COMBAT_LOADER_FINAL_HOLD)
+	# Janela de transição GLOBAL (início → primeiro turno): default = FINAL_HOLD,
+	# configurável no painel de sequências (RemotePatterns.__global__).
+	tween.tween_interval(RemotePatterns.transition_window(COMBAT_LOADER_FINAL_HOLD))
 	tween.tween_property(label, "modulate:a", 0.0, COMBAT_LOADER_FADE)
 	tween.tween_property(fade, "color:a", 0.0, COMBAT_LOADER_FADE)
 	await tween.finished
@@ -519,7 +521,7 @@ func _on_enemy_attack_started() -> void:
 				return
 	# Pose de telegrafia (espingarda na pontaria / machados içados) junto do tint.
 	_animator.play_pose(_enemy, &"windup")
-	var window: float = _phase_window(_active_enemy_pattern.attack_duration)
+	var window: float = _defense_window(_active_enemy_pattern)
 	if _timing_system.timing_result.is_connected(_on_defense_timing_result):
 		_timing_system.timing_result.disconnect(_on_defense_timing_result)
 	_timing_system.timing_result.connect(_on_defense_timing_result)
@@ -609,6 +611,14 @@ func _boss_spread_pos() -> Vector2:
 
 func _phase_window(base: float) -> float:
 	return Constants.timing_window_for_phase(base, GameState.active_phase)
+
+## Janela de ação (defesa) do inimigo na fase ativa. Override explícito por fase
+## (editado em site/sequence.html) vence; sem ele, cai na fórmula por attack_duration.
+func _defense_window(pattern: AttackPattern) -> float:
+	var key := str(GameState.active_phase)
+	if pattern.action_windows.has(key):
+		return float(pattern.action_windows[key])
+	return _phase_window(pattern.attack_duration)
 
 func _is_under_dpad(world_pos: Vector2) -> bool:
 	var rect := _controls_hud.get_dpad_screen_rect()
