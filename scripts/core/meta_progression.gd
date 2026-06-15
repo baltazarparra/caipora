@@ -6,7 +6,7 @@ extends Node
 var SAVE_PATH := "user://savegame.json"
 
 # Versão do formato de save. Incrementar ao mudar o schema; migrar em load_progress().
-const SAVE_VERSION: int = 4
+const SAVE_VERSION: int = 5
 
 # True se user:// é persistente (no Web = IndexedDB disponível; false em aba anônima/quota).
 var is_persistent: bool = true
@@ -89,10 +89,10 @@ const FREEABLE_BOSS_PHASES: Array[int] = [1, 2, 3, 4]
 var freed_bosses: Array[int] = []
 var spirits_seen: Array[int] = []
 
-# ─── Estado de run persistido ───────────────────────
-# Inimigos derrotados na run em curso. Espelha GameState.defeated_enemy_ids, mas sobrevive
-# ao fechamento do navegador. Limpo em start_run(); restaurado para GameState em load_progress().
-var current_run_defeated_enemies: Array[String] = []
+# ─── Inimigos derrotados (permanente entre runs) ────
+# Inimigos derrotados em qualquer run anterior. Espelha GameState.defeated_enemy_ids, mas
+# sobrevive ao fechamento do navegador E ao início de nova run. Restaurado em load_progress().
+var permanently_defeated_enemies: Array[String] = []
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -347,7 +347,7 @@ func save_progress() -> void:
 		"frag_bag_amount": frag_bag_amount,
 		"freed_bosses": freed_bosses,
 		"spirits_seen": spirits_seen,
-		"current_run_defeated_enemies": current_run_defeated_enemies,
+		"permanently_defeated_enemies": permanently_defeated_enemies,
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -397,8 +397,10 @@ func load_progress() -> void:
 	frag_bag_amount = float(data.get("frag_bag_amount", 0.0))
 	freed_bosses = _to_phase_array(data.get("freed_bosses", []))
 	spirits_seen = _to_phase_array(data.get("spirits_seen", []))
-	current_run_defeated_enemies = _to_string_array(data.get("current_run_defeated_enemies", []))
-	GameState.defeated_enemy_ids.assign(current_run_defeated_enemies)
+	permanently_defeated_enemies = _to_string_array(
+		data.get("permanently_defeated_enemies",
+			data.get("current_run_defeated_enemies", [])))
+	GameState.defeated_enemy_ids.assign(permanently_defeated_enemies)
 	if _version < 4:
 		# v3→v4 (Santuário dos Encantados): saves veteranos derivam os libertados de
 		# phase_reached (derrotar o boss da fase N grava phase_reached = N+1) e já entram
@@ -412,8 +414,8 @@ func load_progress() -> void:
 		spirits_seen = freed_bosses.duplicate()
 
 func mark_enemy_defeated(id: String) -> void:
-	if id not in current_run_defeated_enemies:
-		current_run_defeated_enemies.append(id)
+	if id not in permanently_defeated_enemies:
+		permanently_defeated_enemies.append(id)
 	save_progress()
 
 ## Zera todo o progresso e apaga o arquivo de save. Não toca em user://settings.cfg (áudio).
@@ -435,7 +437,7 @@ func reset_save() -> void:
 	# Resetar devolve os guardiões às fases: o santuário se desfaz junto do progresso.
 	freed_bosses = []
 	spirits_seen = []
-	current_run_defeated_enemies = []
+	permanently_defeated_enemies = []
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
 
