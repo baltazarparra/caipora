@@ -71,6 +71,11 @@ func _ready() -> void:
 	# Fica abaixo das CanvasLayer da HUD/D-pad, que desenham em camada própria.
 	_timing_bubble.z_index = 10
 	_timing_bubble_b.z_index = 10
+	# Compensa o CanvasModulate escuro da fase para que os feedbacks de timing
+	# fiquem legíveis sem clarear o fundo (identidade fora das fases escuras).
+	var feedback_gain: Color = Constants.feedback_gain_for_phase(GameState.active_phase)
+	_timing_bubble.set_color_gain(feedback_gain)
+	_timing_bubble_b.set_color_gain(feedback_gain)
 	_feedback = $FeedbackSystem
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)

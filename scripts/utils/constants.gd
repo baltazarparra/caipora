@@ -259,6 +259,23 @@ const COLOR_PARTICLE_SPARK := Color(0.6, 1.6, 0.9, 1.0)   # faísca de crítico 
 const COLOR_PARTICLE_DODGE := Color(0.9, 0.95, 1.0, 0.95) # flash de esquiva (azul-claro)
 const COLOR_PARTICLE_FAIL := Color(0.20, 0.18, 0.22, 0.9) # estilhaço de erro (cinza-fumaça morto, deriva de COLOR_STONE_DARK)
 
+# ─── Ganho de cor dos feedbacks por fase ───────────
+# Algumas fases têm um CanvasModulate de arena muito escuro (clima), que multiplica
+# TODOS os canvas items da layer 0 — inclusive timing bubble, rótulos, VFX e bursts —
+# tornando os feedbacks de timing ilegíveis. Para clarear SÓ os feedbacks (sem mexer
+# no modulate/fundo), pré-multiplicamos a cor deles por este ganho overbright: o
+# modulate da fase reduz de volta e o feedback renderiza na sua cor autoral.
+# Fase 3 (Curupira): recíproco do CanvasModulate de scenes/arena/arena_phase3.tscn
+# Color(0.18, 0.45, 0.22) → se aquele modulate mudar, atualize este valor.
+const FEEDBACK_GAIN_BY_PHASE: Dictionary = {
+	3: Color(1.0 / 0.18, 1.0 / 0.45, 1.0 / 0.22),
+}
+
+## Ganho de cor dos feedbacks para a fase. Identidade (1,1,1) quando a fase não
+## tem entrada — fases sem escurecimento agressivo ficam inalteradas.
+static func feedback_gain_for_phase(phase: int) -> Color:
+	return FEEDBACK_GAIN_BY_PHASE.get(phase, Color(1, 1, 1))
+
 # ─── UI Design Tokens (escala de espaçamento / tipografia) ──
 # Padronização AAA: telas e HUD consomem estes tokens, nunca números soltos.
 const SPACE_XS := 8

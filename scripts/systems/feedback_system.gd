@@ -100,10 +100,19 @@ func force_clear_hit_stop() -> void:
 	hit_stop_ended.emit()
 
 # ─── VFX Sprite pool (hit/crit/dodge) ─────────────
+## Ganho de cor dos feedbacks para compensar o CanvasModulate escuro da fase
+## (clareia rótulos/VFX/partículas sem tocar o fundo). Identidade fora das fases escuras.
+var _feedback_gain: Color = Color(1, 1, 1)
+
 func _ready() -> void:
+	_feedback_gain = Constants.feedback_gain_for_phase(GameState.active_phase)
 	_tex_hit   = _safe_load(HIT_VFX_PATH)
 	_tex_crit  = _safe_load(CRITICAL_VFX_PATH)
 	_tex_dodge = _safe_load(DODGE_VFX_PATH)
+
+## Multiplica só o RGB pelo ganho de cor da fase (preserva alpha).
+func _g(c: Color) -> Color:
+	return Color(c.r * _feedback_gain.r, c.g * _feedback_gain.g, c.b * _feedback_gain.b, c.a)
 
 func _safe_load(path: String) -> Texture2D:
 	if ResourceLoader.exists(path):
@@ -150,6 +159,8 @@ func _burst_vfx(key: StringName, tex: Texture2D, frame_w: int, frame_h: int,
 		s.animation_finished.connect(func(): s.visible = false)
 		nodes[idx] = s
 	s.position = at_position
+	# Pool reutiliza sprites: aplica o ganho no play-time, não na criação.
+	s.modulate = _feedback_gain
 	s.visible = true
 	s.play(&"play")
 
@@ -194,7 +205,7 @@ func spawn_death_particles(at_position: Vector2) -> void:
 ## Bubble burst e fail continuam como partículas (contexto da bolha de timing,
 ## não dos atores — custo já estava isolado e aceitável).
 func spawn_bubble_burst(at_position: Vector2, tint: Color) -> void:
-	_burst(&"bubble", _make_bubble, at_position, tint)
+	_burst(&"bubble", _make_bubble, at_position, _g(tint))
 
 func spawn_fail_particles(at_position: Vector2) -> void:
 	_burst(&"fail", _make_fail, at_position)
@@ -216,6 +227,9 @@ func spawn_result_label(label_key: StringName, at_position: Vector2) -> void:
 	sprite.scale = Vector2(2.0, 2.0)
 	sprite.position = at_position + Vector2(0, -24)
 	sprite.z_index = 20
+	# Ganho de cor da fase (clareia o rótulo sob CanvasModulate escuro). Alpha
+	# começa em 1.0; o fade abaixo anima só modulate:a → compatível.
+	sprite.modulate = Color(_feedback_gain.r, _feedback_gain.g, _feedback_gain.b, 1.0)
 	if not _attach_to_scene(sprite):
 		return
 	var tw := create_tween()
@@ -375,7 +389,7 @@ func _make_fail() -> CPUParticles2D:
 	p.initial_velocity_max = 220.0
 	p.scale_amount_min = 1.5
 	p.scale_amount_max = 3.5
-	p.color = Constants.COLOR_PARTICLE_FAIL
+	p.color = _g(Constants.COLOR_PARTICLE_FAIL)
 	return p
 
 func _glow_material() -> CanvasItemMaterial:

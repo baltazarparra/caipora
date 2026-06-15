@@ -70,6 +70,9 @@ var _key_hint: String = "up"
 var _frozen: bool = false
 var _flash_timer: float = 0.0
 var _arrow_offset: Vector2 = Vector2.ZERO
+## Ganho de cor aplicado no desenho para compensar o CanvasModulate escuro de
+## certas fases (ver Constants.feedback_gain_for_phase). Identidade = sem efeito.
+var _color_gain: Color = Color(1, 1, 1)
 
 
 # ─── Lifecycle ─────────────────────────────────────
@@ -154,8 +157,8 @@ func _process_burst(delta: float) -> void:
 
 func _draw() -> void:
 	if _burst_timer >= 0.0:
-		draw_circle(Vector2.ZERO, _burst_radius, _burst_color)
-		draw_arc(Vector2.ZERO, _burst_radius, 0.0, TAU, 32, Color(1, 1, 1, _burst_color.a * 0.4), 1.5)
+		draw_circle(Vector2.ZERO, _burst_radius, _g(_burst_color))
+		draw_arc(Vector2.ZERO, _burst_radius, 0.0, TAU, 32, _g(Color(1, 1, 1, _burst_color.a * 0.4)), 1.5)
 		return
 
 	if _phase == PHASE_IDLE:
@@ -163,11 +166,11 @@ func _draw() -> void:
 
 	# 1. Anel-alvo fixo (a janela de acerto). Acende na zona perfeita.
 	var target_col: Color = _flashed(_mode_color())
-	draw_circle(Vector2.ZERO, RADIUS_TARGET, Color(target_col.r, target_col.g, target_col.b, _target_alpha * 0.35))
-	draw_arc(Vector2.ZERO, RADIUS_TARGET, 0.0, TAU, 40, Color(target_col.r, target_col.g, target_col.b, _target_alpha), 2.0)
+	draw_circle(Vector2.ZERO, RADIUS_TARGET, _g(Color(target_col.r, target_col.g, target_col.b, _target_alpha * 0.35)))
+	draw_arc(Vector2.ZERO, RADIUS_TARGET, 0.0, TAU, 40, _g(Color(target_col.r, target_col.g, target_col.b, _target_alpha)), 2.0)
 
 	# 2. Anel convergente (o timer): encolhe em direção ao alvo.
-	draw_arc(Vector2.ZERO, _outer_radius, 0.0, TAU, 40, _color, 2.5)
+	draw_arc(Vector2.ZERO, _outer_radius, 0.0, TAU, 40, _g(_color), 2.5)
 
 	# 3. Glifo direcional pixel-art: seta 60×60 px com nudge na janela perfeita.
 	if _arrow_alpha > 0.01:
@@ -181,10 +184,10 @@ func _draw_arrow_glyph(alpha: float, color: Color) -> void:
 	var origin: Vector2 = Vector2(-half, -half) + _arrow_offset
 	var cs: Vector2 = Vector2.ONE * (ARROW_CELL + 0.5)  # overlap mínimo anti-seam
 
-	var bright: Color = Color(color.r, color.g, color.b, alpha)
-	var dark: Color = Color(
+	var bright: Color = _g(Color(color.r, color.g, color.b, alpha))
+	var dark: Color = _g(Color(
 		Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g,
-		Constants.COLOR_JUBA_DARK.b, alpha * 0.7)
+		Constants.COLOR_JUBA_DARK.b, alpha * 0.7))
 	var outline: Color = Color(0.0, 0.0, 0.0, alpha)
 
 	for r: int in ARROW_GRID:
@@ -222,6 +225,12 @@ func _key_hint_to_vec() -> Vector2:
 
 
 # ─── Private helpers ───────────────────────────────
+## Multiplica só o RGB pelo ganho de cor da fase (preserva alpha). Aplicado no
+## momento do desenho para compensar o CanvasModulate escuro de certas fases.
+func _g(c: Color) -> Color:
+	return Color(c.r * _color_gain.r, c.g * _color_gain.g, c.b * _color_gain.b, c.a)
+
+
 func _mode_color() -> Color:
 	if _vuln_color.a > 0.0:
 		return Color(_vuln_color.r, _vuln_color.g, _vuln_color.b, 1.0)
@@ -280,6 +289,12 @@ func burst_success() -> void:
 
 func set_frozen(value: bool) -> void:
 	_frozen = value
+
+
+## Ganho de cor para compensar o CanvasModulate da fase (clareia os feedbacks sem
+## tocar o fundo). Color(1,1,1) = sem efeito.
+func set_color_gain(gain: Color) -> void:
+	_color_gain = gain
 
 
 ## Estilhaço de erro: a bolha colapsa (encolhe e escurece) em vez de explodir.
