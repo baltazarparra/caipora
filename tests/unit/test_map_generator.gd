@@ -261,24 +261,42 @@ func test_exit_tile_matches_has_exit() -> void:
 			else:
 				assert_eq(exits, 0, "sem tile de saída (fase %d seed %d)" % [phase, s])
 
-# ── Fase 3 (CORRIDOR): o Curupira posta adjacente à saída ──
-func test_phase3_boss_guards_exit() -> void:
-	for s: int in SEEDS:
-		var m := _gen(3, s)
-		var b := m.boss()
-		assert_eq(_manhattan(Vector2i(b["x"], b["y"]), m.exit_pos), 1,
-			"Curupira adjacente à saída (seed %d)" % s)
+# ── A saída fica numa clareira 5×5 caminhável e SEM dano (a área útil da saída) ──
+func test_exit_clearing_walkable_and_safe() -> void:
+	var r: int = MapGenerator.EXIT_CLEARING_RADIUS
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			for dy: int in range(-r, r + 1):
+				for dx: int in range(-r, r + 1):
+					var p: Vector2i = m.exit_pos + Vector2i(dx, dy)
+					var ch := m.char_at(p)
+					assert_ne(ch, "W",
+						"clareira da saída caminhável em %s (fase %d seed %d)" % [str(p), phase, s])
+					assert_false(ch == "R" or ch == "S",
+						"clareira da saída sem fogo/espinho em %s (fase %d seed %d)" % [str(p), phase, s])
 
-# ── Fase 3: a saída fica num beco-sem-saída — sem como contornar o Curupira ──
-func test_phase3_exit_is_dead_end() -> void:
-	for s: int in SEEDS:
-		var m := _gen(3, s)
-		var floors := 0
-		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			if m.char_at(m.exit_pos + d) != "W":
-				floors += 1
-		assert_eq(floors, 1,
-			"saída com um único vizinho de chão, o tile do boss (seed %d)" % s)
+# ── O boss guarda a ÚNICA aproximação à clareira (sem como contornar o boss) ──
+func test_boss_guards_single_approach() -> void:
+	var r: int = MapGenerator.EXIT_CLEARING_RADIUS
+	for phase: int in PHASES:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var rect := Rect2i(m.exit_pos.x - r, m.exit_pos.y - r, 2 * r + 1, 2 * r + 1)
+			var openings := {}
+			for y: int in range(rect.position.y, rect.end.y):
+				for x: int in range(rect.position.x, rect.end.x):
+					for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+						var o: Vector2i = Vector2i(x, y) + d
+						if rect.has_point(o):
+							continue
+						if m.char_at(o) != "W":
+							openings[o] = true
+			assert_eq(openings.size(), 1,
+				"clareira da saída com uma única abertura (fase %d seed %d)" % [phase, s])
+			var b := m.boss()
+			assert_true(openings.has(Vector2i(b["x"], b["y"])),
+				"o boss posta na abertura da clareira (fase %d seed %d)" % [phase, s])
 
 # ── Garantia: sempre existe rota até o boss SEM pisar em fogo ──
 func test_clean_path_to_boss_exists() -> void:
