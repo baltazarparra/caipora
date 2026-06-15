@@ -141,13 +141,13 @@ func test_herb_in_every_phase() -> void:
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
 
-# ── Contagem padrão por fase: 7 monstros em todas (6 comuns + boss) ──
-func test_phase_enemy_counts_are_all_seven() -> void:
+# ── Contagem padrão por fase: 5 monstros em todas (4 comuns + boss) ──
+func test_phase_enemy_counts_are_all_five() -> void:
 	for phase: int in PHASES:
-		assert_eq(MapConfig.for_phase(phase).enemy_count, 7,
-			"fase %d = 7 monstros (6 comuns + boss)" % phase)
+		assert_eq(MapConfig.for_phase(phase).enemy_count, 5,
+			"fase %d = 5 monstros (4 comuns + boss)" % phase)
 
-# ── Composição dos comuns: fase 1 só caçador; demais 4/2 por paridade ──
+# ── Composição dos comuns: fase 1 só caçador; demais 2/2 por paridade ──
 func test_common_enemy_mix_by_parity() -> void:
 	for phase: int in PHASES:
 		for s: int in SEEDS:
@@ -161,12 +161,12 @@ func test_common_enemy_mix_by_parity() -> void:
 					"comum tem tipo válido (fase %d seed %d): %s" % [phase, s, t])
 				counts[t] += 1
 			if phase == 1:
-				assert_eq(counts["cacador"], 6, "fase 1: 6 caçadores, sem bruxo")
+				assert_eq(counts["cacador"], 4, "fase 1: 4 caçadores, sem bruxo")
 				assert_eq(counts["bruxo"], 0, "fase 1: nenhum bruxo")
 				continue
 			var major := "bruxo" if phase % 2 == 1 else "cacador"
 			var minor := "cacador" if phase % 2 == 1 else "bruxo"
-			assert_eq(counts[major], 4, "fase %d: 4 do tipo majoritário (%s)" % [phase, major])
+			assert_eq(counts[major], 2, "fase %d: 2 do tipo majoritário (%s)" % [phase, major])
 			assert_eq(counts[minor], 2, "fase %d: 2 do tipo minoritário (%s)" % [phase, minor])
 
 # ── Boss sempre distante do jogador (na metade mais longe do mapa) ──
