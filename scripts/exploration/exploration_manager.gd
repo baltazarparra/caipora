@@ -55,6 +55,7 @@ const WALL_TEXTURE := preload("res://assets/sprites/tile_wall.png")
 const FLOOR_TEXTURE_CHURCH := preload("res://assets/sprites/tile_floor_church.png")
 const WALL_TEXTURE_CHURCH := preload("res://assets/sprites/tile_wall_church.png")
 const SHADE_TEXTURE := preload("res://assets/sprites/tile_shade.png")
+const SKELETON_TEXTURE := preload("res://assets/sprites/skeleton_map.png")
 
 # Aura da Caipora pela névoa/casa (= sprite.offset.y(-12) × scale(0.8); x=0).
 const CAIPORA_AURA_OFFSET := Vector2(0, -10)
@@ -192,6 +193,9 @@ func _attach_aura() -> void:
 func _spawn_enemies() -> void:
 	for def: Dictionary in _map.enemies:
 		if def["id"] in GameState.defeated_enemy_ids:
+			if not def["boss"]:
+				var spawn_pos := Vector2i(def["x"], def["y"])
+				_spawn_skeleton_at(GameState.map_enemy_positions.get(def["id"], spawn_pos))
 			continue
 		var spawn := Vector2i(def["x"], def["y"])
 		# Restaura a posição salva no último combate; senão, o spawn do mapa gerado.
@@ -201,6 +205,13 @@ func _spawn_enemies() -> void:
 		enemy.setup(def["id"], pos, def["boss"], def.get("boss_type", ""), spawn,
 			def.get("enemy_type", ""))
 		_map_enemies.append(enemy)
+
+func _spawn_skeleton_at(grid_pos: Vector2i) -> void:
+	var s := Sprite2D.new()
+	s.texture = SKELETON_TEXTURE
+	s.position = Vector2(grid_pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE * 0.5, Constants.TILE_SIZE * 0.5)
+	s.z_index = -1
+	_objects_container.add_child(s)
 
 func _spawn_objects() -> void:
 	# Decoração temática (tipos determinísticos da paleta da fase).
