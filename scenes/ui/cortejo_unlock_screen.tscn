@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cortejo_unlock_screen"]
+
+[ext_resource type="Script" path="res://scripts/ui/cortejo_unlock_screen.gd" id="1_cortejo"]
+
+[node name="CortejoUnlockScreen" type="CanvasLayer"]
+script = ExtResource("1_cortejo")

@@ -103,6 +103,14 @@ const STRINGS: Dictionary = {
 	&"dlg.jesuita.intro.1":     "converted them all with mirrors and holy water. the forest belongs to the vatican.",
 	&"dlg.jesuita.intro.2":     "your saints became mulch in my woods.",
 
+	# Cortejo dos Encantados — post-boss unlock screen
+	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
+	&"cortejo.unlock.subtitle.first":  "OBTAINED!",
+	&"cortejo.unlock.subtitle.hit":    "STRIKE UNLOCKED!",
+	&"cortejo.unlock.desc.first":      "Charge your attack to chain sacred strikes.",
+	&"cortejo.unlock.desc.hit":        "The Cortejo now chains %d strikes.",
+	&"cortejo.unlock.hint":            "press to continue",
+
 	# Hub Manager — arrival rites
 	&"rite.1":                  "the mula rests. her fire is yours now.",
 	&"rite.2":                  "the boitatá's light circles the clearing. nothing gets through.",

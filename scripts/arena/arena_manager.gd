@@ -8,6 +8,7 @@ extends Node2D
 
 const BOSS_BUBBLE_COLOR := Constants.COLOR_BUBBLE_BOSS
 const BOSS_BUBBLE_SPREAD_MIN: float = 90.0
+const CORTEJO_UNLOCK_SCENE := preload("res://scenes/ui/cortejo_unlock_screen.tscn")
 
 # Enquadramento por orientação (palco, retângulo de ação e posição dos atores)
 # vive em ArenaFraming (helper puro): retrato aproxima os atores e estreita o
@@ -200,9 +201,11 @@ func _run_victory_outro() -> void:
 	if is_instance_valid(layer):
 		layer.queue_free()
 
-func _play_killing_blow_zoom() -> void:
+func _play_killing_blow_zoom(combo_step: int = 0) -> void:
 	_killing_blow_zoom_base = _camera.zoom.x
-	var target_zoom := minf(_killing_blow_zoom_base * 1.5, 2.0)
+	# Streak alto aproxima mais a câmera no golpe final: o clímax escala com a escada.
+	var zoom_factor := 1.5 + combo_step * Constants.COMBO_ZOOM_BONUS_PER_STEP
+	var target_zoom := minf(_killing_blow_zoom_base * zoom_factor, 2.0)
 	var tween := create_tween()
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_SINE)
@@ -419,22 +422,25 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble_b.burst_success()
+		_feedback.track_perfect(true)
+		var step := _feedback.combo_step()
+		SignalBus.attack_result_perfect.emit()
 		var damage := _caipora.execute_attack(false)
 		var is_killing_blow := damage >= _enemy.health.current_health
 		if is_killing_blow:
-			_sfx.play_outcome(SfxSystem.Outcome.CRIT)
+			_sfx.play_outcome(SfxSystem.Outcome.CRIT, step)
 			_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
 			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
-			await _play_killing_blow_zoom()
+			await _play_killing_blow_zoom(step)
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
-		_sfx.play_outcome(SfxSystem.Outcome.CRIT)
-		_feedback.trigger_screenshake(22.0, 0.5)
+		_sfx.play_outcome(SfxSystem.Outcome.CRIT, step)
+		_feedback.trigger_screenshake(22.0 * Constants.combo_scale(step), 0.5)
 		_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
-		_feedback.trigger_hit_stop(4)
+		_feedback.trigger_hit_stop(4 + Constants.combo_hitstop_bonus(step))
 		_animator.strike(_caipora)
 	else:
 		_timing_bubble.burst_fail()
@@ -443,6 +449,8 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.trigger_screenshake(6.0, 0.18)
 		_sfx.play_outcome(SfxSystem.Outcome.MISS)
 		_animator.settle(_caipora)
+		_feedback.track_perfect(false)
+		SignalBus.attack_result_miss.emit()
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -453,25 +461,28 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 	_timing_system.timing_result.disconnect(_on_attack_timing_result)
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
+		# Conta o golpe atual ANTES de ler o passo: a escada já reflete este perfeito.
+		_feedback.track_perfect(true)
+		var step := _feedback.combo_step()
+		SignalBus.attack_result_perfect.emit()
 		var damage := _caipora.execute_attack(true)
 		var is_killing_blow := damage >= _enemy.health.current_health
 		if is_killing_blow:
-			_sfx.play_outcome(SfxSystem.Outcome.CRIT)
+			_sfx.play_outcome(SfxSystem.Outcome.CRIT, step)
 			_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
-			await _play_killing_blow_zoom()
+			await _play_killing_blow_zoom(step)
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
-		_sfx.play_outcome(SfxSystem.Outcome.CRIT)
-		_feedback.trigger_screenshake(26.0, 0.55)
+		_sfx.play_outcome(SfxSystem.Outcome.CRIT, step)
+		_feedback.trigger_screenshake(26.0 * Constants.combo_scale(step), 0.55)
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_TELEGRAPH_ENEMY)
 		_feedback.spawn_critical_particles(_enemy.position)
-		_feedback.trigger_hit_stop(6)
+		_feedback.trigger_hit_stop(6 + Constants.combo_hitstop_bonus(step))
 		_animator.strike(_caipora)
 		_feedback.spawn_result_label(&"critico", _timing_bubble.position + Vector2(0, -55))
-		_feedback.track_perfect(true)
 	else:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
@@ -480,6 +491,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_animator.settle(_caipora)
 		_feedback.spawn_result_label(&"errou", _timing_bubble.position + Vector2(0, -55))
 		_feedback.track_perfect(false)
+		SignalBus.attack_result_miss.emit()
 	if _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
@@ -546,15 +558,16 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	_animator.play_pose(_enemy, &"idle")
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
+		_feedback.track_perfect(true)
+		var step := _feedback.combo_step()
 		_caipora.dodge_performed.emit()
-		_sfx.play_outcome(SfxSystem.Outcome.DODGE)
-		_feedback.trigger_screenshake(22.0, 0.5)
+		_sfx.play_outcome(SfxSystem.Outcome.DODGE, step)
+		_feedback.trigger_screenshake(22.0 * Constants.combo_scale(step), 0.5)
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_PARTICLE_DODGE)
 		_feedback.spawn_dodge_particles(_caipora.position)
-		_feedback.trigger_hit_stop(5)
+		_feedback.trigger_hit_stop(5 + Constants.combo_hitstop_bonus(step))
 		_animator.perfect_dodge(_caipora)
 		_feedback.spawn_result_label(&"perfeito", _timing_bubble.position + Vector2(0, -55))
-		_feedback.track_perfect(true)
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
@@ -571,6 +584,8 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_fail_particles(_timing_bubble.position)
 		_feedback.spawn_blood_particles(_caipora.position)
 		_feedback.trigger_hit_stop(2)
+		# Levar dano quebra a sequência de perfeitos: o streak é "sem sangrar".
+		_feedback.track_perfect(false)
 
 func _on_enemy_pattern_finished() -> void:
 	if not _combat_over and _both_alive():
@@ -715,10 +730,19 @@ func _on_actor_died(actor: CombatActor) -> void:
 	# Watchdog: rede de segurança que garante a transição caso o caminho normal abaixo
 	# seja preemptado por algum motivo. _do_screen_change é idempotente, então o primeiro
 	# a disparar vence. (NÃO cobre engine-halt — ver plano.)
-	# 4.0s: outro de vitória (~2.5s) + 0.6s wait + margem de segurança.
-	get_tree().create_timer(4.0, true).timeout.connect(_do_screen_change.bind(next_screen, caipora_won))
+	# Bosses P1–P4 mostram a tela de unlock do Cortejo (aguarda input do jogador): 60s.
+	# Demais casos: 4.0s (outro de vitória ~2.5s + 0.6s wait + margem).
+	var _watchdog_delay: float = 60.0 if (caipora_won and GameState.active_combat_is_boss and GameState.active_phase in MetaProgression.FREEABLE_BOSS_PHASES) else 4.0
+	get_tree().create_timer(_watchdog_delay, true).timeout.connect(_do_screen_change.bind(next_screen, caipora_won))
 	if caipora_won:
 		await _run_victory_outro()
+		# Tela de unlock do Cortejo: apenas encantados P1–P4 (Jesuíta não é freeable).
+		if GameState.active_combat_is_boss and GameState.active_phase in MetaProgression.FREEABLE_BOSS_PHASES:
+			var unlock: CortejoUnlockScreen = CORTEJO_UNLOCK_SCENE.instantiate()
+			get_tree().root.add_child(unlock)
+			unlock.start(MetaProgression.freed_bosses.size())
+			await unlock.dismissed
+			unlock.queue_free()
 	await get_tree().create_timer(0.6).timeout
 	_do_screen_change(next_screen, caipora_won)
 

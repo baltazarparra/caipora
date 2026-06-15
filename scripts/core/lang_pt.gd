@@ -102,6 +102,14 @@ const STRINGS: Dictionary = {
 	&"dlg.jesuita.intro.1":     "converti todos eles com espelhos e água benta. a floresta pertence ao vaticano.",
 	&"dlg.jesuita.intro.2":     "teus santos viram húmus na minha mata.",
 
+	# Cortejo dos Encantados — tela de unlock pós-boss
+	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
+	&"cortejo.unlock.subtitle.first":  "OBTIDO!",
+	&"cortejo.unlock.subtitle.hit":    "GOLPE LIBERADO!",
+	&"cortejo.unlock.desc.first":      "Carregue o ataque para encadear golpes sagrados.",
+	&"cortejo.unlock.desc.hit":        "O Cortejo agora encadeia %d golpes.",
+	&"cortejo.unlock.hint":            "pressione para continuar",
+
 	# Hub Manager — ritos de chegada
 	&"rite.1":                  "a mula descansa. o fogo dela é teu agora.",
 	&"rite.2":                  "a luz do boitatá ronda a clareira. nada atravessa.",
