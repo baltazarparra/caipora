@@ -50,7 +50,7 @@ var map_enemy_positions: Dictionary = {}
 func start_run() -> void:
 	run_active = true
 	active_phase = 1
-	defeated_enemy_ids.assign(MetaProgression.permanently_defeated_enemies)
+	defeated_enemy_ids.clear()  # inimigos renascem a cada run (sem persistência entre runs)
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
 	active_combat_keeps_own_hp = false
