@@ -388,8 +388,9 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 
 func _open_chest() -> void:
 	GameState.chest_opened = true
-	GameState.caipora_max_hp += 1
-	GameState.caipora_current_hp = mini(GameState.caipora_current_hp + 1, GameState.caipora_max_hp)
+	var bonus: int = phase  # Fase 1 → +1, Fase 2 → +2, ... escala com a fase atual
+	GameState.caipora_max_hp += bonus
+	GameState.caipora_current_hp = mini(GameState.caipora_current_hp + bonus, GameState.caipora_max_hp)
 	SignalBus.caipora_health_changed.emit(GameState.caipora_current_hp, GameState.caipora_max_hp)
 	SignalBus.chest_opened.emit()
 	if _chest_node != null:

@@ -73,6 +73,10 @@ func advance_phase_via_hub(next_exploration: SignalBus.Screen) -> void:
 	pending_exploration = next_exploration
 	player_map_pos = Vector2i(-1, -1)
 	map_enemy_positions.clear()
+	# Cada fase tem seu próprio baú + chave: zera a posse para a fase nova spawnar
+	# e abrir o baú de novo (sem isso os flags ficariam presos em true).
+	has_key = false
+	chest_opened = false
 	change_screen(SignalBus.Screen.HUB)
 
 ## Seed determinística do mapa de uma fase nesta run. Mesma run+fase → mesmo mapa,

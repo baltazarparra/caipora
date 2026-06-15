@@ -133,15 +133,12 @@ func test_seed_variation() -> void:
 		assert_ne(a.rows(), b.rows(),
 			"seeds diferentes → mapas diferentes (fase %d)" % phase)
 
-# ── Baú/chave só existem quando a config pede ──
-func test_chest_key_only_when_configured() -> void:
-	var m1 := _gen(1, 5)  # Fase 1 tem baú + chave
-	assert_ne(m1.chest_pos, Vector2i(-1, -1), "fase 1 tem baú")
-	assert_ne(m1.key_pos, Vector2i(-1, -1), "fase 1 tem chave")
-	for phase: int in [2, 3, 4]:
+# ── Toda fase (1–5) tem baú + chave ──
+func test_chest_key_in_every_phase() -> void:
+	for phase: int in [1, 2, 3, 4, 5]:
 		var m := _gen(phase, 5)
-		assert_eq(m.chest_pos, Vector2i(-1, -1), "fase %d sem baú" % phase)
-		assert_eq(m.key_pos, Vector2i(-1, -1), "fase %d sem chave" % phase)
+		assert_ne(m.chest_pos, Vector2i(-1, -1), "fase %d tem baú" % phase)
+		assert_ne(m.key_pos, Vector2i(-1, -1), "fase %d tem chave" % phase)
 
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
@@ -203,17 +200,18 @@ func test_at_least_one_enemy_near_boss() -> void:
 					near += 1
 			assert_gte(near, 1, "ao menos 1 guarda perto do boss (fase %d seed %d)" % [phase, s])
 
-# ── Baú e chave: longe do jogador e longe um do outro ──
+# ── Baú e chave: longe do jogador e longe um do outro (toda fase, toda topologia) ──
 func test_chest_key_distant() -> void:
-	for s: int in SEEDS:
-		var m := _gen(1, s)  # só a fase 1 tem baú/chave
-		var dist := m.reachable_from(m.player_start)
-		assert_gte(int(dist.get(m.chest_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
-			"baú longe do spawn (seed %d)" % s)
-		assert_gte(int(dist.get(m.key_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
-			"chave longe do spawn (seed %d)" % s)
-		assert_gte(_manhattan(m.chest_pos, m.key_pos), MapGenerator.CHEST_KEY_MIN_SEPARATION,
-			"baú e chave separados (seed %d)" % s)
+	for phase: int in [1, 2, 3, 4, 5]:
+		for s: int in SEEDS:
+			var m := _gen(phase, s)
+			var dist := m.reachable_from(m.player_start)
+			assert_gte(int(dist.get(m.chest_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
+				"baú longe do spawn (fase %d seed %d)" % [phase, s])
+			assert_gte(int(dist.get(m.key_pos, 0)), MapGenerator.CHEST_KEY_MIN_PLAYER_DIST,
+				"chave longe do spawn (fase %d seed %d)" % [phase, s])
+			assert_gte(_manhattan(m.chest_pos, m.key_pos), MapGenerator.CHEST_KEY_MIN_SEPARATION,
+				"baú e chave separados (fase %d seed %d)" % [phase, s])
 
 # ── Decorações: quantidade certa, em chão livre, sem sobrepor entidades ──
 func test_decorations_valid() -> void:
