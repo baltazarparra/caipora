@@ -268,8 +268,12 @@ const COLOR_PARTICLE_FAIL := Color(0.20, 0.18, 0.22, 0.9) # estilhaço de erro (
 # modulate da fase reduz de volta e o feedback renderiza na sua cor autoral.
 # Fase 3 (Curupira): recíproco do CanvasModulate de scenes/arena/arena_phase3.tscn
 # Color(0.18, 0.45, 0.22) → se aquele modulate mudar, atualize este valor.
+# Fase 4 (Saci): recíproco do CanvasModulate de scenes/arena/arena_phase4.tscn
+# Color(0.4, 0.16, 0.07) — a casa em chamas escurece tudo na layer 0 e afogava
+# as setas de feedback em laranja/sangue. O ganho restaura a cor autoral (legível).
 const FEEDBACK_GAIN_BY_PHASE: Dictionary = {
 	3: Color(1.0 / 0.18, 1.0 / 0.45, 1.0 / 0.22),
+	4: Color(1.0 / 0.4, 1.0 / 0.16, 1.0 / 0.07),
 }
 
 ## Ganho de cor dos feedbacks para a fase. Identidade (1,1,1) quando a fase não
