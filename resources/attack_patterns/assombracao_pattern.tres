@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Mãos do Além"
+audio_event = "mv_maos_alem"
+vfx_id = "maos_alem"
 idle_duration = 0.1
 wind_up_duration = 0.35
 attack_duration = 0.9

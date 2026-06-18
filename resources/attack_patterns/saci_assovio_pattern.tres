@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Assovio do Mato"
+audio_event = "mv_assovio_mato"
+vfx_id = "assovio_mato"
 idle_duration = 0.0
 wind_up_duration = 0.85
 attack_duration = 0.4

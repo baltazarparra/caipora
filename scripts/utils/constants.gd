@@ -106,6 +106,14 @@ const CORTEJO_WINDOW_BASE: float = 0.78
 # Custo do erro: multiplicador do contra-ataque (1.0 = um golpe inteiro do inimigo).
 const CORTEJO_MISS_COUNTER_MULT: float = 1.0
 
+# ─── Golpes nomeados da Caipora (PRD docs/PRD-moves-nomeados.md) ────────────
+# Poucos e fixos (a Caipora não tem catálogo de .tres): nome + som (sfx/<audio>.wav,
+# via SfxSystem.play_named) + vfx (FeedbackSystem._VFX_BY_ID). audio "" = sem som
+# próprio (Cortejo já soa pelo Batuque/play_cortejo_*). Espelha os mv_* do gen_sfx.
+const CAIPORA_MOVE_NORMAL := {"name": "Garra Rubra", "audio": "mv_garra_rubra", "vfx": "garra_rubra"}
+const CAIPORA_MOVE_DOUBLE := {"name": "Açoite do Cipó", "audio": "mv_acoite_cipo", "vfx": "acoite_cipo"}
+const CAIPORA_MOVE_CORTEJO := {"name": "Batuque do Cortejo", "audio": "", "vfx": "batuque_cortejo"}
+
 ## Espíritos da barragem a partir das fases libertadas: ordenadas e cortadas no teto.
 ## Seam puro/testável: a arena lê isto para a barragem e para o cálculo de dano.
 static func cortejo_spirits_for(freed: Array[int]) -> Array[int]:

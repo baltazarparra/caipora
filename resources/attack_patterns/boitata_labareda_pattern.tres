@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Labareda Viva"
+audio_event = "mv_labareda_viva"
+vfx_id = "labareda_viva"
 idle_duration = 0.0
 wind_up_duration = 0.4
 attack_duration = 0.85

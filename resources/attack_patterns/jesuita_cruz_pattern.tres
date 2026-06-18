@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Catequese"
+audio_event = "mv_catequese"
+vfx_id = "catequese"
 idle_duration = 0.0
 wind_up_duration = 0.35
 attack_duration = 0.7

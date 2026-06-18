@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Galope sem Cabeça"
+audio_event = "mv_galope_sem_cabeca"
+vfx_id = "galope_sem_cabeca"
 idle_duration = 0.0
 wind_up_duration = 0.4
 attack_duration = 0.85

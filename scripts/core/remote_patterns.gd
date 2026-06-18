@@ -87,6 +87,12 @@ func apply(pattern: AttackPattern) -> AttackPattern:
 		return pattern
 	var ov: Dictionary = _overrides[key]
 	var p: AttackPattern = pattern.duplicate() as AttackPattern
+	# Identidade do golpe (PRD moves nomeados): nome e som são editáveis ao vivo;
+	# vfx_id fica baked (não sobreposto remotamente).
+	if ov.has("display_name"):
+		p.display_name = String(ov["display_name"])
+	if ov.has("audio_event"):
+		p.audio_event = String(ov["audio_event"])
 	if ov.has("wind_up_duration"):
 		p.wind_up_duration = float(ov["wind_up_duration"])
 	if ov.has("attack_duration"):
@@ -157,6 +163,11 @@ func _sanitize(raw: Dictionary) -> Dictionary:
 			"strike_delay": float(d.get("strike_delay", 0.0)),
 			"damage_multiplier": damage_multiplier,
 		}
+		# Identidade do golpe: strings passam adiante (senão o override as descarta).
+		if d.has("display_name"):
+			entry["display_name"] = String(d["display_name"])
+		if d.has("audio_event"):
+			entry["audio_event"] = String(d["audio_event"])
 		if d.has("input_sequence") and d["input_sequence"] is Array:
 			var seq: Array[String] = []
 			for s: Variant in (d["input_sequence"] as Array):

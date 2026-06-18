@@ -995,3 +995,11 @@ aqui qualquer bug descoberto (mesmo não relacionado) antes de seguir. IDs no fo
 - **Feedback é rei:** Cada ação deve ser satisfatória. Priorize juice sobre conteúdo.
 - **Save often:** Use commits do git como checkpoints. O agente deve commitar após cada task bem-sucedida.
 - **Tom:** Nunca suavize o horror. A floresta é hostil. A Caipora é perigosa. O sangue é real.
+
+### 13.1 Moves nomeados (modelo Pokémon)
+
+Cada sequência de ataque (24 inimigas + golpes da Caipora) tem **nome, som e VFX
+próprios**. Catálogo/fonte única: `docs/PRD-moves-nomeados.md`. A identidade aparece
+1x por turno (tag sutil de nome + som + VFX), **sem** banner central — a leitura do
+golpe vem do som/visual, não de texto, preservando o combate reativo (estilo
+Expedition 33). Detalhes do seam: gotcha #17 do `AGENTS.md`.

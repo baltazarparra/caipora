@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Dilacerar"
+audio_event = "mv_dilacerar"
+vfx_id = "dilacerar"
 idle_duration = 0.0
 wind_up_duration = 0.25
 attack_duration = 1.0

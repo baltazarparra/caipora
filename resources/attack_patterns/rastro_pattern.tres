@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Procissão das Almas"
+audio_event = "mv_procissao_almas"
+vfx_id = "procissao_almas"
 idle_duration = 0.2
 wind_up_duration = 0.5
 attack_duration = 0.7

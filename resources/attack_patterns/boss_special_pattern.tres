@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Frenesi"
+audio_event = "mv_frenesi"
+vfx_id = "frenesi"
 idle_duration = 0.2
 wind_up_duration = 0.5
 attack_duration = 1.0

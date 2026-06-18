@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Coice em Brasa"
+audio_event = "mv_coice_brasa"
+vfx_id = "coice_brasa"
 idle_duration = 0.0
 wind_up_duration = 0.5
 attack_duration = 0.85

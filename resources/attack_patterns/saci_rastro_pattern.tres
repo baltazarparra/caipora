@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Ventania"
+audio_event = "mv_ventania"
+vfx_id = "ventania"
 idle_duration = 0.2
 wind_up_duration = 0.5
 attack_duration = 0.65

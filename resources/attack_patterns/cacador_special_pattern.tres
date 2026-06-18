@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Emboscada"
+audio_event = "mv_emboscada"
+vfx_id = "emboscada"
 idle_duration = 0.0
 wind_up_duration = 0.4
 attack_duration = 0.85

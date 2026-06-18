@@ -5,6 +5,15 @@ extends Resource
 ## Salvo como .tres e consumido pela EnemyStateMachine — permite criar novos
 ## padrões (Criatura, Boss, futuros inimigos) sem tocar em código.
 
+## Identidade do golpe (PRD docs/PRD-moves-nomeados.md, modelo Pokémon).
+## display_name: nome exibido no banner de combate (Fase 2). Vazio = sem banner.
+## audio_event: stem do WAV em sfx/ tocado por SfxSystem.play_named (Fase 3). Vazio = som genérico.
+## vfx_id: id do efeito visual por golpe (Fase 4). Baked — NÃO entra no override remoto.
+## display_name/audio_event são sobreponíveis por RemotePatterns; vfx_id não.
+@export var display_name: String = ""
+@export var audio_event: String = ""
+@export var vfx_id: String = ""
+
 @export var idle_duration: float = 0.3
 @export var wind_up_duration: float = 0.5
 @export var attack_duration: float = 1.0

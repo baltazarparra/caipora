@@ -100,6 +100,40 @@ func test_action_window_below_min_is_dropped() -> void:
 	assert_false(patched.action_windows.has("1"), "janela < TIMING_WINDOW_MIN é descartada no sanitize")
 	assert_true(patched.action_windows.has("2"), "janela válida sobrevive")
 
+func test_baked_identity_fields_present() -> void:
+	# Fase 1: os .tres carregam nome/som/vfx do PRD moves nomeados.
+	var pirulito := load(SACI_PIRULITO) as AttackPattern
+	assert_eq(pirulito.display_name, "Travessura", "display_name baked no .tres")
+	assert_eq(pirulito.audio_event, "mv_travessura", "audio_event baked no .tres")
+	assert_eq(pirulito.vfx_id, "travessura", "vfx_id baked no .tres")
+
+func test_identity_override_applies() -> void:
+	RemotePatterns._set_overrides_for_test({
+		"saci_pirulito_pattern": {
+			"attack_duration": 0.5,
+			"strike_count": 1,
+			"damage_multiplier": 2.0,
+			"display_name": "Outro Nome",
+			"audio_event": "mv_outro",
+		},
+	})
+	var patched := RemotePatterns.apply(load(SACI_PIRULITO) as AttackPattern)
+	assert_eq(patched.display_name, "Outro Nome", "display_name do override vence")
+	assert_eq(patched.audio_event, "mv_outro", "audio_event do override vence")
+
+func test_vfx_id_is_not_remote_overridable() -> void:
+	# vfx_id fica baked: nem o sanitize nem o apply propagam o valor remoto.
+	RemotePatterns._set_overrides_for_test({
+		"saci_pirulito_pattern": {
+			"attack_duration": 0.5,
+			"strike_count": 1,
+			"damage_multiplier": 2.0,
+			"vfx_id": "hackeado",
+		},
+	})
+	var patched := RemotePatterns.apply(load(SACI_PIRULITO) as AttackPattern)
+	assert_eq(patched.vfx_id, "travessura", "vfx_id permanece o baked, ignorando o override")
+
 func test_transition_window_global() -> void:
 	RemotePatterns._set_overrides_for_test({
 		"__global__": {"transition_window": 0.8},

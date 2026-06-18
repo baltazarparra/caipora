@@ -258,6 +258,147 @@ func spawn_result_label(label_key: StringName, at_position: Vector2) -> void:
 	tw.chain().tween_property(sprite, "modulate:a", 0.0, 0.18)
 	tw.chain().tween_callback(sprite.queue_free)
 
+# ─── Nome do golpe (tag sutil) ─────────────────────
+## Nome do golpe (PRD moves nomeados) como tag SUTIL e periférica, ancorada no
+## inimigo — longe da bolha de timing (que fica sobre a Caipora). É identidade,
+## não interrupção: combate reativo (modelo Expedition 33) não pode perder o foco.
+## Por isso cor apagada + alpha baixo + fade rápido; o contorno garante leitura sob
+## o CanvasModulate escuro (gotcha #13) sem precisar de preenchimento berrante.
+const MOVE_NAME_FONT: String = "res://assets/fonts/PressStart2P.ttf"
+const MOVE_NAME_SIZE: int = 10
+const MOVE_NAME_COLOR: Color = Color(0.82, 0.78, 0.72)  # cinza-osso apagado
+const MOVE_NAME_ALPHA: float = 0.5
+
+func spawn_move_name(text: String, at_position: Vector2) -> void:
+	if text.strip_edges().is_empty():
+		return
+	var font: Font = load(MOVE_NAME_FONT)
+	if font == null:
+		return
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_override("font", font)
+	label.add_theme_font_size_override("font_size", MOVE_NAME_SIZE)
+	label.add_theme_constant_override("outline_size", 4)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.z_index = 5  # abaixo dos rótulos de resultado (z=20) e da bolha
+	# Label ancora no canto superior-esquerdo: centraliza pela largura medida.
+	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, MOVE_NAME_SIZE).x
+	label.position = at_position - Vector2(w * 0.5, 0)
+	var base := _g(MOVE_NAME_COLOR)
+	label.modulate = Color(base.r, base.g, base.b, 0.0)
+	if not _attach_to_scene(label):
+		return
+	var tw := create_tween()
+	# Fade-in suave, leve deriva pra cima, hold curto, fade-out — calmo, sem pop.
+	tw.tween_property(label, "modulate:a", MOVE_NAME_ALPHA, 0.12)
+	tw.parallel().tween_property(label, "position:y", label.position.y - 10.0, 0.9)
+	tw.tween_interval(0.2)
+	tw.tween_property(label, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(label.queue_free)
+
+# ─── VFX por golpe (moves nomeados, PRD) ───────────
+## Identidade VISUAL por golpe construída EM CÓDIGO (padrão FuriaVisual) — sem .tscn
+## nem folha PNG nova, leve p/ browser e dentro da paleta fechada. Cada vfx_id escolhe
+## um arquétipo de partícula + uma cor. NÃO substitui os VFX de resultado (hit/dodge);
+## é o "cara" do golpe, emanado do inimigo no início do turno.
+## Arquétipos: forma/movimento da família do golpe.
+const _VFX_ARCH := {
+	&"slash":  {"dir": Vector2(0, -1), "spread": 180.0, "vmin": 90.0, "vmax": 220.0, "grav": Vector2(0, 140), "life": 0.34, "amount": 14, "smin": 1.0, "smax": 2.2, "additive": false},
+	&"fire":   {"dir": Vector2(0, -1), "spread": 30.0,  "vmin": 40.0, "vmax": 120.0, "grav": Vector2(0, -40), "life": 0.45, "amount": 18, "smin": 1.4, "smax": 3.0, "additive": true},
+	&"wind":   {"dir": Vector2(1, 0),  "spread": 18.0,  "vmin": 140.0, "vmax": 300.0, "grav": Vector2(0, 0),  "life": 0.30, "amount": 12, "smin": 1.0, "smax": 2.0, "additive": true},
+	&"ghost":  {"dir": Vector2(0, -1), "spread": 60.0,  "vmin": 12.0, "vmax": 50.0,  "grav": Vector2(0, -12), "life": 0.70, "amount": 12, "smin": 1.6, "smax": 3.2, "additive": true},
+	&"holy":   {"dir": Vector2(0, -1), "spread": 180.0, "vmin": 60.0, "vmax": 160.0, "grav": Vector2(0, 0),   "life": 0.40, "amount": 16, "smin": 1.2, "smax": 2.4, "additive": true},
+	&"impact": {"dir": Vector2(0, -1), "spread": 180.0, "vmin": 70.0, "vmax": 200.0, "grav": Vector2(0, 70),  "life": 0.32, "amount": 16, "smin": 1.2, "smax": 2.6, "additive": false},
+}
+## vfx_id (PRD) -> [arquétipo, cor]. Cor da paleta fechada (constants.gd); overbright
+## (>1) é intencional p/ glow aditivo. Mantido em sync com o PRD e os .tres.
+const _VFX_BY_ID := {
+	# Assombração — espectral azul-pálido
+	&"assovio_cova":      [&"ghost",  Color(0.70, 0.85, 1.00)],
+	&"maos_alem":         [&"ghost",  Color(0.70, 0.85, 1.00)],
+	&"procissao_almas":   [&"ghost",  Color(0.70, 0.85, 1.00)],
+	# Criatura — sangue/carne
+	&"dilacerar":         [&"slash",  Color(0.545, 0.0, 0.0)],
+	&"mordida_dobrada":   [&"slash",  Color(0.545, 0.0, 0.0)],
+	&"furia_carnica":     [&"slash",  Color(1.40, 0.30, 0.10)],
+	&"investida":         [&"impact", Color(1.00, 0.42, 0.0)],
+	&"esmaga_ossos":      [&"impact", Color(0.78, 0.74, 0.62)],
+	&"frenesi":           [&"slash",  Color(0.545, 0.0, 0.0)],
+	# Mula — jato de fogo
+	&"galope_sem_cabeca": [&"fire",   Color(2.00, 0.55, 0.10)],
+	&"coice_brasa":       [&"fire",   Color(1.00, 0.55, 0.05)],
+	# Boitatá — chama
+	&"brasa_rasteira":    [&"fire",   Color(1.00, 0.55, 0.05)],
+	&"labareda_viva":     [&"fire",   Color(2.00, 0.70, 0.15)],
+	&"fogo_fatuo":        [&"fire",   Color(1.20, 1.30, 0.90)],
+	&"cobra_fogo":        [&"fire",   Color(1.60, 1.50, 1.10)],
+	# Curupira — verde-mata
+	&"pe_virado":         [&"wind",   Color(0.10, 1.50, 0.35)],
+	&"trilha_falsa":      [&"wind",   Color(0.10, 1.50, 0.35)],
+	# Saci — vento/poeira
+	&"assovio_mato":      [&"wind",   Color(0.85, 0.95, 1.00)],
+	&"redemoinho":        [&"wind",   Color(1.60, 1.20, 0.50)],
+	&"travessura":        [&"wind",   Color(1.00, 0.42, 0.0)],
+	&"ventania":          [&"wind",   Color(0.90, 0.95, 1.00)],
+	# Jesuíta — ouro de incenso / branco sacro
+	&"catequese":         [&"holy",   Color(1.70, 1.40, 0.60)],
+	&"espada_fe":         [&"holy",   Color(1.80, 1.70, 1.20)],
+	# Caçador — clarão de cano
+	&"emboscada":         [&"impact", Color(1.00, 0.42, 0.0)],
+	# Caipora — garra laranja / cipó verde / Cortejo (espíritos verde-dourados)
+	&"garra_rubra":       [&"slash",  Color(1.00, 0.27, 0.0)],
+	&"acoite_cipo":       [&"wind",   Color(0.40, 1.20, 0.30)],
+	&"batuque_cortejo":   [&"ghost",  Color(0.60, 1.40, 0.80)],
+}
+
+## Dispara o VFX de identidade de um golpe em `at_position`. vfx_id desconhecido ou
+## vazio = no-op silencioso (degrada para o combate sem VFX próprio).
+func spawn_attack_vfx(vfx_id: String, at_position: Vector2) -> void:
+	if vfx_id.is_empty():
+		return
+	var entry: Variant = _VFX_BY_ID.get(StringName(vfx_id), null)
+	if entry == null:
+		return
+	var params: Variant = _VFX_ARCH.get(entry[0], null)
+	if params == null:
+		return
+	var burst := _make_attack_burst(params, entry[1])
+	burst.position = at_position
+	if not _attach_to_scene(burst):
+		return
+	# One-shot: libera exatamente quando a última partícula morre (sem TTL chutado).
+	burst.finished.connect(burst.queue_free)
+
+func _make_attack_burst(p: Dictionary, col: Color) -> CPUParticles2D:
+	var vp := get_viewport().get_visible_rect().size
+	var ps: float = Constants.particle_amount_scale(vp)  # budget de aparelho fraco
+	var pa := CPUParticles2D.new()
+	pa.one_shot = true
+	pa.explosiveness = 0.85
+	pa.amount = maxi(3, int(float(p["amount"]) * ps))
+	pa.lifetime = float(p["life"])
+	pa.direction = p["dir"]
+	pa.spread = float(p["spread"])
+	pa.gravity = p["grav"]
+	pa.initial_velocity_min = float(p["vmin"])
+	pa.initial_velocity_max = float(p["vmax"])
+	pa.scale_amount_min = float(p["smin"])
+	pa.scale_amount_max = float(p["smax"])
+	pa.z_index = 6
+	pa.color = _g(col)
+	# Ramp só de alpha (branco→transparente): a cor vem de pa.color (final = color ×
+	# ramp). Evita dobrar o tom — cor não-overbright (sangue) ficaria escura demais.
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	pa.color_ramp = ramp
+	if bool(p.get("additive", false)):
+		pa.material = Constants.ADDITIVE_MATERIAL
+	pa.emitting = true
+	return pa
+
 # ─── Combo tracker / indicador ────────────────────
 ## Registra acerto/falha. Streak ≥ 2 exibe o multiplicador na tela.
 func track_perfect(is_perfect: bool) -> void:

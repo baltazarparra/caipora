@@ -61,6 +61,25 @@ func test_p1_tactile_assets_exist():
 		assert_true(_sfx.play_named(sound_name),
 			"%s deve existir com geração procedural" % sound_name)
 
+# ─── Moves nomeados: cada audio_event tem um WAV real ──
+func test_every_pattern_audio_event_has_asset():
+	# Trava o elo dado↔asset: todo audio_event preenchido nos .tres resolve para um
+	# sfx/<stem>.wav gerado (gen_sfx --only moves). Pega som faltando antes do runtime.
+	var dir := DirAccess.open("res://resources/attack_patterns")
+	assert_not_null(dir, "pasta de attack_patterns deve existir")
+	var checked := 0
+	for file in dir.get_files():
+		if not file.ends_with(".tres"):
+			continue
+		var pattern := load("res://resources/attack_patterns/%s" % file) as AttackPattern
+		if pattern == null or pattern.audio_event.is_empty():
+			continue
+		var path := "res://assets/audio/sfx/%s.wav" % pattern.audio_event
+		assert_true(ResourceLoader.exists(path),
+			"%s aponta para %s, que deve existir" % [file, path])
+		checked += 1
+	assert_gt(checked, 0, "deve ter checado ao menos um audio_event")
+
 # ─── Áudio v4 Etapa 1: a escada de impacto do combate ──
 func test_combat_outcome_assets_exist():
 	# Os dois sons novos da escada (errou / crítico) com primário + _2/_3.
