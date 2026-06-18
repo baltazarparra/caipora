@@ -368,9 +368,8 @@ func spawn_attack_vfx(vfx_id: String, at_position: Vector2) -> void:
 	burst.position = at_position
 	if not _attach_to_scene(burst):
 		return
-	# One-shot: para de emitir após a vida; libera com margem para a última partícula.
-	var ttl: float = float(params["life"]) + 0.4
-	get_tree().create_timer(ttl).timeout.connect(burst.queue_free)
+	# One-shot: libera exatamente quando a última partícula morre (sem TTL chutado).
+	burst.finished.connect(burst.queue_free)
 
 func _make_attack_burst(p: Dictionary, col: Color) -> CPUParticles2D:
 	var vp := get_viewport().get_visible_rect().size
@@ -388,11 +387,12 @@ func _make_attack_burst(p: Dictionary, col: Color) -> CPUParticles2D:
 	pa.scale_amount_min = float(p["smin"])
 	pa.scale_amount_max = float(p["smax"])
 	pa.z_index = 6
-	var tinted := _g(col)
-	pa.color = tinted
+	pa.color = _g(col)
+	# Ramp só de alpha (branco→transparente): a cor vem de pa.color (final = color ×
+	# ramp). Evita dobrar o tom — cor não-overbright (sangue) ficaria escura demais.
 	var ramp := Gradient.new()
-	ramp.set_color(0, tinted)
-	ramp.set_color(1, Color(tinted.r, tinted.g, tinted.b, 0.0))
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
 	pa.color_ramp = ramp
 	if bool(p.get("additive", false)):
 		pa.material = Constants.ADDITIVE_MATERIAL
