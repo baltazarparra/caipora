@@ -347,9 +347,10 @@ const _VFX_BY_ID := {
 	&"espada_fe":         [&"holy",   Color(1.80, 1.70, 1.20)],
 	# Caçador — clarão de cano
 	&"emboscada":         [&"impact", Color(1.00, 0.42, 0.0)],
-	# Caipora — garra laranja / cipó verde (prontos p/ Fase 5)
+	# Caipora — garra laranja / cipó verde / Cortejo (espíritos verde-dourados)
 	&"garra_rubra":       [&"slash",  Color(1.00, 0.27, 0.0)],
 	&"acoite_cipo":       [&"wind",   Color(0.40, 1.20, 0.30)],
+	&"batuque_cortejo":   [&"ghost",  Color(0.60, 1.40, 0.80)],
 }
 
 ## Dispara o VFX de identidade de um golpe em `at_position`. vfx_id desconhecido ou

@@ -352,7 +352,13 @@ func _start_caipora_turn() -> void:
 		_start_cortejo_turn()
 		return
 	_is_double_attack = randf() < Constants.TIMING_DOUBLE_CHANCE
-	_sfx.play(_sfx.attack_sound)
+	# Identidade do golpe da Caipora (Garra Rubra / Açoite do Cipó): som + tag + VFX,
+	# ancorados NELA (a bolha de timing fica no inimigo). Fallback ao attack_sound.
+	var move: Dictionary = Constants.CAIPORA_MOVE_DOUBLE if _is_double_attack else Constants.CAIPORA_MOVE_NORMAL
+	if not _sfx.play_named(move["audio"]):
+		_sfx.play(_sfx.attack_sound)
+	_feedback.spawn_move_name(move["name"], _caipora.position + Vector2(0, -64.0))
+	_feedback.spawn_attack_vfx(move["vfx"], _caipora.position + Vector2(0, -20.0))
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
 	_animator.play_pose(_caipora, &"windup")
 	_first_bubble_pos = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
@@ -580,6 +586,9 @@ func _end_cortejo() -> void:
 ## slow-mo estica a telegrafia — mesmo padrão do _play_killing_blow_zoom).
 func _cortejo_lead_in() -> void:
 	_sfx.play(_sfx.attack_sound)
+	# Identidade do Cortejo: tag + VFX de espíritos (o som é o Batuque/summon próprio).
+	_feedback.spawn_move_name(Constants.CAIPORA_MOVE_CORTEJO["name"], _caipora.position + Vector2(0, -64.0))
+	_feedback.spawn_attack_vfx(Constants.CAIPORA_MOVE_CORTEJO["vfx"], _caipora.position + Vector2(0, -20.0))
 	_animator.play_pose(_caipora, &"windup")
 	_apparition.begin()
 	AudioDirector.play_cortejo_summon()
