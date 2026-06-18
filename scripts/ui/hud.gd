@@ -2,10 +2,10 @@ class_name Hud
 extends CanvasLayer
 
 # HUD de combate/exploração. Layout coerente e sempre visível, independente da magnitude
-# de HP ou de fragmentos (antes os ícones de HP transbordavam com muito HP e os fragmentos
-# eram "+".repeat(n), estourando a tela):
+# de HP ou de Terra Rara (antes os ícones de HP transbordavam com muito HP e a economia
+# era "+".repeat(n), estourando a tela):
 #
-#   ┌ topo-esq: barra da CAIPORA            topo-dir: ◈ fragmentos   🔊 ┐
+#   ┌ topo-esq: barra da CAIPORA            topo-dir: ◈ Terra Rara   🔊 ┐
 #   │                                                                   │
 #   └              centro (combate): barra do inimigo / boss           ┘
 #
