@@ -41,6 +41,10 @@ var _arena_timing: Node = null
 var _pressed_window: bool = false
 var _captured: Array[Image] = []
 var _cell: Vector2i = Vector2i.ZERO
+## Finisher: marca o frame do golpe final (quando _combat_over vira true e o
+## slow-mo da garra esmagando o coração começa) para amostrar SÓ a partir dele.
+var _death_seen: bool = false
+var _death_frame: int = 0
 
 
 func _initialize() -> void:
@@ -67,6 +71,9 @@ func _process(_delta: float) -> bool:
 
 	_drive_inputs()
 
+	if _clip == "finisher":
+		return _process_finisher()
+
 	var since: int = _frames - _effective_warmup()
 	if since > 0 and since % _sample == 0:
 		_grab_frame()
@@ -90,6 +97,41 @@ func _effective_warmup() -> int:
 		return _warmup
 	# Todos os clipes usam a arena, que tem o loader de intro (~2s) antes do 1º turno.
 	return 165
+
+
+## Captura do GOLPE FINAL: dirige o combate até o inimigo morrer e, no instante da
+## morte (arena seta `_combat_over` antes do slow-mo), passa a amostrar. O finisher
+## roda em câmera lenta (Engine.time_scale 0.25 por 1.4s REAL ~84 frames a 60fps),
+## então o sample padrão 3 enche ~26 células com a garra esmagando o coração. Para
+## ANTES do fade de vitória (que sujaria as últimas células).
+func _process_finisher() -> bool:
+	if not _death_seen:
+		var combat_over: bool = _scene != null and bool(_scene.get("_combat_over"))
+		if _frames > _effective_warmup() and combat_over:
+			_death_seen = true
+			_death_frame = _frames
+		elif _frames > _effective_warmup() + 4000:
+			push_error("[capture] finisher: inimigo não morreu a tempo")
+			quit(1)
+			return true
+		return false
+
+	var since: int = _frames - _death_frame
+	if since > 0 and since % _sample == 0:
+		_grab_frame()
+		if _captured.size() >= _target_frames:
+			_build_strip()
+			print("[capture] finisher: %d frames -> %s" % [_captured.size(), _out])
+			return true
+	# Trava: encerra antes do fade de vitória mesmo com poucos frames.
+	if since > _target_frames * _sample + 30:
+		if _captured.size() >= 2:
+			_build_strip()
+			print("[capture] finisher: parcial %d frames -> %s" % [_captured.size(), _out])
+		else:
+			push_error("[capture] finisher: sem frames")
+		return true
+	return false
 
 
 # ─── Setup (frame 1) ───────────────────────────────────────────────
@@ -116,6 +158,13 @@ func _setup() -> void:
 			gs.active_combat_is_boss = true
 			gs.next_enemy_scene = (load("res://scenes/arena/mula.tscn") as PackedScene)
 			_scene = _instantiate("res://scenes/arena/arena.tscn")
+		"finisher":
+			# Inimigo com POUCO HP: morre no golpe perfeito e dispara o FINISHER — a
+			# garra preta esmagando o coração em câmera lenta (PRD do golpe final).
+			# Dano 1, mas a Caipora está invencível (9999): o foco é o clímax.
+			_override_enemy("cacador", 1, 6)
+			gs.active_combat_is_boss = false
+			_scene = _instantiate("res://scenes/arena/arena.tscn")
 		"furia":
 			# Fúria MÁXIMA (tier 6 — aura de fogo). Os upgrades têm de estar setados
 			# ANTES do add_child: o arena anexa a aura em _apply_furia_visual durante
@@ -136,11 +185,11 @@ func _setup() -> void:
 		_arena_timing = _scene.get_node("TimingSystem")
 
 
-func _override_enemy(id: String, phase: int) -> void:
+func _override_enemy(id: String, phase: int, hp: int = 9999) -> void:
 	var rc: Node = root.get_node_or_null("RemoteConfig")
 	if rc != null and rc.has_method("_set_overrides_for_test"):
 		rc._set_overrides_for_test({
-			"%s@%d" % [id, phase]: {"hp": 9999, "damage": 1},
+			"%s@%d" % [id, phase]: {"hp": hp, "damage": 1},
 		})
 
 

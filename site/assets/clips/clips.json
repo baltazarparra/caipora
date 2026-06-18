@@ -1,9 +1,9 @@
 {
   "boss": {
-    "cell_h": 480,
-    "cell_w": 270,
+    "cell_h": 480.0,
+    "cell_w": 270.0,
     "file": "boss_strip.png",
-    "frames": 36,
+    "frames": 36.0,
     "poster": "boss_strip_poster.png"
   },
   "combat": {
@@ -12,6 +12,13 @@
     "file": "combat_strip.png",
     "frames": 30.0,
     "poster": "combat_strip_poster.png"
+  },
+  "finisher": {
+    "cell_h": 480,
+    "cell_w": 270,
+    "file": "finisher_strip.png",
+    "frames": 26,
+    "poster": "finisher_strip_poster.png"
   },
   "furia": {
     "cell_h": 480.0,

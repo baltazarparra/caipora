@@ -17,6 +17,16 @@
   "clip.furia.short": "Fúria máxima — aura de fogo",
   "clip.boss.short": "Frente a frente com os chefes",
 
+  "climax.tag": "O clímax",
+  "climax.title": "Toda caçada termina em sangue",
+  "climax.lead": "Os dois instantes que selam o destino da mata — capturados direto do jogo.",
+  "climax.finish.kicker": "O golpe final",
+  "climax.finish.title": "A garra que esmaga o coração",
+  "climax.finish.body": "No último golpe, o tempo racha. A garra negra da Caipora atravessa o peito do invasor, agarra o coração e aperta até drenar — em câmera lenta, quadro a quadro. A mata cobra com as próprias mãos.",
+  "climax.choice.kicker": "A escolha final",
+  "climax.choice.title": "Poupar — ou arrancar",
+  "climax.choice.body": "O catequizador tomba sob o vitral da própria igreja. Ele ainda respira. A floresta inteira aguarda a sua resposta: a misericórdia que custa a vida da Caipora, ou o fim que faz a mata seguir respirando. A decisão é só sua.",
+
   "access.tag": "Sem barreiras",
   "access.title": "Um roguelike que roda no seu navegador",
   "access.lead": "Nada de loja, nada de download, nada de espera. Abre o link e a mata já está te esperando — no celular, no tablet ou no computador.",

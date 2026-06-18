@@ -933,6 +933,138 @@ a {
 }
 
 /* --------------------------------------------------------------
+   Clímax — os dois instantes finais, em destaque
+   -------------------------------------------------------------- */
+.climax {
+  padding: var(--section-gap) 1.5rem;
+  background-color: var(--bg-void);
+  border-top: 1px solid var(--blood-line);
+  position: relative;
+}
+
+.climax::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(139, 0, 0, 0.12) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.climax-inner {
+  position: relative;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.climax-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.climax-title {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 4vw, 1.6rem);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  line-height: 1.35;
+  margin-bottom: 1rem;
+}
+
+.climax-lead {
+  max-width: 56ch;
+  margin: 0 auto;
+  color: var(--text-secondary);
+  font-size: 1.0625rem;
+}
+
+.moment {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+  margin-bottom: 4rem;
+}
+
+.moment:last-child {
+  margin-bottom: 0;
+}
+
+.moment-visual {
+  position: relative;
+}
+
+.moment-visual::after {
+  content: '';
+  position: absolute;
+  inset: -1rem;
+  background: radial-gradient(ellipse at center, rgba(255, 69, 0, 0.10) 0%, transparent 65%);
+  z-index: -1;
+}
+
+/* O clipe do golpe final é retrato (9:16) — moldura de "telefone" centralizada. */
+.moment-visual--portrait .clip-frame {
+  width: 100%;
+  max-width: 280px;
+  margin-inline: auto;
+}
+
+/* O still da escolha é paisagem (cena cinematográfica). */
+.clip-frame--still {
+  margin: 0;
+}
+
+.clip-frame--still img {
+  display: block;
+  width: 100%;
+}
+
+/* Selo estático (não é "ao vivo"): sem o ponto piscando. */
+.clip-badge--static::before {
+  animation: none;
+  background: var(--accent-blood);
+  box-shadow: 0 0 8px var(--accent-blood);
+}
+
+.moment-kicker {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-flame);
+  margin-bottom: 0.85rem;
+}
+
+.moment-title {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 3.4vw, 1.35rem);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+
+.moment-body {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 760px) {
+  .moment {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+  /* Still de paisagem ganha mais largura que o texto. */
+  .moment--reverse {
+    grid-template-columns: 1.3fr 1fr;
+  }
+  .moment--reverse .moment-visual {
+    order: 2;
+  }
+}
+
+/* --------------------------------------------------------------
    Galeria
    -------------------------------------------------------------- */
 .gallery {

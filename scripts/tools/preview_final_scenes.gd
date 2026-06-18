@@ -16,6 +16,9 @@ var _out: String = "/tmp/final_scene.png"
 var _scene: String = "res://scenes/ui/final_choice_screen.tscn"
 var _wait: int = 340
 var _choose: String = ""
+## Ganho de exposição (igual capture_clips.gd): a cena roda na web e o jogo é muito
+## escuro (Atmosphere/vinheta). 1.0 = sem ganho (mantém o frame cru do jogo).
+var _gain: float = 1.0
 var _frames: int = 0
 var _inst: Node
 
@@ -29,6 +32,8 @@ func _initialize() -> void:
 			_wait = int(arg.substr("--frames=".length()))
 		elif arg.begins_with("--choose="):
 			_choose = arg.substr("--choose=".length())
+		elif arg.begins_with("--gain="):
+			_gain = maxf(1.0, arg.substr("--gain=".length()).to_float())
 	var packed: PackedScene = load(_scene)
 	_inst = packed.instantiate()
 	root.add_child(_inst)
@@ -44,7 +49,22 @@ func _process(_delta: float) -> bool:
 		_inst._enable_buttons()
 		_inst._choose(_choose == "sim")
 	if _frames >= _wait:
-		root.get_texture().get_image().save_png(_out)
+		var img: Image = root.get_texture().get_image()
+		if _gain != 1.0:
+			_apply_gain(img)
+		img.save_png(_out)
 		print("[preview] saved ", _out)
 		return true
 	return false
+
+## Multiplica RGB pelo ganho (preto continua preto; o que está iluminado sobe).
+func _apply_gain(img: Image) -> void:
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c: Color = img.get_pixel(x, y)
+			c.r = minf(c.r * _gain, 1.0)
+			c.g = minf(c.g * _gain, 1.0)
+			c.b = minf(c.b * _gain, 1.0)
+			img.set_pixel(x, y, c)
