@@ -106,7 +106,7 @@ const STRINGS: Dictionary = {
 	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
 	&"cortejo.unlock.subtitle.first":  "OBTIDO!",
 	&"cortejo.unlock.subtitle.hit":    "GOLPE LIBERADO!",
-	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: SEGURE ↑ para carregar e SOLTE no cheio. Cada encantado libertado golpeia em corrente.",
+	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: toque a DIREÇÃO de cada espírito NO TEMPO do tambor. Cada encantado libertado entra na corrente.",
 	&"cortejo.unlock.desc.hit":        "O Cortejo agora encadeia %d golpes.",
 	&"cortejo.unlock.hint":            "pressione para continuar",
 

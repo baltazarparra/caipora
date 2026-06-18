@@ -143,9 +143,7 @@ var _stinger_player: AudioStreamPlayer
 var _last_hover_msec: int = -UI_HOVER_COOLDOWN_MSEC
 var _last_dpad_tap_msec: int = -DPAD_TAP_COOLDOWN_MSEC
 var _dpad_tap_variant: int = 0
-## Cortejo dos Encantados: loop de carga (pitch sobe com o progresso) + flag que
-## acende o STEM_TOP da música durante a corrente. Dormentes até os .wav existirem.
-var _cortejo_charge_player: AudioStreamPlayer
+## Cortejo dos Encantados: flag que acende o STEM_TOP da música durante a corrente.
 var _cortejo_active: bool = false
 ## Scheduler dos eventos raros da mata. Filho do autoload; morto em toda troca de
 ## tela por _apply_screen_audio — nenhum timer sobrevive fora da exploração.
@@ -183,10 +181,6 @@ func _ready() -> void:
 	_stinger_player = AudioStreamPlayer.new()
 	_stinger_player.bus = BUS_MUSIC
 	add_child(_stinger_player)
-
-	_cortejo_charge_player = AudioStreamPlayer.new()
-	_cortejo_charge_player.bus = BUS_SFX
-	add_child(_cortejo_charge_player)
 
 	_mata_timer = Timer.new()
 	_mata_timer.one_shot = true
@@ -479,46 +473,32 @@ func play_combat_victory() -> void:
 	_play_stinger(STING_VICTORY)
 
 
-# ─── Cortejo dos Encantados ────────────────────────
-## Direção de áudio do conceito §7: charge loop que sobe de pitch, trinco no armado,
-## stinger por espírito (assinatura sônica do chefe), perdido morto, acento de
-## maracatu no full-chain, STEM_TOP aceso na corrente + ducking. Tudo DORMENTE até os
-## .wav dedicados existirem, com fallback aos sons canônicos para não ficar mudo hoje.
+# ─── Cortejo dos Encantados (Batuque) ──────────────
+## Direção de áudio do conceito §7, agora rítmica: metrônomo de tambor (count-in +
+## cadência), stinger por espírito no acerto (assinatura sônica do chefe), perdido
+## morto no erro, acento de maracatu no full-chain, STEM_TOP aceso na corrente +
+## ducking. DORMENTE até os .wav dedicados, com fallback aos sons canônicos.
 
-## Loop de carga do elo (sopro grave). Dormente até cortejo_charge.wav.
-func play_cortejo_charge() -> void:
+## Batida do tambor do batuque (count-in e cadência). `strong` marca o tempo forte
+## (downbeat) com pitch/volume um tico acima. Reusa o tick de maracatu do D-pad.
+func play_cortejo_beat(strong: bool = false) -> void:
 	if not _audio_unlocked:
 		return
-	var path := SFX_DIR + "cortejo_charge.wav"
+	var path := SFX_DIR + "cortejo_beat.wav"
+	if not ResourceLoader.exists(path):
+		path = SFX_DIR + "dpad_tap.wav"
 	if not ResourceLoader.exists(path):
 		return
-	var stream: AudioStream = load(path)
-	_force_loop(stream)
-	_cortejo_charge_player.stream = stream
-	_cortejo_charge_player.pitch_scale = 0.85
-	_cortejo_charge_player.volume_db = -4.0
-	_cortejo_charge_player.play()
+	var player := AudioStreamPlayer.new()
+	player.stream = load(path)
+	player.bus = BUS_SFX
+	player.volume_db = 1.0 if strong else -3.0
+	player.pitch_scale = 0.95 if strong else 0.78
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
 
-## Pitch do loop sobe com o progresso (0..1). No-op se não estiver tocando.
-func set_cortejo_charge_progress(progress: float) -> void:
-	if _cortejo_charge_player != null and _cortejo_charge_player.playing:
-		_cortejo_charge_player.pitch_scale = 0.85 + clampf(progress, 0.0, 1.0) * 0.6
-
-func stop_cortejo_charge() -> void:
-	if _cortejo_charge_player != null and _cortejo_charge_player.playing:
-		_cortejo_charge_player.stop()
-
-## Trinco curto no topo do anel (armado). Reusa o tap do D-pad até cortejo_armed.wav.
-func play_cortejo_armed() -> void:
-	if not _audio_unlocked:
-		return
-	var path := SFX_DIR + "cortejo_armed.wav"
-	if ResourceLoader.exists(path):
-		_play_oneshot_sfx(path, -2.0)
-	else:
-		play_dpad_tap()
-
-## Resultado do elo: landado toca o stinger do espírito; perdido dissolve sem brilho.
+## Resultado do chamado: acertado toca o stinger do espírito; errado dissolve sem brilho.
 ## Fallback do landado = morte canônica do chefe (mais baixa) — mesma identidade sônica.
 func play_cortejo_link(phase: int, landed: bool) -> void:
 	if not _audio_unlocked:

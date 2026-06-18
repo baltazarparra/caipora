@@ -40,6 +40,17 @@ func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end
 func close_window() -> void:
 	_is_window_open = false
 
+## Cancela a janela aberta emitindo timing_result(MISS) uma única vez. Diferente de
+## close_window (que fecha em silêncio), serve para desbloquear quem dá `await
+## timing_result` — ex.: o batuque do Cortejo no teardown de combate. No-op se já
+## fechada. Chame DEPOIS de desconectar os handlers normais para o emit não atingir
+## ataque/defesa, só a corrotina pendurada.
+func cancel_window() -> void:
+	if not _is_window_open:
+		return
+	_is_window_open = false
+	timing_result.emit(TimingResult.MISS)
+
 func is_open() -> bool:
 	return _is_window_open
 
