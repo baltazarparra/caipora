@@ -315,12 +315,17 @@ func _nearest_walkable(pos: Vector2i) -> Vector2i:
 func _spawn_exit_marker() -> void:
 	var pos := _map.exit_pos
 	var center := Vector2(pos) * Constants.TILE_SIZE + Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
+	# Gate do boss: só avança quem libertou o guardião da fase. Enquanto ele vive, o portal
+	# aparece SELADO (frio, sem halo âmbar) — comunica que a saída ainda não liberta a fase.
+	var sealed := not MetaProgression.is_boss_freed(phase)
 	# Passagem ritual (MapObject.EXIT_PASSAGE) no centro da clareira da saída: o portão por
 	# onde a Caipora mergulha de volta na mata — mesma leitura forte em toda fase com saída.
 	var passage := MapObject.new()
 	_objects_container.add_child(passage)
-	passage.setup(MapObject.Type.EXIT_PASSAGE, pos)
-	# Luz âmbar pulsante: marca a saída na escuridão sem texto.
+	passage.setup(MapObject.Type.EXIT_PASSAGE, pos, false, sealed)
+	if sealed:
+		return
+	# Portal aberto: luz âmbar pulsante marca a saída na escuridão sem texto.
 	var light := ForestLight.make(Constants.COLOR_AMBER, 1.0, 1.0)
 	light.position = center
 	_objects_container.add_child(light)
@@ -366,11 +371,14 @@ func _on_player_moved(new_grid_pos: Vector2i) -> void:
 	if _profile["has_fog"]:
 		_update_fog()
 
-	# Saída (fases com tile 'E') → acampamento → próxima fase
+	# Saída (fases com tile 'E') → acampamento (aprimoramento) → fase. Gate do boss: só avança
+	# de fase quem libertou o guardião; senão volta à MESMA fase (passa pelo HUB e recomeça).
 	if _config.has_exit and new_grid_pos == _map.exit_pos:
 		_locked = true
+		var dest: SignalBus.Screen = GameState.exit_destination(
+			phase, MetaProgression.is_boss_freed(phase), _profile["next_screen_on_exit"])
 		# advance_phase_via_hub já zera a continuidade (jogador/inimigos no spawn na fase nova).
-		GameState.advance_phase_via_hub(_profile["next_screen_on_exit"])
+		GameState.advance_phase_via_hub(dest)
 		return
 
 	# Bolsa de fragmentos (souls-like): pisar nela reaver TODOS os fragmentos derrubados na morte.

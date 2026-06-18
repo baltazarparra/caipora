@@ -19,7 +19,7 @@ const STRINGS: Dictionary = {
 	&"options.audio.ambience":  "Ambiência",
 
 	# Hub Shop
-	&"hub.fragments":           "Fragmentos: %d",
+	&"hub.fragments":           "Terra Rara: %d",
 	&"hub.track.furia":         "FÚRIA · dano",
 	&"hub.track.cura":          "CURA · vida",
 	&"hub.options.btn":         "Opções",
@@ -28,8 +28,8 @@ const STRINGS: Dictionary = {
 	&"hub.next.fire":           "próxima: %s — na próxima fogueira",
 
 	# Hub Card
-	&"card.cost":               "%d fragmentos",
-	&"card.cost.short":         "%d frag",
+	&"card.cost":               "%d de Terra Rara",
+	&"card.cost.short":         "%d TR",
 	&"card.effect.dmg":         "Dano +%d/hit (total %d)",
 	&"card.effect.hp":          "+%d HP (total %d)",
 	&"card.effect.dmg.short":   "+%d dano",
@@ -40,8 +40,8 @@ const STRINGS: Dictionary = {
 	&"hud.enemy":               "CRIATURA",
 	&"hud.chama":               "CHAMA!",
 	&"hud.herb":                "HP máx.",
-	&"hud.fragment.s":          "+%s fragmento",
-	&"hud.fragment.pl":         "+%s fragmentos",
+	&"hud.fragment.s":          "+%s Terra Rara",
+	&"hud.fragment.pl":         "+%s Terra Rara",
 
 	# End Screen
 	&"end.hint.touch.won":      "Toque para inserir suas iniciais",
@@ -50,6 +50,7 @@ const STRINGS: Dictionary = {
 	&"end.hint.key.lost":       "Espaço para voltar ao menu",
 	&"win.title":               "A CRIATURA TOMBOU",
 	&"gameover.title":          "... E desperta de outra premonição ...",
+	&"gameover.terra_lost":     "Terra Rara perdida: %d — volte ao local da queda para recuperá-la.",
 
 	# Ending Screen (canônico)
 	&"ending.sky":              "a floresta segue respirando",

@@ -3,6 +3,8 @@ extends Node2D
 
 const ForestLight := preload("res://scripts/exploration/forest_light.gd")
 const FireEffect := preload("res://scripts/exploration/fire_effect.gd")
+# Sprite premium da TERRA RARA caída (souls-like): minério cristalino numa poça de sangue.
+const TERRA_RARA_NODE_TEX: Texture2D = preload("res://assets/sprites/terra_rara_node.png")
 
 enum Type { FIRE, SPIKE, DEAD_TREE, BONES, MOSS, BLOOD_POOL, ROCK, FERN, VINE,
 	MUSHROOM, STUMP, TOTEM, ROOTS, PUDDLE, BAG, CROSS, MIRROR, FONT, CANDLE, PEW, BURROW,
@@ -19,14 +21,21 @@ const DECO_TYPES := [Type.DEAD_TREE, Type.BONES, Type.MOSS, Type.BLOOD_POOL, Typ
 const CHURCH_PROPS := [Type.CROSS, Type.MIRROR, Type.FONT, Type.CANDLE, Type.PEW]
 
 var _type: Type
+# Saída SELADA (gate do boss): o guardião da fase ainda vive, então o portal está trancado
+# — leitura fria/barrada, sem o halo âmbar de portal ativo. Destravada ao libertar o boss.
+var _sealed: bool = false
 
 # ─── Public API ────────────────────────────────────
 ## `enhanced` liga luz + partículas na fogueira (chama/brasas/fumaça). Fases 1 e 2 usam.
-func setup(type: Type, grid_pos: Vector2i, enhanced: bool = false) -> void:
+## `sealed` (só EXIT_PASSAGE) desenha o portal trancado enquanto o boss da fase não cai.
+func setup(type: Type, grid_pos: Vector2i, enhanced: bool = false, sealed: bool = false) -> void:
 	_type = type
+	_sealed = sealed
 	position = Vector2(grid_pos) * T
 	if type in DECO_TYPES or type in CHURCH_PROPS:
 		z_index = -1  # ambientação fica embaixo de jogador/inimigos/baú
+	if type == Type.BAG:
+		texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # sprite pixel-art crocante
 	if type == Type.FIRE and enhanced:
 		FireEffect.attach(self, Vector2(T / 2.0, T / 2.0), 0.8)
 	queue_redraw()
@@ -279,37 +288,11 @@ func _draw_puddle(cx: float, cy: float) -> void:
 	draw_line(Vector2(cx - 4, cy + 1), Vector2(cx + 2, cy), water_light, 1.0)
 	draw_line(Vector2(cx + 1, cy + 3), Vector2(cx + 6, cy + 2), water_light, 1.0)
 
-func _draw_bag(cx: float, cy: float) -> void:
-	# Bolsa de fragmentos derrubada na morte (souls-like): saco de couro caído numa poça de
-	# sangue, com estilhaços âmbar escapando pela boca — atrai o olhar pra "voltar lá".
-	var blood := Constants.COLOR_BLOOD_POOL
-	var leather := Constants.COLOR_WOOD
-	var leather_dark := Constants.COLOR_WOOD_DARK
-	var cord := Constants.COLOR_BARK
-	var shard := Constants.COLOR_AMBER
-	# mancha de sangue sob o saco
-	draw_circle(Vector2(cx, cy + 6), 11.0, blood)
-	# corpo do saco (bojudo na base, estreito no topo)
-	var sack: PackedVector2Array = [
-		Vector2(cx - 5, cy - 3), Vector2(cx - 8, cy + 3), Vector2(cx - 6, cy + 9),
-		Vector2(cx + 6, cy + 9), Vector2(cx + 8, cy + 3), Vector2(cx + 5, cy - 3),
-	]
-	draw_colored_polygon(sack, leather)
-	# sombra lateral pra dar volume
-	var shade: PackedVector2Array = [
-		Vector2(cx + 5, cy - 3), Vector2(cx + 8, cy + 3), Vector2(cx + 6, cy + 9), Vector2(cx + 2, cy + 9),
-	]
-	draw_colored_polygon(shade, leather_dark)
-	# cordão amarrando a boca
-	draw_rect(Rect2(cx - 5, cy - 4, 10, 2), cord)
-	# estilhaços de fragmento escapando pela boca aberta
-	for p: Array in [[Vector2(cx - 2, cy - 7), 2.2], [Vector2(cx + 2, cy - 9), 1.6], [Vector2(cx, cy - 5), 1.4]]:
-		var c: Vector2 = p[0]
-		var r: float = p[1]
-		draw_colored_polygon(PackedVector2Array([
-			c + Vector2(0, -r), c + Vector2(r * 0.7, 0),
-			c + Vector2(0, r), c + Vector2(-r * 0.7, 0),
-		]), shard)
+func _draw_bag(_cx: float, _cy: float) -> void:
+	# TERRA RARA derrubada na morte (souls-like): sprite premium do minério cristalino caído
+	# numa poça de sangue — atrai o olhar pra "voltar lá". O brilho âmbar pulsante é erguido
+	# pelo ExplorationManager (ForestLight) sobre este tile.
+	draw_texture(TERRA_RARA_NODE_TEX, Vector2.ZERO)
 
 func _draw_burrow(cx: float, cy: float) -> void:
 	# Boca de toca descendo pra escuridão da mata, com terra revolvida e folhas secas
@@ -348,6 +331,9 @@ func _draw_burrow(cx: float, cy: float) -> void:
 	draw_circle(Vector2(cx + 2, cy + 1), 1.6, leaf_dark)
 
 func _draw_exit_passage(cx: float, cy: float) -> void:
+	if _sealed:
+		_draw_exit_passage_sealed(cx, cy)
+		return
 	# Passagem ritual: portal de pedra-osso aberto na terra escura, por onde a Caipora
 	# mergulha de volta na caçada. Halo âmbar (a marca laranja), boca acesa, vazio preto
 	# total, ladeado por dois menires de osso com marca ritual de sangue e brasas âmbar
@@ -402,6 +388,45 @@ func _draw_exit_passage(cx: float, cy: float) -> void:
 		draw_colored_polygon(PackedVector2Array([
 			p + Vector2(0, -r), p + Vector2(r * 0.7, 0), p + Vector2(0, r), p + Vector2(-r * 0.7, 0),
 		]), e[2])
+
+func _draw_exit_passage_sealed(cx: float, cy: float) -> void:
+	# Saída TRANCADA: o guardião da fase ainda vive, então o portal está selado. Mesmo
+	# enquadramento de menires da passagem aberta, mas a boca é barrada por ossos cruzados e
+	# um selo de sangue — frio, sem o halo âmbar (a marca laranja só volta ao libertar o boss).
+	var night := Constants.COLOR_NIGHT
+	var earth := Constants.COLOR_EARTH
+	var bark_dark := Constants.COLOR_BARK_DARK
+	var bone := Constants.COLOR_BONE
+	var bone_dark := Constants.COLOR_BONE_HOLLOW
+	var blood := Constants.COLOR_BLOOD
+	# aro de terra revolvida (sem halo âmbar — apagado)
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3), 14.0, 10.0), earth)
+	# parede interna em sombra + vão escuro
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3.5), 11.0, 7.5), bark_dark)
+	draw_colored_polygon(_ellipse(Vector2(cx, cy + 3.5), 9.5, 6.3), night)
+	# ossos cruzados barrando a boca (o portal está trancado)
+	draw_line(Vector2(cx - 9, cy - 2), Vector2(cx + 9, cy + 8), bone, 2.5)
+	draw_line(Vector2(cx + 9, cy - 2), Vector2(cx - 9, cy + 8), bone, 2.5)
+	draw_line(Vector2(cx - 9, cy - 2), Vector2(cx + 9, cy + 8), bone_dark, 1.0)
+	draw_line(Vector2(cx + 9, cy - 2), Vector2(cx - 9, cy + 8), bone_dark, 1.0)
+	# selo de sangue ritual no centro (marca que ninguém passa)
+	draw_circle(Vector2(cx, cy + 3), 3.0, blood)
+	draw_line(Vector2(cx - 2, cy + 1), Vector2(cx + 2, cy + 5), blood, 1.0)
+	draw_line(Vector2(cx + 2, cy + 1), Vector2(cx - 2, cy + 5), blood, 1.0)
+	# menires de osso ladeando a passagem (gatepostes rituais, frios)
+	var stone := bone.lerp(earth, 0.4)
+	for sx: float in [cx - 10.0, cx + 10.0]:
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(sx - 3, cy + 8), Vector2(sx - 3, cy - 7),
+			Vector2(sx, cy - 10), Vector2(sx + 3, cy - 7), Vector2(sx + 3, cy + 8),
+		]), night)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(sx - 2, cy + 7), Vector2(sx - 2, cy - 6),
+			Vector2(sx, cy - 9), Vector2(sx + 2, cy - 6), Vector2(sx + 2, cy + 7),
+		]), stone)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(sx, cy - 9), Vector2(sx + 2, cy - 6), Vector2(sx + 2, cy + 7), Vector2(sx, cy + 7),
+		]), bone_dark)
 
 # Elipse achatada (leitura top-down) como polígono — base de buracos e bocas de toca.
 func _ellipse(center: Vector2, rx: float, ry: float) -> PackedVector2Array:

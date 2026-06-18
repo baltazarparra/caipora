@@ -2,10 +2,10 @@ class_name Hud
 extends CanvasLayer
 
 # HUD de combate/exploração. Layout coerente e sempre visível, independente da magnitude
-# de HP ou de fragmentos (antes os ícones de HP transbordavam com muito HP e os fragmentos
-# eram "+".repeat(n), estourando a tela):
+# de HP ou de Terra Rara (antes os ícones de HP transbordavam com muito HP e a economia
+# era "+".repeat(n), estourando a tela):
 #
-#   ┌ topo-esq: barra da CAIPORA            topo-dir: ◈ fragmentos   🔊 ┐
+#   ┌ topo-esq: barra da CAIPORA            topo-dir: ◈ Terra Rara   🔊 ┐
 #   │                                                                   │
 #   └              centro (combate): barra do inimigo / boss           ┘
 #
@@ -153,11 +153,11 @@ func _show_fragment_popup(amount: float) -> void:
 	_show_popup(Lang.tf(key, [n]), Constants.COLOR_AMBER)
 
 ## Texto compacto do ganho em pt-BR (função pura, sem acesso a Lang — testável isolado).
-## NÃO usar "%g": o format do Godot não suporta e vaza literal na tela. Só "%d", "%.1f", "%s".
+## "Terra Rara" é incontável (minério), então não há plural. NÃO usar "%g": o format do
+## Godot não suporta e vaza literal na tela. Só "%d", "%.1f", "%s".
 static func format_fragment_popup(amount: float) -> String:
 	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
-	var plural: String = "s" if amount != 1.0 else ""
-	return "+%s fragmento%s" % [n, plural]
+	return "+%s Terra Rara" % n
 
 func _show_popup(text: String, color: Color) -> void:
 	var popup := Label.new()

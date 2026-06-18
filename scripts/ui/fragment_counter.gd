@@ -1,14 +1,14 @@
 class_name FragmentCounter
 extends Control
 
-# Contador de fragmentos compacto: um glifo de estilhaço âmbar + o número.
-# Substitui o antigo `"+".repeat(n)` (que transbordava a tela com muitos fragmentos).
+# Contador de TERRA RARA compacto: o ícone de minério cristalino (sprite premium) + o número.
+# Substitui o antigo `"+".repeat(n)` (que transbordava a tela) e o losango desenhado à mão.
 # Largura praticamente constante: cresce só com a contagem de dígitos.
 
 # ─── Constants ─────────────────────────────────────
-const SHARD_W: float = 9.0    # meia-largura do estilhaço (proporcional ao glyph)
-const SHARD_H: float = 13.0   # meia-altura
-const GAP: float = 8.0        # respiro entre glifo e número
+const ICON_TEX: Texture2D = preload("res://assets/sprites/terra_rara_icon.png")
+const ICON_BOX: float = 22.0  # lado do ícone (proporcional ao tamanho da fonte)
+const GAP: float = 8.0        # respiro entre ícone e número
 
 # ─── State ─────────────────────────────────────────
 var _count: int = 0
@@ -19,6 +19,7 @@ var _pop_tween: Tween
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # pixel-art crocante (sem blur)
 	_label = Label.new()
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -45,26 +46,23 @@ func configure_size(font_size: int) -> void:
 	queue_redraw()
 
 # ─── Internals ─────────────────────────────────────
-func _shard_width() -> float:
-	return SHARD_W * _glyph_size
-
-func _shard_height() -> float:
-	return SHARD_H * _glyph_size
+func _icon_box() -> float:
+	return ICON_BOX * _glyph_size
 
 func _relayout() -> void:
 	if _label == null:
 		return
-	var glyph_box: float = _shard_width() * 2.0
-	var h: float = maxf(_shard_height() * 2.0, _label.get_minimum_size().y)
-	_label.position = Vector2(glyph_box + GAP, 0.0)
+	var box: float = _icon_box()
+	var h: float = maxf(box, _label.get_minimum_size().y)
+	_label.position = Vector2(box + GAP, 0.0)
 	_label.size = Vector2(_label.get_minimum_size().x, h)
-	custom_minimum_size = Vector2(glyph_box + GAP + _label.get_minimum_size().x, h)
+	custom_minimum_size = Vector2(box + GAP + _label.get_minimum_size().x, h)
 	size = custom_minimum_size
 
 func _pop() -> void:
 	if _pop_tween != null and _pop_tween.is_valid():
 		_pop_tween.kill()
-	pivot_offset = Vector2(_shard_width(), size.y * 0.5)
+	pivot_offset = Vector2(_icon_box() * 0.5, size.y * 0.5)
 	scale = Vector2(1.25, 1.25)
 	_pop_tween = create_tween()
 	_pop_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -72,22 +70,6 @@ func _pop() -> void:
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:
-	var w: float = _shard_width()
-	var h: float = _shard_height()
-	var cx: float = w
-	var cy: float = size.y * 0.5
-	# cristal/estilhaço: losango vertical alongado
-	var pts: PackedVector2Array = [
-		Vector2(cx, cy - h),
-		Vector2(cx + w, cy - h * 0.15),
-		Vector2(cx, cy + h),
-		Vector2(cx - w, cy - h * 0.15),
-	]
-	draw_colored_polygon(pts, Constants.COLOR_AMBER)
-	# faceta esquerda mais escura, para dar volume de gema
-	var facet: PackedVector2Array = [
-		Vector2(cx, cy - h),
-		Vector2(cx, cy + h),
-		Vector2(cx - w, cy - h * 0.15),
-	]
-	draw_colored_polygon(facet, Constants.COLOR_AMBER.darkened(0.35))
+	var box: float = _icon_box()
+	var rect := Rect2(0.0, (size.y - box) * 0.5, box, box)
+	draw_texture_rect(ICON_TEX, rect, false)

@@ -18,13 +18,30 @@ extends CanvasLayer
 # Guard contra dupla ativação: com emulate_mouse_from_touch, um toque gera touch +
 # mouse emulado no mesmo frame; só a primeira troca de tela deve valer.
 var _handled: bool = false
+# Aviso souls-like da Terra Rara derrubada na morte (só na derrota, criado por código).
+var _terra_label: Label = null
 
 func _ready() -> void:
 	GameState.end_run(won)
 	_title.text = Lang.t(&"win.title") if won else Lang.t(&"gameover.title")
 	_hint.text = _hint_text()
+	_maybe_show_dropped_terra()
 	_fit_portrait()
 	get_viewport().size_changed.connect(_fit_portrait)
+
+## Na derrota, se a Caipora derrubou Terra Rara, avisa quanto ficou caído e que dá pra recuperar
+## voltando ao local da queda numa run futura (souls-like). Label adicionado por código entre o
+## título e a dica — editar o .tscn à mão é proibido (gotcha 7).
+func _maybe_show_dropped_terra() -> void:
+	if won or not MetaProgression.frag_bag_active or MetaProgression.frag_bag_amount <= 0.0:
+		return
+	_terra_label = Label.new()
+	_terra_label.text = Lang.tf(&"gameover.terra_lost", [int(MetaProgression.frag_bag_amount)])
+	_terra_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	_terra_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
+	_terra_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_vbox.add_child(_terra_label)
+	_vbox.move_child(_terra_label, _hint.get_index())
 
 ## Em retrato a tela é estreita: sem quebra de linha o título (frase longa, fonte grande) fica
 ## mais largo que o viewport e vaza pelos dois lados. Liga o autowrap e fixa a largura útil
@@ -37,6 +54,9 @@ func _fit_portrait() -> void:
 	_vbox.custom_minimum_size.x = maxw
 	_title.custom_minimum_size.x = maxw
 	_hint.custom_minimum_size.x = maxw
+	if _terra_label != null:
+		_terra_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_terra_label.custom_minimum_size.x = maxw
 
 ## Tela-alvo ao dispensar (puro, sem efeitos colaterais — testável destacado da árvore).
 ## Derrota → MENU PRINCIPAL (a caçada acabou); vitória → INITIALS (entrada no PODIO).

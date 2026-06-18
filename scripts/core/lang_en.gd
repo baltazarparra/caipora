@@ -20,7 +20,7 @@ const STRINGS: Dictionary = {
 	&"options.audio.ambience":  "Ambience",
 
 	# Hub Shop
-	&"hub.fragments":           "Shards: %d",
+	&"hub.fragments":           "Rare Earth: %d",
 	&"hub.track.furia":         "FURY · damage",
 	&"hub.track.cura":          "HEAL · life",
 	&"hub.options.btn":         "Options",
@@ -29,8 +29,8 @@ const STRINGS: Dictionary = {
 	&"hub.next.fire":           "next: %s — at the next camp",
 
 	# Hub Card
-	&"card.cost":               "%d shards",
-	&"card.cost.short":         "%d shards",
+	&"card.cost":               "%d Rare Earth",
+	&"card.cost.short":         "%d RE",
 	&"card.effect.dmg":         "Dmg +%d/hit (total %d)",
 	&"card.effect.hp":          "+%d HP (total %d)",
 	&"card.effect.dmg.short":   "+%d dmg",
@@ -41,8 +41,8 @@ const STRINGS: Dictionary = {
 	&"hud.enemy":               "CRIATURA",
 	&"hud.chama":               "CHAMA!",
 	&"hud.herb":                "Max HP",
-	&"hud.fragment.s":          "+%s shard",
-	&"hud.fragment.pl":         "+%s shards",
+	&"hud.fragment.s":          "+%s Rare Earth",
+	&"hud.fragment.pl":         "+%s Rare Earth",
 
 	# End Screen
 	&"end.hint.touch.won":      "Tap to enter your initials",
@@ -51,6 +51,7 @@ const STRINGS: Dictionary = {
 	&"end.hint.key.lost":       "Space to go back to menu",
 	&"win.title":               "THE CRIATURA FELL",
 	&"gameover.title":          "... And wakes from another premonition ...",
+	&"gameover.terra_lost":     "Rare Earth dropped: %d — return to where you fell to recover it.",
 
 	# Ending Screen (canonical)
 	&"ending.sky":              "the forest's still breathing",
