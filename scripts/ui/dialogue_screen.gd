@@ -11,11 +11,17 @@ extends CanvasLayer
 @onready var _right_text_label:    Label = $RightBox/VBox/TextLabel
 @onready var _right_indicator:     Label = $RightBox/VBox/Indicator
 
+# ─── Constants ─────────────────────────────────────
+const NAME_MARGIN_RATIO: float = 0.05    # respiro lateral até a borda do viewport
+const NAME_FONT_MAX: int = Constants.FONT_TITLE  # 48 — tamanho cheio quando cabe
+const NAME_FONT_MIN: int = 24                     # piso de legibilidade; só recua se precisar
+
 var _lines: Array[Dictionary] = []
 var _current_index: int = 0
 var _ready_for_input: bool = false
 var _left_speaker_name: String = ""
 var _last_input_frame: int = -1
+var _boss_name: String = ""
 
 # ─── Public API ────────────────────────────────────
 
@@ -26,10 +32,45 @@ func start(boss_name: String, lines: Array[Dictionary],
 	_lines = lines
 	_current_index = 0
 	_left_speaker_name = left_speaker
+	_boss_name = boss_name
 	_boss_name_label.text = boss_name
+	# O nome NUNCA pode vazar o viewport: quebra em palavra dentro das margens e
+	# encolhe a fonte só o necessário para a maior palavra caber (ex. "JESUÍTA
+	# BANDEIRANTE CATEQUIZADOR" estourava já no iPad com a fonte fixa de 48px).
+	_boss_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_fit_boss_name()
+	if not get_viewport().size_changed.is_connected(_fit_boss_name):
+		get_viewport().size_changed.connect(_fit_boss_name)
 	_left_speaker_label.add_theme_color_override("font_color", left_color)
 	_right_speaker_label.add_theme_color_override("font_color", right_color)
 	_show_line(0)
+
+# Ajusta margens e fonte do nome para caber no viewport (reage à rotação).
+func _fit_boss_name() -> void:
+	if _boss_name_label == null or _boss_name.is_empty():
+		return
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var margin: float = vp.x * NAME_MARGIN_RATIO
+	_boss_name_label.offset_left = margin
+	_boss_name_label.offset_right = -margin
+	var available: float = maxf(vp.x - margin * 2.0, 1.0)
+
+	var font: Font = _boss_name_label.get_theme_font(&"font")
+	var longest: String = _longest_word(_boss_name)
+	var fs: int = NAME_FONT_MAX
+	while fs > NAME_FONT_MIN:
+		if font.get_string_size(longest, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= available:
+			break
+		fs -= 2
+	_boss_name_label.add_theme_font_size_override("font_size", fs)
+
+# Maior palavra do nome — nenhuma palavra pode estourar a linha (a quebra é por palavra).
+func _longest_word(text: String) -> String:
+	var longest: String = ""
+	for word in text.split(" ", false):
+		if word.length() > longest.length():
+			longest = word
+	return longest if not longest.is_empty() else text
 
 ## Avança para a próxima fala. Chamado via input ou diretamente em testes.
 func advance() -> void:
