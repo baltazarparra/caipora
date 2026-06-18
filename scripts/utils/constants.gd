@@ -91,45 +91,29 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 	window += TOUCH_TIMING_WINDOW_BONUS
 	return window
 
-# ─── Cortejo dos Encantados (Batuque do Cortejo) ───
-# Terceiro tipo de ataque da Caipora: uma PROCISSÃO tocada a tambor (maracatu).
-# Cada chefe LIBERTADO (MetaProgression.freed_bosses, teto CORTEJO_MAX_LINKS) tem um
-# CHAMADO direcional fixo; no turno do Cortejo o jogador convoca os espíritos em
-# cadência — toca a direção certa NO tempo de cada batida (como Patapon/Guitar Hero,
-# reusando o anel convergente do tap). Errar um chamado NÃO interrompe a corrente —
-# só perde o golpe daquele espírito. Ver docs/CONCEITO-corrente-encantados.md.
-const CORTEJO_CHANCE: float = 0.30          # roll no turno da Caipora (espelha o duplo)
+# ─── Cortejo dos Encantados (Golpe Perfeito) ───────
+# Terceiro tipo de ataque da Caipora, à la Expedition 33/Sekiro: UMA janela única e
+# apertada (um toque ui_up, igual ao ataque normal — pensado pro dedão em retrato).
+# Acertar o toque perfeito → TODOS os chefes LIBERTADOS (MetaProgression.freed_bosses,
+# teto CORTEJO_MAX_LINKS) desabam de uma vez numa BARRAGEM cinematográfica (dano escala
+# com nº de libertados). Errar → whiff + CONTRA-ATAQUE (custo souls-like). Disparado por
+# roll no turno, MESMA chance do ataque duplo. Ver docs/CONCEITO-corrente-encantados.md.
+const CORTEJO_CHANCE: float = TIMING_DOUBLE_CHANCE  # = 0.30, espelha o duplo (pedido)
 const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
-const CORTEJO_LINK_HITS: int = 2            # hits de dano por chamado acertado
-const CORTEJO_BEAT_SECS: float = 0.62       # cadência do tambor: uma nota por batida (legível)
-const CORTEJO_COUNT_IN_BEATS: int = 2       # batidas de "contagem" antes da 1ª nota (trava o tempo)
-# Direção+tempo já é mais difícil que o tap: a janela perfeita da nota parte de uma
-# base um tico mais generosa que o ataque padrão (depois afina por fase).
-const CORTEJO_WINDOW_BASE: float = 0.95
+const CORTEJO_LINK_HITS: int = 2            # hits de dano por espírito na barragem
+# Janela apertada (alto risco/recompensa); afina por fase via timing_window_for_phase.
+const CORTEJO_WINDOW_BASE: float = 0.78
+# Custo do erro: multiplicador do contra-ataque (1.0 = um golpe inteiro do inimigo).
+const CORTEJO_MISS_COUNTER_MULT: float = 1.0
 
-## Chamado direcional fixo por fase (espírito). Varredura horária ↑→↓←: memorizável,
-## cresce pela cauda (1 boss = ↑, 2 = ↑→, …). Mula sobe, Boitatá varre, Curupira
-## investe baixo, Saci gira de volta.
-const CORTEJO_CALL_FOR_PHASE: Dictionary = {
-	1: "ui_up",     # Mula — o galope empina, fogo subindo do toco
-	2: "ui_right",  # Boitatá — a serpente de brasa varre/enrola
-	3: "ui_down",   # Curupira — investida baixa, raízes arrancando o chão
-	4: "ui_left",   # Saci — o redemoinho gira de volta
-}
-
-## Sequência de chamados a partir das fases libertadas (ordenadas), cortada no teto.
-## Seam puro/testável: arena lê isto para montar o batuque. Fases sem chamado mapeado
-## (não deveria ocorrer em P1–P4) são ignoradas.
-static func cortejo_calls_for(freed: Array[int]) -> Array[String]:
-	var calls: Array[String] = []
+## Espíritos da barragem a partir das fases libertadas: ordenadas e cortadas no teto.
+## Seam puro/testável: a arena lê isto para a barragem e para o cálculo de dano.
+static func cortejo_spirits_for(freed: Array[int]) -> Array[int]:
 	var ordered: Array[int] = freed.duplicate()
 	ordered.sort()
-	for phase: int in ordered:
-		if calls.size() >= CORTEJO_MAX_LINKS:
-			break
-		if CORTEJO_CALL_FOR_PHASE.has(phase):
-			calls.append(CORTEJO_CALL_FOR_PHASE[phase])
-	return calls
+	if ordered.size() > CORTEJO_MAX_LINKS:
+		ordered.resize(CORTEJO_MAX_LINKS)
+	return ordered
 
 # ─── Audio ─────────────────────────────────────────
 # Passo bem abaixo dos SFX de combate: presença tátil, nunca spam. O asset é

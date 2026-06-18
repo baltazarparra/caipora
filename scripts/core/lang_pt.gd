@@ -106,8 +106,8 @@ const STRINGS: Dictionary = {
 	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
 	&"cortejo.unlock.subtitle.first":  "OBTIDO!",
 	&"cortejo.unlock.subtitle.hit":    "GOLPE LIBERADO!",
-	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: toque a DIREÇÃO de cada espírito NO TEMPO do tambor. Cada encantado libertado entra na corrente.",
-	&"cortejo.unlock.desc.hit":        "O Cortejo agora encadeia %d golpes.",
+	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: quando o anel fechar, TOQUE no tempo. Acertar = todos os espíritos libertados desabam de uma vez. Errar = contra-ataque.",
+	&"cortejo.unlock.desc.hit":        "O Cortejo agora desaba %d espíritos de uma vez.",
 	&"cortejo.unlock.hint":            "pressione para continuar",
 
 	# Hub Manager — ritos de chegada
