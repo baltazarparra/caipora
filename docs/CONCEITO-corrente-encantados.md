@@ -1,19 +1,21 @@
-# Conceito — O Cortejo dos Encantados (Batuque do Cortejo)
+# Conceito — O Cortejo dos Encantados (Golpe Perfeito)
 
 > Sistema de combate novo. Um **terceiro tipo de ataque** da Caipora, somado ao
 > tap de crítico e ao ataque duplo já existentes. Desbloqueado ao libertar o
 > primeiro chefe; cresce a cada encantado libertado.
 >
-> **Status:** IMPLEMENTADO (2026-06-17) e depois REDESENHADO. A 1ª versão usava uma
-> mecânica de CARGA (segurar ↑ e soltar no cheio) que se mostrou ilegível (ponto de
-> soltar invisível; segunda metáfora de timing). Foi substituída pelo **Batuque do
-> Cortejo**: uma procissão tocada a tambor (maracatu) — cada chefe libertado tem um
-> CHAMADO direcional fixo (↑→↓←) e o jogador toca a direção certa NO TEMPO de cada
-> batida, reusando o anel convergente do tap (legível) e o pipeline direcional dos
-> especiais de boss. Referências: Patapon, Guitar Hero, Expedition 33.
-> Pendente apenas: os .wav dedicados do áudio (hoje em fallback canônico).
-> **NOTA:** as seções 3 (mecânica) e 6/7 abaixo descrevem a CARGA original e estão
-> historicamente desatualizadas; a fonte da mecânica vigente é este cabeçalho + §9.
+> **Status:** REDESENHADO 2× e agora na 3ª forma, VIGENTE = **Golpe Perfeito**
+> (2026-06-18). As duas primeiras foram rejeitadas pelo jogador: CARGA (segurar ↑,
+> soltar no cheio — ponto invisível) e BATUQUE direcional (tocar ↑→↓← no tempo —
+> hostil ao dedão, abstrato, vazio com 1 espírito). A forma vigente é à la
+> **Expedition 33/Sekiro**: UMA janela única e apertada (um toque `ui_up`, o mesmo do
+> ataque normal — pensado pro **dedão em retrato**); acerto → **BARRAGEM** (todos os
+> chefes libertados desabam de uma vez, dano escala com nº deles); erro → whiff +
+> **contra-ataque** (custo souls). Lead-in com slow-mo telegrafa o golpe. Disparado
+> por roll no turno, MESMA chance do duplo. Referências: Expedition 33, Sekiro,
+> The Legend of Dragoon. Pendente: os .wav dedicados (hoje em fallback canônico).
+> **NOTA:** as seções 3/6/7 abaixo descrevem as mecânicas ANTIGAS (carga/batuque) e
+> estão historicamente desatualizadas; a fonte da mecânica vigente é este cabeçalho.
 > Escopo deste doc: mecânica, integração com o sistema vigente, narrativa,
 > direção de arte AAA e direção de áudio/música AAA.
 

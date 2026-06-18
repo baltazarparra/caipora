@@ -479,27 +479,25 @@ func play_combat_victory() -> void:
 ## morto no erro, acento de maracatu no full-chain, STEM_TOP aceso na corrente +
 ## ducking. DORMENTE até os .wav dedicados, com fallback aos sons canônicos.
 
-## Batida do tambor do batuque (count-in e cadência). `strong` marca o tempo forte
-## (downbeat) com pitch/volume um tico acima. Reusa o tick de maracatu do D-pad.
-func play_cortejo_beat(strong: bool = false) -> void:
+## Lead-in do Golpe Perfeito: cue dramático de convocação (telegrafa que vem o golpe
+## grande). Dormente até cortejo_summon.wav; fallback ao sting de intro de boss + duck.
+func play_cortejo_summon() -> void:
 	if not _audio_unlocked:
 		return
-	var path := SFX_DIR + "cortejo_beat.wav"
-	if not ResourceLoader.exists(path):
-		path = SFX_DIR + "dpad_tap.wav"
-	if not ResourceLoader.exists(path):
-		return
-	var player := AudioStreamPlayer.new()
-	player.stream = load(path)
-	player.bus = BUS_SFX
-	player.volume_db = 1.0 if strong else -3.0
-	player.pitch_scale = 0.95 if strong else 0.78
-	player.finished.connect(player.queue_free)
-	add_child(player)
-	player.play()
+	duck()
+	var summon := "cortejo_summon"
+	_play_stinger(summon if ResourceLoader.exists(STING_DIR + summon + ".wav") else STING_BOSS_INTRO, -3.0)
 
-## Resultado do chamado: acertado toca o stinger do espírito; errado dissolve sem brilho.
-## Fallback do landado = morte canônica do chefe (mais baixa) — mesma identidade sônica.
+## Erro do Golpe Perfeito: sopro morto antes do contra-ataque. Fallback = combat_miss.
+func play_cortejo_miss() -> void:
+	if not _audio_unlocked:
+		return
+	var miss := SFX_DIR + "cortejo_miss.wav"
+	_play_oneshot_sfx(miss if ResourceLoader.exists(miss) else SFX_DIR + "combat_miss.wav", -2.0)
+
+## Slam de um espírito na barragem: stinger do espírito (assinatura sônica do chefe).
+## Fallback = morte canônica do chefe (mais baixa) — mesma identidade. `landed` herdado
+## da API antiga; hoje a barragem só chama com landed=true.
 func play_cortejo_link(phase: int, landed: bool) -> void:
 	if not _audio_unlocked:
 		return

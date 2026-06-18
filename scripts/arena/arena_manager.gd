@@ -53,7 +53,6 @@ var _timing_system: TimingSystem
 var _timing_bubble: Node2D
 var _timing_bubble_b: Node2D
 var _apparition: CortejoApparition
-var _beat_track: CortejoBeatTrack
 var _feedback: FeedbackSystem
 var _sfx: SfxSystem
 var _active_enemy_pattern: AttackPattern
@@ -89,15 +88,12 @@ func _ready() -> void:
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
 	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
-	# Cortejo dos Encantados (Batuque): aparição dos espíritos + faixa de leitura do
-	# ritmo. Criados por código (nós de runtime) para não tocar os .tscn das 5 arenas
-	# — gotcha #7. As NOTAS direcionais reusam _timing_system/_timing_bubble.
+	# Cortejo dos Encantados (Golpe Perfeito): aparição dos espíritos da barragem.
+	# Criada por código (nó de runtime) para não tocar os .tscn das 5 arenas — gotcha
+	# #7. A janela única reusa _timing_system/_timing_bubble (o tap do ataque normal).
 	_apparition = CortejoApparition.new()
 	_apparition.set_color_gain(feedback_gain)
 	add_child(_apparition)
-	_beat_track = CortejoBeatTrack.new()
-	_beat_track.set_color_gain(feedback_gain)
-	add_child(_beat_track)
 	# Feedback tátil a cada input na janela de combate (conectado uma única vez).
 	_timing_system.input_registered.connect(_on_input_registered)
 	_feedback.hit_stop_started.connect(_on_hit_stop_started)
@@ -533,50 +529,43 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
 
-# ─── Cortejo dos Encantados (Batuque do Cortejo) ───
-## Turno especial da Caipora: uma PROCISSÃO tocada a tambor. Cada chefe libertado tem
-## um CHAMADO direcional fixo (Constants.CORTEJO_CALL_FOR_PHASE); o jogador toca a
-## direção certa NO tempo de cada batida. A nota é o anel convergente direcional já
-## conhecido (reusa TimingSystem/TimingBubble, como os especiais de boss). Errar um
-## chamado NÃO interrompe a corrente — só perde o golpe daquele espírito. Mata no meio
-## encerra. Sequência perfeita (todos no tempo) → FEVER: acento de maracatu + o último
-## golpe vira crítico.
+# ─── Cortejo dos Encantados (Golpe Perfeito) ───────
+## Turno especial da Caipora, à la Expedition 33/Sekiro: UMA janela única e apertada
+## (um toque ui_up — o MESMO do ataque normal, pensado pro dedão). Acerto perfeito →
+## BARRAGEM: todos os chefes libertados desabam de uma vez (dano escala com nº deles),
+## com clímax cinematográfico. Erro → whiff + CONTRA-ATAQUE (custo souls). Mata no meio
+## reusa o killing-blow zoom. Lead-in com slow-mo telegrafa que vem o golpe grande.
 func _start_cortejo_turn() -> void:
 	if _combat_over or not _both_alive():
 		return
-	var calls: Array[String] = Constants.cortejo_calls_for(MetaProgression.freed_bosses)
-	if calls.is_empty():
+	var spirits: Array[int] = Constants.cortejo_spirits_for(MetaProgression.freed_bosses)
+	if spirits.is_empty():
 		_start_enemy_turn()  # defensivo: o roll exige freed_bosses não vazio
 		return
-	_sfx.play(_sfx.attack_sound)
-	_animator.play_pose(_caipora, &"windup")
-	_apparition.begin()
-	_beat_track.setup(calls)
-	# Stem TOP sobe durante a corrente + ducking da ambiência (dormente até os stems).
 	AudioDirector.set_cortejo_active(true)
-	# Count-in: trava o tempo antes da 1ª nota (padrão Guitar Hero/Patapon).
-	for b: int in range(Constants.CORTEJO_COUNT_IN_BEATS):
-		if _combat_over or not _both_alive():
-			_end_cortejo()
-			return
-		AudioDirector.play_cortejo_beat(b == 0)
-		_beat_track.pulse()
-		await get_tree().create_timer(Constants.CORTEJO_BEAT_SECS).timeout
-	var landed_all: bool = true
-	for i: int in range(calls.size()):
-		if _combat_over or not _both_alive():
-			landed_all = false
-			break
-		# FEVER: se TODOS os chamados anteriores acertaram E este é o último, o golpe
-		# dele vira crítico (recompensa modesta da corrente perfeita — ver §10).
-		var fever: bool = landed_all and i == calls.size() - 1
-		var landed: bool = await _run_cortejo_note(MetaProgression.freed_bosses[i], calls[i], i, fever)
-		landed_all = landed_all and landed
-		# Mata no meio: _on_actor_died já fez teardown + transição.
-		if _combat_over or not _both_alive():
-			break
-	if landed_all and not _combat_over and _both_alive():
-		AudioDirector.play_cortejo_full_chain()
+	# 1. Lead-in telegrafado (slow-mo + cue): avisa que vem algo grande.
+	await _cortejo_lead_in()
+	if _combat_over or not _both_alive():
+		_end_cortejo()
+		return
+	# 2. Janela única — UM toque ui_up, na bolha do ataque normal (zona do dedão).
+	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
+	var window: float = _phase_window(Constants.CORTEJO_WINDOW_BASE)
+	_timing_bubble.show_bubble(pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, Constants.COLOR_CHAMA_HOT, "up")
+	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, "ui_up")
+	var result: int = await _timing_system.timing_result
+	if _combat_over or not _both_alive():
+		_timing_bubble.hide_bubble()
+		_end_cortejo()
+		return
+	if result == TimingSystem.TimingResult.PERFECT:
+		_timing_bubble.burst_success()
+		SignalBus.attack_result_perfect.emit()  # haptic de recompensa (ControlsHud)
+		await _cortejo_barrage(spirits, pos)
+	else:
+		_timing_bubble.burst_fail()
+		SignalBus.attack_result_miss.emit()
+		await _cortejo_whiff(pos)
 	_end_cortejo()
 	if not _combat_over and _enemy.health.is_alive():
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
@@ -584,81 +573,92 @@ func _start_cortejo_turn() -> void:
 
 func _end_cortejo() -> void:
 	_apparition.finish()
-	_beat_track.finish()
 	AudioDirector.set_cortejo_active(false)
+	Engine.time_scale = 1.0
 
-## Uma nota do batuque: abre a bolha direcional do chamado e espera o resultado
-## (await terminal; cancel_window no teardown o desbloqueia). Acerto = o espírito
-## investe + aplica os golpes; erro = ele hesita e some, a corrente segue. Retorna
-## se acertou.
-func _run_cortejo_note(phase: int, action: String, index: int, fever: bool) -> bool:
-	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
-	var hint: String = _cortejo_hint(action)
-	var window: float = _phase_window(Constants.CORTEJO_WINDOW_BASE)
-	_beat_track.set_current(index)
-	AudioDirector.play_cortejo_beat(false)
-	_timing_bubble.show_bubble(pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, Color.TRANSPARENT, hint)
-	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, action)
-	var result: int = await _timing_system.timing_result
+## Lead-in: slow-mo curto + cue de convocação. Os timers IGNORAM o time_scale (senão a
+## slow-mo estica a telegrafia — mesmo padrão do _play_killing_blow_zoom).
+func _cortejo_lead_in() -> void:
+	_sfx.play(_sfx.attack_sound)
+	_animator.play_pose(_caipora, &"windup")
+	_apparition.begin()
+	AudioDirector.play_cortejo_summon()
+	Engine.time_scale = 0.45
+	await get_tree().create_timer(0.5, true, false, true).timeout
+	Engine.time_scale = 1.0
+
+## BARRAGEM: todos os espíritos desabam em rajada; cada um = CORTEJO_LINK_HITS golpes.
+## O último floresce em crítico. Killing-blow no meio reusa o zoom; o clímax usa o
+## finisher VFX. Mata no meio encerra (os espíritos restantes não disparam).
+func _cortejo_barrage(spirits: Array[int], pos: Vector2) -> void:
+	_feedback.spawn_finisher_vfx(_enemy.position + Vector2(0.0, FINISHER_CHEST_OFFSET_Y))
+	for i: int in range(spirits.size()):
+		if _combat_over or not _enemy.health.is_alive():
+			return
+		var crit: bool = i == spirits.size() - 1   # florição no último espírito
+		_apparition.strike(spirits[i], _enemy.position, i % 2 == 0)
+		AudioDirector.play_cortejo_link(spirits[i], true)
+		await _apply_cortejo_hits(pos, crit, i)
+		if _combat_over or not _enemy.health.is_alive():
+			return
+		await get_tree().create_timer(0.14).timeout
+	AudioDirector.play_cortejo_full_chain()
+
+## ERRO: a Caipora se expõe e o inimigo CONTRA-ATACA (custo souls), reusando a fórmula
+## canônica de dano do inimigo.
+func _cortejo_whiff(pos: Vector2) -> void:
+	_feedback.spawn_fail_particles(pos)
+	_feedback.trigger_screenshake(6.0, 0.18)
+	_sfx.play_outcome(SfxSystem.Outcome.MISS)
+	AudioDirector.play_cortejo_miss()
+	_animator.settle(_caipora)
+	await get_tree().create_timer(0.22).timeout
 	if _combat_over or not _both_alive():
-		_timing_bubble.hide_bubble()
-		return result == TimingSystem.TimingResult.PERFECT
-	var landed: bool = result == TimingSystem.TimingResult.PERFECT
-	if landed:
-		_timing_bubble.burst_success()
-		_beat_track.mark(index, true)
-		# A aparição entra pela direção do chamado (coerência tátil↔visual).
-		_apparition.strike(phase, _enemy.position, action)
-		AudioDirector.play_cortejo_link(phase, true)
-		# attack_result_perfect só alimenta o haptic de recompensa na ControlsHud.
-		SignalBus.attack_result_perfect.emit()
-		await _apply_cortejo_hits(pos, fever)
-	else:
-		# O espírito hesita: dissolve sem bater (errar não interrompe a corrente).
-		_timing_bubble.burst_fail()
-		_beat_track.mark(index, false)
-		_feedback.spawn_fail_particles(pos)
-		AudioDirector.play_cortejo_link(phase, false)
-		SignalBus.attack_result_miss.emit()
-	return landed
+		return
+	var counter: float = _enemy_counter_damage() * Constants.CORTEJO_MISS_COUNTER_MULT
+	_caipora.take_damage(counter)
+	_sfx.play_outcome(SfxSystem.Outcome.HURT)
+	_feedback.trigger_screenshake(14.0, 0.35)
+	_feedback.spawn_blood_particles(_caipora.position)
+	_feedback.trigger_hit_stop(2)
+	_feedback.track_perfect(false)
 
-func _cortejo_hint(action: String) -> String:
-	match action:
-		"ui_right": return "right"
-		"ui_left": return "left"
-		"ui_down": return "down"
-		_: return "up"
+## Dano canônico de um golpe do inimigo (mesma fórmula do erro de defesa). DRY.
+func _enemy_counter_damage() -> float:
+	var damage: float = _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
+	damage += EnemyStats.bonus_damage_for(_enemy_id, GameState.active_phase)
+	if GameState.active_phase == 5:
+		damage = maxf(damage, EnemyStats.DAMAGE_FLOOR)
+	return damage
 
-## Cada chamado acertado = CORTEJO_LINK_HITS golpes de dano-base. `fever` (último elo
-## da corrente perfeita) torna-os críticos. Reaproveita o pipeline de golpe
-## (execute_attack/take_damage/killing-blow zoom).
-func _apply_cortejo_hits(pos: Vector2, fever: bool) -> void:
+## Um espírito da barragem aplica CORTEJO_LINK_HITS golpes; `crit` (último) floresce em
+## crítico. `index` faz o shake crescer (escada de clímax). Reaproveita o pipeline.
+func _apply_cortejo_hits(pos: Vector2, crit: bool, index: int) -> void:
 	for h: int in range(Constants.CORTEJO_LINK_HITS):
 		if _combat_over or not _enemy.health.is_alive():
 			return
-		var damage: float = _caipora.execute_attack(fever)
+		var damage: float = _caipora.execute_attack(crit)
 		var is_killing_blow: bool = damage >= _enemy.health.current_health
-		var outcome: int = SfxSystem.Outcome.CRIT if fever else SfxSystem.Outcome.HIT
+		var outcome: int = SfxSystem.Outcome.CRIT if crit else SfxSystem.Outcome.HIT
 		if is_killing_blow:
 			_sfx.play_outcome(outcome)
 			_feedback.spawn_bubble_burst(pos, Constants.COLOR_TELEGRAPH_ENEMY)
-			if fever:
-				_feedback.spawn_critical_particles(_enemy.position)
+			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
 			await _play_killing_blow_zoom()
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
 		_sfx.play_outcome(outcome)
-		_feedback.trigger_screenshake(13.0, 0.3)
+		_feedback.trigger_screenshake(12.0 + index * 4.0, 0.3)
 		_feedback.spawn_bubble_burst(pos, Constants.COLOR_TELEGRAPH_ENEMY)
-		if fever:
+		if crit:
 			_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(3)
 		_animator.strike(_caipora)
 		_caipora_step_forward()
 		if h < Constants.CORTEJO_LINK_HITS - 1:
-			await get_tree().create_timer(0.12).timeout
+			await get_tree().create_timer(0.1).timeout
 
 # ─── Turno do Inimigo (Defesa) ─────────────────────
 func _start_enemy_turn() -> void:
@@ -934,16 +934,16 @@ func _teardown_combat() -> void:
 	_disconnect_timing(_on_defense_timing_result)
 	if _timing_system.timing_first_hit.is_connected(_on_double_first_hit):
 		_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
-	# Cortejo (Batuque): cancela a nota aberta. cancel_window emite timing_result(MISS)
-	# uma vez → desbloqueia o `await` pendente em _run_cortejo_note (sem corrotina
-	# pendurada). Vem DEPOIS dos disconnects acima: assim o emit não atinge handler de
-	# ataque/defesa, só a corrotina do batuque. Some com aparição/faixa/STEM_TOP.
+	# Cortejo (Golpe Perfeito): cancela a janela aberta. cancel_window emite
+	# timing_result(MISS) uma vez → desbloqueia o `await` pendente em _start_cortejo_turn
+	# (sem corrotina pendurada). Vem DEPOIS dos disconnects acima: assim o emit não
+	# atinge handler de ataque/defesa, só a corrotina do Cortejo. Restaura time_scale
+	# (caso a morte caia no lead-in em slow-mo) e some com a aparição/STEM_TOP.
 	_timing_system.cancel_window()
 	if _apparition != null:
 		_apparition.finish()
-	if _beat_track != null:
-		_beat_track.finish()
 	AudioDirector.set_cortejo_active(false)
+	Engine.time_scale = 1.0
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
 	_feedback.force_clear_hit_stop()

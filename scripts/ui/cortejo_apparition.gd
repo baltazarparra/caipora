@@ -49,10 +49,9 @@ func begin() -> void:
 	visible = true
 	queue_redraw()
 
-## Convoca o espírito da fase `phase` para golpear em `target`, entrando PELA direção
-## do chamado `action` (ui_up sobe de baixo, ui_right vem da esquerda, etc.) — coesão
-## tátil↔visual: o espírito vem do lado que você tocou.
-func strike(phase: int, target: Vector2, action: String) -> void:
+## Convoca o espírito da fase `phase` para investir em `target`. `from_left` alterna o
+## lado de entrada na barragem (a "passagem" do cortejo cruzando a arena).
+func strike(phase: int, target: Vector2, from_left: bool) -> void:
 	visible = true
 	_impacts.append(target)
 	_trail_alpha = 1.0
@@ -61,28 +60,16 @@ func strike(phase: int, target: Vector2, action: String) -> void:
 	if ghost == null:
 		return
 	add_child(ghost)
-	# Vetor de entrada: começa deslocado na direção OPOSTA ao movimento e investe até
-	# o alvo (ui_up → entra de baixo subindo; ui_right → da esquerda; etc.).
-	var dir: Vector2 = _entry_dir(action)
-	ghost.position = target - dir * SIDE_OFFSET
-	if dir.x != 0.0:
-		ghost.scale.x = absf(ghost.scale.x) * signf(dir.x)  # encara a direção do avanço
-	var overshoot: Vector2 = target + dir * 12.0
+	var start_x: float = target.x + (-SIDE_OFFSET if from_left else SIDE_OFFSET)
+	ghost.position = Vector2(start_x, target.y)
+	ghost.scale.x = absf(ghost.scale.x) * (1.0 if from_left else -1.0)  # encara o alvo
+	var overshoot: float = target.x + (12.0 if from_left else -12.0)
 	var t := create_tween()
-	t.tween_property(ghost, "position", overshoot, SWEEP_IN) \
+	t.tween_property(ghost, "position:x", overshoot, SWEEP_IN) \
 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	t.tween_property(ghost, "modulate:a", 0.0, SWEEP_OUT) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	t.tween_callback(ghost.queue_free)
-
-## Direção do AVANÇO da aparição (coords de tela: Y+ = baixo) a partir do chamado.
-func _entry_dir(action: String) -> Vector2:
-	match action:
-		"ui_up": return Vector2.UP
-		"ui_down": return Vector2.DOWN
-		"ui_left": return Vector2.LEFT
-		"ui_right": return Vector2.RIGHT
-		_: return Vector2.UP
 
 ## Encerra a corrente: a trilha esmaece.
 func finish() -> void:
