@@ -200,7 +200,8 @@ func _build() -> void:
 	desc_lbl.add_theme_font_size_override("font_size", Constants.FONT_SM)
 	desc_lbl.add_theme_color_override("font_color", Constants.COLOR_TEXT)
 	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc_lbl.size = Vector2(vp.x * 0.8, 40.0)
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.size = Vector2(vp.x * 0.8, 96.0)
 	desc_lbl.position = Vector2(vp.x * 0.1, dots_y + 24.0)
 	desc_lbl.modulate.a = 0.0
 	desc_lbl.name = &"DescLabel"
