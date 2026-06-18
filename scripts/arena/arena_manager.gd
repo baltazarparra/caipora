@@ -676,6 +676,8 @@ func _start_enemy_turn() -> void:
 		)
 	if not _active_enemy_pattern.audio_event.is_empty():
 		_sfx.play_named(_active_enemy_pattern.audio_event)
+	if not _active_enemy_pattern.vfx_id.is_empty():
+		_feedback.spawn_attack_vfx(_active_enemy_pattern.vfx_id, _enemy.position + Vector2(0, -20.0))
 	_enemy.state_machine.start_pattern(_active_enemy_pattern)
 
 func _on_enemy_attack_started() -> void:
