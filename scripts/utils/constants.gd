@@ -91,20 +91,45 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 	window += TOUCH_TIMING_WINDOW_BONUS
 	return window
 
-# ─── Cortejo dos Encantados (corrente de carga) ────
-# Terceiro tipo de ataque da Caipora: segurar ↑ por CORTEJO_HOLD_SEC solta um
-# golpe; encadeia-se em N elos, um por chefe LIBERTADO (MetaProgression.freed_bosses,
-# teto CORTEJO_MAX_LINKS). Errar um elo NÃO interrompe a corrente — só perde o dano
-# daquele elo. Ver docs/CONCEITO-corrente-encantados.md.
-# A carga NÃO encurta por fase (diferente das janelas de tap): é uma promessa
-# tátil estável ("segurei e soltei no cheio"); a dificuldade vem de encadear N elos.
+# ─── Cortejo dos Encantados (Batuque do Cortejo) ───
+# Terceiro tipo de ataque da Caipora: uma PROCISSÃO tocada a tambor (maracatu).
+# Cada chefe LIBERTADO (MetaProgression.freed_bosses, teto CORTEJO_MAX_LINKS) tem um
+# CHAMADO direcional fixo; no turno do Cortejo o jogador convoca os espíritos em
+# cadência — toca a direção certa NO tempo de cada batida (como Patapon/Guitar Hero,
+# reusando o anel convergente do tap). Errar um chamado NÃO interrompe a corrente —
+# só perde o golpe daquele espírito. Ver docs/CONCEITO-corrente-encantados.md.
 const CORTEJO_CHANCE: float = 0.30          # roll no turno da Caipora (espelha o duplo)
 const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
-const CORTEJO_HOLD_SEC: float = 0.8         # tempo de carga por elo
-const CORTEJO_RELEASE_GRACE: float = 0.18   # janela de overcharge no topo (segurar demais perde o elo)
-const CORTEJO_LINK_TIMEOUT: float = 1.6     # elo perdido se não concluir a carga a tempo
-const CORTEJO_LINK_GAP: float = 0.22        # beat entre elos
-const CORTEJO_LINK_HITS: int = 2            # hits de dano por elo acertado
+const CORTEJO_LINK_HITS: int = 2            # hits de dano por chamado acertado
+const CORTEJO_BEAT_SECS: float = 0.62       # cadência do tambor: uma nota por batida (legível)
+const CORTEJO_COUNT_IN_BEATS: int = 2       # batidas de "contagem" antes da 1ª nota (trava o tempo)
+# Direção+tempo já é mais difícil que o tap: a janela perfeita da nota parte de uma
+# base um tico mais generosa que o ataque padrão (depois afina por fase).
+const CORTEJO_WINDOW_BASE: float = 0.95
+
+## Chamado direcional fixo por fase (espírito). Varredura horária ↑→↓←: memorizável,
+## cresce pela cauda (1 boss = ↑, 2 = ↑→, …). Mula sobe, Boitatá varre, Curupira
+## investe baixo, Saci gira de volta.
+const CORTEJO_CALL_FOR_PHASE: Dictionary = {
+	1: "ui_up",     # Mula — o galope empina, fogo subindo do toco
+	2: "ui_right",  # Boitatá — a serpente de brasa varre/enrola
+	3: "ui_down",   # Curupira — investida baixa, raízes arrancando o chão
+	4: "ui_left",   # Saci — o redemoinho gira de volta
+}
+
+## Sequência de chamados a partir das fases libertadas (ordenadas), cortada no teto.
+## Seam puro/testável: arena lê isto para montar o batuque. Fases sem chamado mapeado
+## (não deveria ocorrer em P1–P4) são ignoradas.
+static func cortejo_calls_for(freed: Array[int]) -> Array[String]:
+	var calls: Array[String] = []
+	var ordered: Array[int] = freed.duplicate()
+	ordered.sort()
+	for phase: int in ordered:
+		if calls.size() >= CORTEJO_MAX_LINKS:
+			break
+		if CORTEJO_CALL_FOR_PHASE.has(phase):
+			calls.append(CORTEJO_CALL_FOR_PHASE[phase])
+	return calls
 
 # ─── Audio ─────────────────────────────────────────
 # Passo bem abaixo dos SFX de combate: presença tátil, nunca spam. O asset é

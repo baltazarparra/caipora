@@ -1,13 +1,19 @@
-# Conceito — O Cortejo dos Encantados (Corrente de Carga)
+# Conceito — O Cortejo dos Encantados (Batuque do Cortejo)
 
 > Sistema de combate novo. Um **terceiro tipo de ataque** da Caipora, somado ao
 > tap de crítico e ao ataque duplo já existentes. Desbloqueado ao libertar o
 > primeiro chefe; cresce a cada encantado libertado.
 >
-> **Status:** IMPLEMENTADO (2026-06-17). Etapas 1–6 entregues (ver §9). A etapa 1
-> (núcleo + tela de unlock) já existia; as etapas 2–6 entraram juntas ao consertar
-> o KI-018 (a tela "OBTIDO" anunciava um golpe que nunca chegava ao combate).
+> **Status:** IMPLEMENTADO (2026-06-17) e depois REDESENHADO. A 1ª versão usava uma
+> mecânica de CARGA (segurar ↑ e soltar no cheio) que se mostrou ilegível (ponto de
+> soltar invisível; segunda metáfora de timing). Foi substituída pelo **Batuque do
+> Cortejo**: uma procissão tocada a tambor (maracatu) — cada chefe libertado tem um
+> CHAMADO direcional fixo (↑→↓←) e o jogador toca a direção certa NO TEMPO de cada
+> batida, reusando o anel convergente do tap (legível) e o pipeline direcional dos
+> especiais de boss. Referências: Patapon, Guitar Hero, Expedition 33.
 > Pendente apenas: os .wav dedicados do áudio (hoje em fallback canônico).
+> **NOTA:** as seções 3 (mecânica) e 6/7 abaixo descrevem a CARGA original e estão
+> historicamente desatualizadas; a fonte da mecânica vigente é este cabeçalho + §9.
 > Escopo deste doc: mecânica, integração com o sistema vigente, narrativa,
 > direção de arte AAA e direção de áudio/música AAA.
 
@@ -360,26 +366,35 @@ normalização de loudness).
 
 ---
 
-**Estado da implementação (2026-06-17):**
+**Estado da implementação — VIGENTE (Batuque do Cortejo, redesenho 2026-06-17):**
 
-1. ✅ Núcleo `HoldTimingSystem` + constantes + testes.
-2. ✅ Integração no turno: roll, `_start_cortejo_turn`, encadeamento, dano por elo,
-   killing-blow no meio, teardown.
-3. ✅ Anel de carga `ChargeBubble` (segura ↑) + touch (wedge UP segurável, haptics
-   via `attack_result_*`).
-4. ✅ Aparições: `CortejoApparition` reusa o sprite canônico do boss libertado como
-   espírito translúcido tingido na aura (em vez de 4 sprites novos — a aparição É o
-   chefe que você libertou). _Nicety futura:_ sprites de golpe dedicados por espírito.
-5. ✅ VFX da corrente: trilha de luz ligando os impactos. _Pendente:_ crescendo de
-   vinheta (evitado para não tocar o shader compartilhado de `Atmosphere`).
-6. ✅ Áudio: hooks `AudioDirector.play_cortejo_*`/`set_cortejo_active` (charge loop,
-   trinco, stinger por espírito, perdido, full-chain, STEM_TOP + duck), com fallback
-   aos sons canônicos. _Pendente:_ os .wav dedicados via `gen_sfx.py`.
+A mecânica de CARGA (itens históricos abaixo) foi APOSENTADA por ilegibilidade.
+A versão atual é a **sequência direcional rítmica**:
+
+- **Mecânica:** chamado direcional fixo por fase (`Constants.CORTEJO_CALL_FOR_PHASE`:
+  Mula ↑, Boitatá →, Curupira ↓, Saci ←; `cortejo_calls_for()` monta a sequência das
+  fases libertadas). Turno = count-in de tambor → uma nota direcional por batida
+  (anel convergente via `TimingSystem`+`TimingBubble`, reusando o tap conhecido) →
+  acerto invoca a aparição (entra pela direção do chamado) + 2 hits; erro hesita, a
+  corrente segue. Sequência perfeita → FEVER (acento de maracatu + último golpe
+  crítico). Arquivos: `arena_manager._start_cortejo_turn/_run_cortejo_note`,
+  `CortejoBeatTrack` (faixa de leitura), `TimingSystem.cancel_window` (destrava o
+  await no teardown).
+- **Legibilidade:** nota convergente (metáfora dominada) + metrônomo audível
+  (`AudioDirector.play_cortejo_beat`) + faixa de pips com preview da sequência.
+- **Aparições/trilha:** `CortejoApparition` (mantido) — o boss libertado retorna como
+  espírito translúcido na aura, + fio de luz ligando os impactos.
+- **Áudio:** `play_cortejo_beat/link/full_chain` + `set_cortejo_active` (STEM_TOP+duck),
+  com fallback canônico. _Pendente:_ .wav dedicados via `gen_sfx.py`.
+
+_Histórico (CARGA, aposentada): 1. `HoldTimingSystem`; 2. integração de elos; 3. anel
+`ChargeBubble`; 4–6 aparições/VFX/áudio. Os itens 4–6 foram preservados; 1–3 trocados._
 
 ## 10. Pendências a balancear (registrar em PLAN.md ao implementar)
 
-- `CORTEJO_CHANCE` (0.30 inicial) vs. dominância do pico de dano.
-- Os 2 hits por elo escalam com Fúria/CHAMA — medir o teto real (4 elos × 2 ×
-  dano-base com trilha máxima) contra o HP dos chefes da Fase 5.
-- `CORTEJO_RELEASE_GRACE` no touch (latência de injeção do D-pad pode pedir
-  janela um pouco maior que no teclado — ver `TOUCH_TIMING_WINDOW_BONUS`).
+- `CORTEJO_CHANCE` (0.30) vs. dominância do pico de dano.
+- `CORTEJO_BEAT_SECS` (~0.62) e a janela perfeita por fase (`CORTEJO_WINDOW_BASE`) —
+  calibrar no playtest (direção+tempo é mais difícil que o tap simples).
+- Recompensa do FEVER (último golpe crítico) vs. teto de dano (4 chamados × 2 hits,
+  o último crítico, escalando com Fúria/CHAMA) contra o HP dos chefes da Fase 5.
+- `.wav` dedicados do Cortejo (metrônomo/stingers) via `gen_sfx.py`.
