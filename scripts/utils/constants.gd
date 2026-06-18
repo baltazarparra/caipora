@@ -101,10 +101,35 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 const CORTEJO_CHANCE: float = TIMING_DOUBLE_CHANCE  # = 0.30, espelha o duplo (pedido)
 const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
 const CORTEJO_LINK_HITS: int = 2            # hits de dano por espírito na barragem
-# Janela apertada (alto risco/recompensa); afina por fase via timing_window_for_phase.
-const CORTEJO_WINDOW_BASE: float = 0.78
+# Cada hit da barragem é FIXO em 1 (não escala com o dano da Caipora nem com crit): a
+# força do Golpe Perfeito vem do NÚMERO de hits (espíritos × LINK_HITS), não da
+# magnitude por golpe. Antes cada hit usava execute_attack() e estourava o dano.
+const CORTEJO_HIT_DAMAGE: float = 1.0
+# GOLPE CARREGADO (hold-to-charge): o jogador SEGURA ui_up para carregar e SOLTA na
+# zona confortável. A carga acompanha o progresso da janela; o que conta é o instante
+# do SOLTAR. A zona de soltar é larga DE PROPÓSITO (golpe-recompensa, nada frame-perfect).
+#   < CHARGE_FULL  → carga fraca, solta cedo → whiff
+#   [FULL, OVER]   → SOLTE AQUI → barragem (PERFEITO)
+#   > OVERCHARGE   → estourou (segurou demais) → whiff
+const CORTEJO_CHARGE_FULL: float = 0.50     # carga cheia: a partir daqui soltar é perfeito
+const CORTEJO_OVERCHARGE: float = 0.92      # passou daqui segurando → estoura
+# Janela confortável: base + bônus de touch, com PISO por fase (golpe-recompensa não
+# aperta nas fases altas). Use cortejo_window_for_phase(), não timing_window_for_phase().
+const CORTEJO_WINDOW_BASE: float = 0.95
+const CORTEJO_WINDOW_FLOOR: float = 0.85    # piso pós-redução de fase (conforto)
 # Custo do erro: multiplicador do contra-ataque (1.0 = um golpe inteiro do inimigo).
 const CORTEJO_MISS_COUNTER_MULT: float = 1.0
+
+# Ritmo da barragem: espaçado DE PROPÓSITO para a leitura (cada espírito e cada hit
+# lê individualmente, não vira borrão). Só timing/hit-stop — nada de partículas extras.
+const CORTEJO_SPIRIT_TELEGRAPH: float = 0.12   # antecipação antes do espírito investir
+const CORTEJO_HIT_GAP: float = 0.14            # intervalo entre hits do mesmo espírito
+const CORTEJO_SPIRIT_GAP: float = 0.22         # intervalo entre espíritos da corrente
+
+## Janela de ação do Golpe Carregado na fase: parte da fórmula padrão mas respeita um
+## PISO confortável (CORTEJO_WINDOW_FLOOR) — o golpe-recompensa nunca vira frame-perfect.
+static func cortejo_window_for_phase(phase: int) -> float:
+	return maxf(timing_window_for_phase(CORTEJO_WINDOW_BASE, phase), CORTEJO_WINDOW_FLOOR)
 
 # ─── Golpes nomeados da Caipora (PRD docs/PRD-moves-nomeados.md) ────────────
 # Poucos e fixos (a Caipora não tem catálogo de .tres): nome + som (sfx/<audio>.wav,

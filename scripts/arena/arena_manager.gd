@@ -554,12 +554,16 @@ func _start_cortejo_turn() -> void:
 	if _combat_over or not _both_alive():
 		_end_cortejo()
 		return
-	# 2. Janela única — UM toque ui_up, na bolha do ataque normal (zona do dedão).
+	# 2. Janela ÚNICA de CARGA: SEGURA ui_up para carregar, SOLTA na zona confortável.
+	#    Janela com piso por fase (golpe-recompensa não vira frame-perfect). A bolha vira
+	#    medidor de fogo; a carga espelha no D-pad (ControlsHud) via SignalBus.
 	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
-	var window: float = _phase_window(Constants.CORTEJO_WINDOW_BASE)
-	_timing_bubble.show_bubble(pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, Constants.COLOR_CHAMA_HOT, "up")
-	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, "ui_up")
+	var window: float = Constants.cortejo_window_for_phase(GameState.active_phase)
+	_timing_bubble.show_bubble(pos, window, Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE, false, Constants.COLOR_CHAMA_HOT, "up", true)
+	_timing_system.open_window(window, Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE, false, 0.0, 0.0, "ui_up", "ui_right", true)
+	SignalBus.cortejo_charge_opened.emit("ui_up", window)
 	var result: int = await _timing_system.timing_result
+	SignalBus.cortejo_charge_closed.emit()  # soltou/estourou/expirou → apaga o fogo do D-pad
 	if _combat_over or not _both_alive():
 		_timing_bubble.hide_bubble()
 		_end_cortejo()
@@ -580,6 +584,7 @@ func _start_cortejo_turn() -> void:
 func _end_cortejo() -> void:
 	_apparition.finish()
 	AudioDirector.set_cortejo_active(false)
+	SignalBus.cortejo_charge_closed.emit()  # defensivo: garante o D-pad limpo em qualquer saída
 	Engine.time_scale = 1.0
 
 ## Lead-in: slow-mo curto + cue de convocação. Os timers IGNORAM o time_scale (senão a
@@ -605,12 +610,17 @@ func _cortejo_barrage(spirits: Array[int], pos: Vector2) -> void:
 		if _combat_over or not _enemy.health.is_alive():
 			return
 		var crit: bool = i == spirits.size() - 1   # florição no último espírito
+		# Antecipação curta por espírito: invoca e deixa a aparição investir ANTES de
+		# bater (cada elo lê individualmente, em vez de virar um borrão de hits).
 		_apparition.strike(spirits[i], _enemy.position, i % 2 == 0)
 		AudioDirector.play_cortejo_link(spirits[i], true)
+		await get_tree().create_timer(Constants.CORTEJO_SPIRIT_TELEGRAPH).timeout
+		if _combat_over or not _enemy.health.is_alive():
+			return
 		await _apply_cortejo_hits(pos, crit, i)
 		if _combat_over or not _enemy.health.is_alive():
 			return
-		await get_tree().create_timer(0.14).timeout
+		await get_tree().create_timer(Constants.CORTEJO_SPIRIT_GAP).timeout
 	AudioDirector.play_cortejo_full_chain()
 
 ## ERRO: a Caipora se expõe e o inimigo CONTRA-ATACA (custo souls), reusando a fórmula
@@ -646,7 +656,9 @@ func _apply_cortejo_hits(pos: Vector2, crit: bool, index: int) -> void:
 	for h: int in range(Constants.CORTEJO_LINK_HITS):
 		if _combat_over or not _enemy.health.is_alive():
 			return
-		var damage: float = _caipora.execute_attack(crit)
+		# Dano FIXO por hit (1): a barragem fere pela quantidade de golpes, não pela
+		# magnitude. `crit` segue valendo só para o visual (florição do último espírito).
+		var damage: float = Constants.CORTEJO_HIT_DAMAGE
 		var is_killing_blow: bool = damage >= _enemy.health.current_health
 		var outcome: int = SfxSystem.Outcome.CRIT if crit else SfxSystem.Outcome.HIT
 		if is_killing_blow:
@@ -663,11 +675,12 @@ func _apply_cortejo_hits(pos: Vector2, crit: bool, index: int) -> void:
 		_feedback.spawn_bubble_burst(pos, Constants.COLOR_TELEGRAPH_ENEMY)
 		if crit:
 			_feedback.spawn_critical_particles(_enemy.position)
-		_feedback.trigger_hit_stop(3)
+		# Hit-stop cresce com o índice do espírito (escada de clímax até a florição).
+		_feedback.trigger_hit_stop(3 + index)
 		_animator.strike(_caipora)
 		_caipora_step_forward()
 		if h < Constants.CORTEJO_LINK_HITS - 1:
-			await get_tree().create_timer(0.1).timeout
+			await get_tree().create_timer(Constants.CORTEJO_HIT_GAP).timeout
 
 # ─── Turno do Inimigo (Defesa) ─────────────────────
 func _start_enemy_turn() -> void:

@@ -89,6 +89,8 @@ func _ready() -> void:
 	SignalBus.defense_result_miss.connect(_on_defense_result_miss)
 	SignalBus.attack_result_perfect.connect(_pulse_reward_haptic)
 	SignalBus.attack_result_miss.connect(_pulse_fail_haptic)
+	SignalBus.cortejo_charge_opened.connect(_on_cortejo_charge_opened)
+	SignalBus.cortejo_charge_closed.connect(_on_cortejo_charge_closed)
 
 
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
@@ -473,6 +475,23 @@ func _on_defense_window_closed() -> void:
 		return
 	for btn in _keys:
 		(btn as CombatArrowButton).set_window_open(false)
+
+
+# ─── Feedback do Golpe Carregado (carga espelhada no D-pad) ──
+func _on_cortejo_charge_opened(action: String, duration: float) -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	for btn in _keys:
+		var b := btn as CombatArrowButton
+		if b.action == action:
+			b.start_cortejo_charge(duration)
+
+
+func _on_cortejo_charge_closed() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	for btn in _keys:
+		(btn as CombatArrowButton).clear_cortejo_charge()
 
 
 func _on_defense_result_perfect() -> void:

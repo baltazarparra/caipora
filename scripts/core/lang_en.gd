@@ -107,8 +107,9 @@ const STRINGS: Dictionary = {
 	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
 	&"cortejo.unlock.subtitle.first":  "OBTAINED!",
 	&"cortejo.unlock.subtitle.hit":    "STRIKE UNLOCKED!",
-	&"cortejo.unlock.desc.first":      "Sometimes on your turn: when the ring closes, TAP on time. Hit = every freed spirit crashes down at once. Miss = counter-attack.",
+	&"cortejo.unlock.desc.first":      "Sometimes on your turn: HOLD ↑ to charge and RELEASE when the fire fills. Hit = every freed spirit crashes down at once. Miss = counter-attack.",
 	&"cortejo.unlock.desc.hit":        "The Cortejo now crashes %d spirits down at once.",
+	&"cortejo.unlock.demo":            "Hold ↑ and release at the perfect moment",
 	&"cortejo.unlock.hint":            "press to continue",
 
 	# Hub Manager — arrival rites

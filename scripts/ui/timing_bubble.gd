@@ -70,6 +70,9 @@ var _key_hint: String = "up"
 var _frozen: bool = false
 var _flash_timer: float = 0.0
 var _arrow_offset: Vector2 = Vector2.ZERO
+## Modo GOLPE CARREGADO: a seta vira medidor de fogo (enche com a carga), com bordas
+## flamejantes. A zona perfeita = janela de SOLTAR. Tudo em immediate-mode (sem nós).
+var _charge_mode: bool = false
 ## Ganho de cor aplicado no desenho para compensar o CanvasModulate escuro de
 ## certas fases (ver Constants.feedback_gain_for_phase). Identidade = sem efeito.
 var _color_gain: Color = Color(1, 1, 1)
@@ -88,6 +91,10 @@ func _process(delta: float) -> void:
 		return
 
 	if _phase == PHASE_IDLE:
+		return
+
+	if _charge_mode:
+		_process_charge(delta)
 		return
 
 	_flash_timer = maxf(0.0, _flash_timer - delta)
@@ -155,6 +162,20 @@ func _process_burst(delta: float) -> void:
 		visible = false
 
 
+## Modo carga: avança o "enchimento" com o progresso e dispara o cue ao entrar na zona
+## de soltar. Sem alocação — só contadores + queue_redraw.
+func _process_charge(delta: float) -> void:
+	_flash_timer = maxf(0.0, _flash_timer - delta)
+	_elapsed += delta
+	var progress: float = clampf(_elapsed / _duration, 0.0, 1.0)
+	var in_release: bool = progress >= _perfect_start and progress <= _perfect_end
+	if in_release and not _vuln_emitted:
+		_vuln_emitted = true
+		_flash_timer = FLASH_S
+		vulnerable_entered.emit()  # cue "SOLTE!" (timing_alert) + flash verde-cristal
+	queue_redraw()
+
+
 func _draw() -> void:
 	if _burst_timer >= 0.0:
 		draw_circle(Vector2.ZERO, _burst_radius, _g(_burst_color))
@@ -162,6 +183,10 @@ func _draw() -> void:
 		return
 
 	if _phase == PHASE_IDLE:
+		return
+
+	if _charge_mode:
+		_draw_charge()
 		return
 
 	# 1. Anel-alvo fixo (a janela de acerto). Acende na zona perfeita.
@@ -202,6 +227,76 @@ func _draw_arrow_glyph(alpha: float, color: Color) -> void:
 				"D": col = dark
 				_:   col = outline
 			var cell_pos: Vector2 = _glyph_rotated_cell(r, c)
+			draw_rect(Rect2(origin + cell_pos * ARROW_CELL, cs), col, true)
+
+
+# ─── Modo carga: medidor de fogo (immediate-mode, sem nós/partículas) ──────
+func _draw_charge() -> void:
+	var progress: float = clampf(_elapsed / _duration, 0.0, 1.0)
+	var in_release: bool = progress >= _perfect_start and progress <= _perfect_end
+	var overcharge: bool = progress > _perfect_end
+	var flick: float = sin(_elapsed * TAU * 7.0) * 0.5 + 0.5   # cintilação de chama (barata)
+
+	# 1. Trilho do medidor (apagado) + banda da zona de SOLTAR (chama).
+	draw_arc(Vector2.ZERO, RADIUS_TARGET, 0.0, TAU, 40, _g(Color(0.5, 0.3, 0.15, 0.30)), 2.0)
+	var a0: float = -PI * 0.5 + _perfect_start * TAU
+	var a1: float = -PI * 0.5 + _perfect_end * TAU
+	draw_arc(Vector2.ZERO, RADIUS_TARGET, a0, a1, 24,
+		_g(Color(Constants.COLOR_CHAMA_HOT.r, Constants.COLOR_CHAMA_HOT.g, Constants.COLOR_CHAMA_HOT.b, 0.55)), 3.0)
+
+	# 2. Arco de carga: enche no sentido horário a partir do topo.
+	var fill_end: float = -PI * 0.5 + progress * TAU
+	var gauge: Color
+	if overcharge:
+		gauge = Color(Constants.COLOR_BLOOD.r, 0.1, 0.05, 0.95)
+	elif in_release:
+		gauge = Constants.COLOR_CRYSTAL_GLOW
+	else:
+		gauge = Constants.COLOR_AMBER.lerp(Constants.COLOR_CHAMA_HOT, flick)
+	draw_arc(Vector2.ZERO, RADIUS_TARGET, -PI * 0.5, fill_end, 36,
+		_g(Color(gauge.r, gauge.g, gauge.b, 0.95)), 4.0)
+
+	# 3. Anel de "SOLTE!" pulsando na zona de soltar.
+	if in_release:
+		var pulse: float = sin(_elapsed * TAU * 4.0) * 0.25 + 0.7
+		draw_arc(Vector2.ZERO, RADIUS_TARGET + 6.0 + flick * 3.0, 0.0, TAU, 40,
+			_g(Color(Constants.COLOR_CHAMA_CORE.r, Constants.COLOR_CHAMA_CORE.g, Constants.COLOR_CHAMA_CORE.b, pulse)), 2.0)
+
+	# 4. Seta de fogo enchendo de baixo pra cima.
+	_draw_charge_glyph(progress, in_release, overcharge, flick)
+
+
+## A Garra Tribal vira medidor: bordas SEMPRE flamejantes, miolo enche com a carga.
+func _draw_charge_glyph(progress: float, in_release: bool, overcharge: bool, flick: float) -> void:
+	var half: float = ARROW_GRID * ARROW_CELL * 0.5
+	var origin: Vector2 = Vector2(-half, -half)
+	var cs: Vector2 = Vector2.ONE * (ARROW_CELL + 0.5)
+	var fill_top: float = (1.0 - progress) * float(ARROW_GRID)   # linha r acima = carregado
+
+	var fill_col: Color = Constants.COLOR_CHAMA_CORE.lerp(Constants.COLOR_CHAMA_HOT, flick)
+	var edge_col: Color = Constants.COLOR_JUBA.lerp(Constants.COLOR_AMBER, flick)
+	if in_release:
+		fill_col = Constants.COLOR_CRYSTAL_GLOW
+	elif overcharge:
+		fill_col = Color(Constants.COLOR_BLOOD.r, 0.12, 0.06)
+		edge_col = Color(0.7, 0.1, 0.05)
+	var dim: Color = Color(Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g, Constants.COLOR_JUBA_DARK.b, 0.45)
+
+	for r: int in ARROW_GRID:
+		var row: String = ARROW_GLYPH[r]
+		var charged: bool = float(r) >= fill_top
+		for c: int in ARROW_GRID:
+			var ch: String = row[c]
+			if ch == ".":
+				continue
+			var col: Color
+			if ch == "K":
+				col = _g(Color(edge_col.r, edge_col.g, edge_col.b, 0.95))   # borda de fogo
+			elif charged:
+				col = _g(Color(fill_col.r, fill_col.g, fill_col.b, 0.95))
+			else:
+				col = _g(dim)
+			var cell_pos: Vector2 = _glyph_rotated_cell(r, c)   # cortejo é sempre "up"
 			draw_rect(Rect2(origin + cell_pos * ARROW_CELL, cs), col, true)
 
 
@@ -249,7 +344,7 @@ func _flashed(c: Color) -> Color:
 
 
 # ─── Public API ────────────────────────────────────
-func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up") -> void:
+func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up", charge: bool = false) -> void:
 	_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
@@ -260,6 +355,7 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_defense_mode = defense
 	_vuln_color = vuln_color
 	_key_hint = key_hint
+	_charge_mode = charge
 	_outer_radius = RADIUS_MAX
 	_target_alpha = 0.25
 	_arrow_alpha = 0.35
