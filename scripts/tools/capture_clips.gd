@@ -11,11 +11,12 @@ extends SceneTree
 ##     --out=site/assets/clips/combat_strip.png
 ##
 ## Args (-- depois do nome do script):
-##   --clip=combat|explore|boss   o que capturar (default combat)
+##   --clip=combat|furia|boss     o que capturar (default combat)
 ##   --out=<png>                  tira de saída (default p/ combat)
 ##   --frames=N                   nº de células amostradas (default 30)
 ##   --sample=S                   captura 1 a cada S frames de render (default 5 ~12fps)
 ##   --warmup=F                   frames a pular antes de amostrar (pula o loader)
+##   --gain=G                     ganho de exposição p/ legibilidade web (default 2.0)
 ##
 ## Saídas: <out> (tira), <out sem ext>_poster.png (1ª célula), e atualiza
 ## <dir>/clips.json com { clip: {frames, cell_w, cell_h} } para o CSS/JS.
@@ -29,6 +30,10 @@ var _out: String = "site/assets/clips/combat_strip.png"
 var _target_frames: int = 30
 var _sample: int = 5
 var _warmup: int = -1  # -1 = default por clipe
+## Multiplicação de exposição aplicada ao frame capturado: o clipe da landing
+## roda na web e o jogo é MUITO escuro (Atmosphere/vignette). Multiplicar mantém
+## o preto puro preto (0×ganho=0) e levanta só a Caipora/VFX iluminados.
+var _gain: float = 2.0
 
 var _frames: int = 0
 var _scene: Node = null
@@ -36,8 +41,6 @@ var _arena_timing: Node = null
 var _pressed_window: bool = false
 var _captured: Array[Image] = []
 var _cell: Vector2i = Vector2i.ZERO
-const _WALK_DIRS: Array[String] = ["ui_right", "ui_down", "ui_left", "ui_up"]
-var _walk_held: String = ""
 
 
 func _initialize() -> void:
@@ -52,6 +55,8 @@ func _initialize() -> void:
 			_sample = maxi(1, int(arg.substr("--sample=".length())))
 		elif arg.begins_with("--warmup="):
 			_warmup = int(arg.substr("--warmup=".length()))
+		elif arg.begins_with("--gain="):
+			_gain = maxf(1.0, arg.substr("--gain=".length()).to_float())
 
 
 func _process(_delta: float) -> bool:
@@ -83,8 +88,8 @@ func _process(_delta: float) -> bool:
 func _effective_warmup() -> int:
 	if _warmup >= 0:
 		return _warmup
-	# Combate/chefe têm o loader de intro (~2s). Exploração entra mais rápido.
-	return 30 if _clip == "explore" else 165
+	# Todos os clipes usam a arena, que tem o loader de intro (~2s) antes do 1º turno.
+	return 165
 
 
 # ─── Setup (frame 1) ───────────────────────────────────────────────
@@ -111,8 +116,17 @@ func _setup() -> void:
 			gs.active_combat_is_boss = true
 			gs.next_enemy_scene = (load("res://scenes/arena/mula.tscn") as PackedScene)
 			_scene = _instantiate("res://scenes/arena/arena.tscn")
-		"explore":
-			_scene = _instantiate("res://scenes/exploration/exploration.tscn")
+		"furia":
+			# Fúria MÁXIMA (tier 6 — aura de fogo). Os upgrades têm de estar setados
+			# ANTES do add_child: o arena anexa a aura em _apply_furia_visual durante
+			# _spawn_caipora (no _ready, disparado pelo add_child abaixo). Padrão de
+			# preview_furia_max.gd. SAVE_PATH já foi p/ sandbox: não toca o save real.
+			for key in meta.FURIA_KEYS:
+				meta.upgrades[key] = 1
+			meta.has_chama = true  # chama viva sobre a aura
+			_override_enemy("cacador", 1)
+			gs.active_combat_is_boss = false
+			_scene = _instantiate("res://scenes/arena/arena.tscn")
 		_:
 			push_error("[capture] clip desconhecido: " + _clip)
 			quit(1)
@@ -137,34 +151,22 @@ func _instantiate(path: String) -> Node:
 # ─── Inputs ────────────────────────────────────────────────────────
 func _drive_inputs() -> void:
 	if _frames <= _effective_warmup() - 20:
-		# Durante o warmup do explore, dispensa qualquer diálogo de intro.
-		if _clip == "explore" and _frames % 12 == 0:
-			_tap("ui_accept")
 		return
-	match _clip:
-		"combat":
-			_drive_combat()
-		"explore":
-			# Exploração lê o movimento por POLLING (Input.is_action_pressed em
-			# caipora.gd:62) — precisa MANTER a ação apertada, não um tap de 1 frame.
-			# Troca de direção a cada ~16 frames pra não congelar contra parede.
-			if _frames % 16 == 0:
-				if _walk_held != "":
-					Input.action_release(_walk_held)
-				_walk_held = _WALK_DIRS[(_frames / 16) % _WALK_DIRS.size()]
-				Input.action_press(_walk_held)
-		"boss":
-			pass  # só observa o loop idle->windup (ameaça)
+	# combat, furia e boss usam o MESMO driver: tocar a ação esperada na zona perfeita
+	# acerta tanto o crítico do turno do jogador quanto a esquiva da defesa.
+	_drive_combat()
 
 
-## Aperta ui_up na zona perfeita da janela -> crítico/contra real (VFX + shake).
+## Aperta a AÇÃO ESPERADA (ui_up no ataque; ui_down/ui_up na defesa, inclusive a
+## sequência do chefe) na zona perfeita real -> crítico/esquiva+contra (VFX + shake).
 func _drive_combat() -> void:
 	if _arena_timing == null or not _arena_timing.is_open():
 		_pressed_window = false
 		return
 	var p: float = _arena_timing._window_progress
-	if not _pressed_window and p >= 0.45 and p <= 0.6:
-		_tap("ui_up")
+	# Zona perfeita real = Constants.TIMING_PERFECT_START/END (0.65..0.85).
+	if not _pressed_window and p >= 0.66 and p <= 0.84:
+		_tap(_arena_timing._expected_action)
 		_pressed_window = true
 
 
@@ -188,7 +190,23 @@ func _grab_frame() -> void:
 		img.resize(_cell.x, _cell.y, Image.INTERPOLATE_LANCZOS)
 	if img.get_format() != Image.FORMAT_RGBA8:
 		img.convert(Image.FORMAT_RGBA8)
+	if _gain != 1.0:
+		_apply_gain(img)
 	_captured.append(img)
+
+
+## Multiplica RGB pelo ganho (preto continua preto, ação iluminada aparece). Alpha
+## intocado. Loop de pixel no estilo de preview_furia_max.gd — custo trivial p/ dev.
+func _apply_gain(img: Image) -> void:
+	var w: int = img.get_width()
+	var h: int = img.get_height()
+	for y in h:
+		for x in w:
+			var c: Color = img.get_pixel(x, y)
+			c.r = minf(c.r * _gain, 1.0)
+			c.g = minf(c.g * _gain, 1.0)
+			c.b = minf(c.b * _gain, 1.0)
+			img.set_pixel(x, y, c)
 
 
 func _build_strip() -> void:

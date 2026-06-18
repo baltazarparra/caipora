@@ -879,6 +879,13 @@ a {
   border: 1px solid rgba(255, 69, 0, 0.22);
 }
 
+/* O clipe da seção é retrato (9:16) — moldura de "telefone" centralizada. */
+.mechanics-visual .clip-frame {
+  width: 100%;
+  max-width: 300px;
+  margin-inline: auto;
+}
+
 .mechanics-content {
   flex: 1;
   max-width: 55ch;
@@ -1319,14 +1326,20 @@ a {
   text-align: center;
 }
 
-/* Galeria: showcase de clipes (1 -> 3 colunas). */
+/* Galeria: showcase de clipes (1 -> 3 colunas). Clipes são retrato (9:16): cada
+   card vira um "telefone" de largura limitada e centralizado na sua coluna. */
 .clips-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
-.clip-card { margin: 0; }
+.clip-card {
+  margin: 0;
+  width: 100%;
+  max-width: 280px;
+  margin-inline: auto;
+}
 
 .gallery-stills {
   display: grid;
@@ -1353,12 +1366,13 @@ a {
   .gallery-stills { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Hero: a tela do jogo abaixo dos CTAs. */
+/* Hero: a tela do jogo (retrato 9:16, como no celular) abaixo dos CTAs. Largura
+   de "telefone" centralizada — a altura segue o aspect-ratio do clipe (clips.json). */
 .hero-clip {
   position: relative;
   z-index: 2;
-  width: min(92vw, 680px);
-  margin-top: 2.75rem;
+  width: min(78vw, 300px);
+  margin: 2.75rem auto 0;
   opacity: 0;
   transform: translateY(24px);
   animation: heroEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.85s forwards;

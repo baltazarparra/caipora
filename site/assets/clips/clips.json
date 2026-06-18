@@ -1,23 +1,23 @@
 {
   "boss": {
-    "cell_h": 270.0,
-    "cell_w": 480.0,
+    "cell_h": 480,
+    "cell_w": 270,
     "file": "boss_strip.png",
-    "frames": 30.0,
+    "frames": 36,
     "poster": "boss_strip_poster.png"
   },
   "combat": {
-    "cell_h": 270.0,
-    "cell_w": 480.0,
+    "cell_h": 480.0,
+    "cell_w": 270.0,
     "file": "combat_strip.png",
     "frames": 30.0,
     "poster": "combat_strip_poster.png"
   },
-  "explore": {
-    "cell_h": 270,
-    "cell_w": 480,
-    "file": "explore_strip.png",
-    "frames": 30,
-    "poster": "explore_strip_poster.png"
+  "furia": {
+    "cell_h": 480.0,
+    "cell_w": 270.0,
+    "file": "furia_strip.png",
+    "frames": 30.0,
+    "poster": "furia_strip_poster.png"
   }
 }
