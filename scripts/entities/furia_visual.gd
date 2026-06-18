@@ -10,11 +10,21 @@ extends Node2D
 ## Componente reutilizável: usado na exploração (Caipora) e na arena (ArenaManager).
 ## CPUParticles2D obrigatório (export web em GL Compatibility, sem GPUParticles).
 
+const ForestLight := preload("res://scripts/exploration/forest_light.gd")
+
 ## Posição do cristal em idle no espaço local do AnimatedSprite2D (centrado):
 ## staff_tip (66.5, 23.5) do _rig em gen_caipora.py menos o centro (48, 48).
 ## O cajado se MOVE por pose (windup/strike); as poses duram ~0.2-0.5s e o
 ## smear das partículas cobre isso — não rastrear por frame.
 const CRYSTAL_ANCHOR := Vector2(18.5, -24.5)
+
+## Centro do corpo em coords locais do FuriaVisual: como visual.position =
+## CRYSTAL_ANCHOR + sprite_offset e o centro da textura no espaço do pai é o
+## sprite_offset, o offset cancela e o corpo fica exatamente em -CRYSTAL_ANCHOR.
+## (Travado por test_anchor_follows_sprite_offset.)
+const BODY_CENTER_LOCAL := Vector2(-18.5, 24.5)
+## Queda da base da chama até os "pés" da Caipora (ajuste visual, 96px de altura).
+const FIRE_FOOT_DROP := 26.0
 
 var _base_x: float = 0.0
 
@@ -72,6 +82,10 @@ static func attach_to(parent: Node2D) -> void:
 		visual.add_child(_build_bone_fragments(tier))
 	if tier >= 6:
 		visual.add_child(_build_flesh_spines(tier))
+		# Fúria máxima: aura de fogo envolvendo a silhueta (escala por device).
+		var vp := parent.get_viewport()
+		var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+		_build_max_fire(visual, ps)
 
 	# CHAMA: chama viva somada às partículas do tier
 	if MetaProgression.has_chama:
@@ -266,6 +280,66 @@ static func _build_flame(tier: int) -> CPUParticles2D:
 	return flame
 
 
+## Fúria máxima (T6): labareda quente envolvendo a silhueta (ATRÁS, z=-1, corpo
+## legível por cima), brasas rápidas à frente e luz quente com flicker irregular.
+## Reforça o read LARANJA da marca. Tudo CPUParticles2D + ADDITIVE_MATERIAL e
+## escalado por device via `ps` (0.5 no celular). 1 luz por Caipora (custo baixo).
+static func _build_max_fire(visual: Node2D, ps: float) -> void:
+	# Labareda traseira: lambe a silhueta de baixo (pés) pra cima.
+	var flame := CPUParticles2D.new()
+	flame.name = "MaxFireFlame"
+	flame.position = BODY_CENTER_LOCAL + Vector2(0, FIRE_FOOT_DROP)
+	flame.z_index = -1
+	flame.amount = maxi(1, int(16.0 * ps))
+	flame.lifetime = 0.7
+	flame.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	flame.emission_rect_extents = Vector2(11, 12)
+	flame.direction = Vector2(0, -1)
+	flame.spread = 12.0
+	flame.gravity = Vector2(0, -90)
+	flame.initial_velocity_min = 16.0
+	flame.initial_velocity_max = 38.0
+	flame.scale_amount_min = 2.0
+	flame.scale_amount_max = 4.5
+	flame.color = Constants.COLOR_FIRE_HOT
+	flame.color_ramp = _flame_ramp()
+	flame.material = Constants.ADDITIVE_MATERIAL
+	flame.emitting = true
+	visual.add_child(flame)
+
+	# Brasas: poucas, rápidas, subindo alto à frente do corpo.
+	var embers := CPUParticles2D.new()
+	embers.name = "MaxFireEmbers"
+	embers.position = BODY_CENTER_LOCAL
+	embers.z_index = 1
+	embers.amount = maxi(1, int(7.0 * ps))
+	embers.lifetime = 1.1
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(9, 12)
+	embers.direction = Vector2(0, -1)
+	embers.spread = 30.0
+	embers.gravity = Vector2(0, -70)
+	embers.initial_velocity_min = 22.0
+	embers.initial_velocity_max = 52.0
+	embers.scale_amount_min = 1.0
+	embers.scale_amount_max = 2.2
+	embers.color = Color(1.0, 0.6, 0.2, 0.9)
+	embers.color_ramp = _max_ember_ramp()
+	embers.material = Constants.ADDITIVE_MATERIAL
+	embers.emitting = true
+	visual.add_child(embers)
+
+	# Luz quente pulsante (flicker irregular em 4 passos), centrada no corpo.
+	var light := ForestLight.make(Constants.COLOR_FIRE_HOT, 0.9, 0.7)
+	light.position = BODY_CENTER_LOCAL
+	visual.add_child(light)
+	var flicker := visual.create_tween().set_loops()
+	flicker.tween_property(light, "energy", 1.05, 0.18).set_trans(Tween.TRANS_SINE)
+	flicker.tween_property(light, "energy", 0.72, 0.13).set_trans(Tween.TRANS_SINE)
+	flicker.tween_property(light, "energy", 0.95, 0.21).set_trans(Tween.TRANS_SINE)
+	flicker.tween_property(light, "energy", 0.8, 0.16).set_trans(Tween.TRANS_SINE)
+
+
 # ─── Ramps ───────────────────────────────────────────────────────────────────
 
 static func _flame_ramp() -> Gradient:
@@ -274,6 +348,15 @@ static func _flame_ramp() -> Gradient:
 	g.set_color(0, Constants.COLOR_FIRE_HOT)
 	g.add_point(0.5, Constants.COLOR_FIRE_MID)
 	g.add_point(1.0, Color(Constants.COLOR_FIRE_LOW.r, Constants.COLOR_FIRE_LOW.g, Constants.COLOR_FIRE_LOW.b, 0.0))
+	return g
+
+
+static func _max_ember_ramp() -> Gradient:
+	var amber := Constants.COLOR_AMBER
+	var g := Gradient.new()
+	g.set_offset(0, 0.0)
+	g.set_color(0, Color(1.0, 0.6, 0.2, 0.9))
+	g.add_point(1.0, Color(amber.r, amber.g, amber.b, 0.0))
 	return g
 
 

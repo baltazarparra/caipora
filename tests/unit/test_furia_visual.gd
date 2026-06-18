@@ -98,6 +98,8 @@ func test_tier5_adds_bone_fragments() -> void:
 	var bone := furia.get_node_or_null("BoneFragments") as CPUParticles2D
 	assert_not_null(bone, "T5 tem fragmentos de osso")
 	assert_null(furia.get_node_or_null("FleshSpines"), "T5 sem espinhos de carne")
+	assert_null(furia.get_node_or_null("MaxFireFlame"), "T5 sem aura de fogo máximo")
+	assert_null(furia.get_node_or_null("MaxFireEmbers"), "T5 sem brasas de fogo máximo")
 
 func test_tier6_adds_flesh_spines() -> void:
 	MetaProgression.upgrades["forca_6"] = 1
@@ -113,6 +115,21 @@ func test_tier6_adds_flesh_spines() -> void:
 	var spines := furia.get_node_or_null("FleshSpines") as CPUParticles2D
 	assert_not_null(spines, "T6 tem espinhos de carne")
 	assert_true(spines.emitting, "espinhos emitindo")
+
+	# Fúria máxima: aura de fogo envolvendo a silhueta (labareda + brasas).
+	var flame := furia.get_node_or_null("MaxFireFlame") as CPUParticles2D
+	assert_not_null(flame, "T6 tem labareda de fogo máximo")
+	assert_true(flame.emitting, "labareda emitindo")
+	assert_eq(flame.z_index, -1, "labareda atrás do corpo (silhueta legível por cima)")
+	var flame_mat := flame.material as CanvasItemMaterial
+	assert_not_null(flame_mat, "labareda tem material")
+	assert_eq(flame_mat.blend_mode, CanvasItemMaterial.BLEND_MODE_ADD, "labareda usa blend aditivo")
+	var embers := furia.get_node_or_null("MaxFireEmbers") as CPUParticles2D
+	assert_not_null(embers, "T6 tem brasas de fogo máximo")
+	assert_true(embers.emitting, "brasas emitindo")
+	var ember_mat := embers.material as CanvasItemMaterial
+	assert_not_null(ember_mat, "brasas têm material")
+	assert_eq(ember_mat.blend_mode, CanvasItemMaterial.BLEND_MODE_ADD, "brasas usam blend aditivo")
 
 func test_glow_escalates_with_tier() -> void:
 	MetaProgression.upgrades["forca"] = 1
