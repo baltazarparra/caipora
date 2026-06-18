@@ -35,6 +35,12 @@ const COMBAT_LOADER_FINAL_HOLD: float = 0.50
 const VICTORY_OUTRO_FADE: float = 0.15
 const VICTORY_OUTRO_TEXT_FADE: float = 0.20
 const VICTORY_OUTRO_HOLD: float = 1.8
+# Clímax do golpe final: a câmera empurra mais forte (fator base 2.0, teto 3.0 —
+# acima do teto 2.0 de enquadramento) e reposiciona no peito do inimigo.
+const KILLING_BLOW_ZOOM_FACTOR: float = 2.0
+const KILLING_BLOW_ZOOM_CAP: float = 3.0
+# Peito = acima do pé do sprite (offset -40 × escala): onde a garra esmaga o coração.
+const FINISHER_CHEST_OFFSET_Y: float = -20.0
 
 @onready var _camera: Camera2D = $Camera2D
 # D-pad é um autoload persistente (TouchControls), não mais um nó por cena.
@@ -64,6 +70,7 @@ var _animator: ActorAnimator
 var _backdrop: ArenaBackdrop
 var _doom_fire: DoomFire
 var _killing_blow_zoom_base: float = 0.0
+var _killing_blow_cam_base: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	_timing_system = $TimingSystem
@@ -221,13 +228,19 @@ func _run_victory_outro() -> void:
 
 func _play_killing_blow_zoom(combo_step: int = 0) -> void:
 	_killing_blow_zoom_base = _camera.zoom.x
+	_killing_blow_cam_base = _camera.position
 	# Streak alto aproxima mais a câmera no golpe final: o clímax escala com a escada.
-	var zoom_factor := 1.5 + combo_step * Constants.COMBO_ZOOM_BONUS_PER_STEP
-	var target_zoom := minf(_killing_blow_zoom_base * zoom_factor, 2.0)
+	var zoom_factor := KILLING_BLOW_ZOOM_FACTOR + combo_step * Constants.COMBO_ZOOM_BONUS_PER_STEP
+	var target_zoom := minf(_killing_blow_zoom_base * zoom_factor, KILLING_BLOW_ZOOM_CAP)
+	# Empurra E reposiciona no peito do inimigo: o coração que será esmagado fica no centro.
+	var target_pos := _camera.position
+	if _enemy != null and is_instance_valid(_enemy):
+		target_pos = _enemy.position + Vector2(0.0, FINISHER_CHEST_OFFSET_Y)
 	var tween := create_tween()
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_SINE)
-	tween.tween_property(_camera, "zoom", Vector2(target_zoom, target_zoom), 0.18)
+	tween.parallel().tween_property(_camera, "zoom", Vector2(target_zoom, target_zoom), 0.18)
+	tween.parallel().tween_property(_camera, "position", target_pos, 0.18)
 	await tween.finished
 
 func _update_camera_fit() -> void:
@@ -874,13 +887,18 @@ func _on_actor_died(actor: CombatActor) -> void:
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	if caipora_won and _killing_blow_zoom_base > 0.0:
 		Engine.time_scale = 0.25
+		# Golpe final em câmera lenta: a garra esmaga o coração sobre o peito. O VFX
+		# herda o time_scale (a animação avança pelo clock da cena) — slow-mo de graça.
+		_feedback.spawn_finisher_vfx(actor.position + Vector2(0.0, FINISHER_CHEST_OFFSET_Y))
 		await get_tree().create_timer(1.4, true, false, true).timeout
 		Engine.time_scale = 1.0
 		var zoom_tween := create_tween()
 		zoom_tween.set_ease(Tween.EASE_IN_OUT)
 		zoom_tween.set_trans(Tween.TRANS_SINE)
-		zoom_tween.tween_property(_camera, "zoom",
+		zoom_tween.parallel().tween_property(_camera, "zoom",
 			Vector2(_killing_blow_zoom_base, _killing_blow_zoom_base), 0.25)
+		zoom_tween.parallel().tween_property(_camera, "position",
+			_killing_blow_cam_base, 0.25)
 	_sfx.play(_sfx.death_sound)
 	_feedback.spawn_death_particles(actor.position)
 	_feedback.trigger_screenshake(26.0, 0.7)
