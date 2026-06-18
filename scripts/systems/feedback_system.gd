@@ -258,6 +258,46 @@ func spawn_result_label(label_key: StringName, at_position: Vector2) -> void:
 	tw.chain().tween_property(sprite, "modulate:a", 0.0, 0.18)
 	tw.chain().tween_callback(sprite.queue_free)
 
+# ─── Nome do golpe (tag sutil) ─────────────────────
+## Nome do golpe (PRD moves nomeados) como tag SUTIL e periférica, ancorada no
+## inimigo — longe da bolha de timing (que fica sobre a Caipora). É identidade,
+## não interrupção: combate reativo (modelo Expedition 33) não pode perder o foco.
+## Por isso cor apagada + alpha baixo + fade rápido; o contorno garante leitura sob
+## o CanvasModulate escuro (gotcha #13) sem precisar de preenchimento berrante.
+const MOVE_NAME_FONT: String = "res://assets/fonts/PressStart2P.ttf"
+const MOVE_NAME_SIZE: int = 10
+const MOVE_NAME_COLOR: Color = Color(0.82, 0.78, 0.72)  # cinza-osso apagado
+const MOVE_NAME_ALPHA: float = 0.5
+
+func spawn_move_name(text: String, at_position: Vector2) -> void:
+	if text.strip_edges().is_empty():
+		return
+	var font: Font = load(MOVE_NAME_FONT)
+	if font == null:
+		return
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_override("font", font)
+	label.add_theme_font_size_override("font_size", MOVE_NAME_SIZE)
+	label.add_theme_constant_override("outline_size", 4)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.z_index = 5  # abaixo dos rótulos de resultado (z=20) e da bolha
+	# Label ancora no canto superior-esquerdo: centraliza pela largura medida.
+	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, MOVE_NAME_SIZE).x
+	label.position = at_position - Vector2(w * 0.5, 0)
+	var base := _g(MOVE_NAME_COLOR)
+	label.modulate = Color(base.r, base.g, base.b, 0.0)
+	if not _attach_to_scene(label):
+		return
+	var tw := create_tween()
+	# Fade-in suave, leve deriva pra cima, hold curto, fade-out — calmo, sem pop.
+	tw.tween_property(label, "modulate:a", MOVE_NAME_ALPHA, 0.12)
+	tw.parallel().tween_property(label, "position:y", label.position.y - 10.0, 0.9)
+	tw.tween_interval(0.2)
+	tw.tween_property(label, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(label.queue_free)
+
 # ─── Combo tracker / indicador ────────────────────
 ## Registra acerto/falha. Streak ≥ 2 exibe o multiplicador na tela.
 func track_perfect(is_perfect: bool) -> void:
