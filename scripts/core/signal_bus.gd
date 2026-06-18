@@ -38,6 +38,13 @@ signal defense_result_perfect()
 ## Janela expirou sem input correto, ou input veio no timing errado.
 signal defense_result_miss()
 
+# ─── Golpe Carregado (Cortejo) — carga espelhada no D-pad ──
+## Janela do golpe carregado abriu: a seta `action` deve "encher de fogo" ao longo de
+## `duration` segundos (espelho visual da bolha de timing; só feedback, sem input).
+signal cortejo_charge_opened(action: String, duration: float)
+## Janela do golpe carregado fechou (soltou, estourou ou expirou): limpa o fogo do D-pad.
+signal cortejo_charge_closed()
+
 # ─── Resultado de ataque — háptico diferenciado no HUD ──
 ## Jogador acertou o timing perfeito do ATAQUE (crítico). Espelha o de defesa para o
 ## D-pad poder vibrar distinto por desfecho (a arena já dava feedback visual/sonoro).

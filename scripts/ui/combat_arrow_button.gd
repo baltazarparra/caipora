@@ -106,6 +106,14 @@ var _miss_amount: float = 0.0:
 var _perfect_tween: Tween = null
 var _miss_tween: Tween = null
 
+# Golpe Carregado: a garra "enche de fogo" enquanto a janela está aberta (espelho
+# visual da bolha de timing — só feedback, sem tocar no contrato de input).
+var _cortejo_charge: float = 0.0:
+	set(value):
+		_cortejo_charge = value
+		queue_redraw()
+var _charge_tween: Tween = null
+
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -114,8 +122,8 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Pulso animado do anel de janela ativa requer redraw contínuo.
-	if _window_amount > 0.001:
+	# Pulso animado do anel de janela ativa / cintilação da carga: redraw contínuo.
+	if _window_amount > 0.001 or _cortejo_charge > 0.001:
 		queue_redraw()
 
 
@@ -131,7 +139,7 @@ func configure(plate_rect: Rect2, wedge_center: Vector2, dead_radius: float) -> 
 
 ## Zera o estado visual de press, janela e resultados.
 func clear_feedback() -> void:
-	for tw: Tween in [_release_tween, _ring_tween, _window_tween, _perfect_tween, _miss_tween]:
+	for tw: Tween in [_release_tween, _ring_tween, _window_tween, _perfect_tween, _miss_tween, _charge_tween]:
 		if tw != null:
 			tw.kill()
 	_press_amount = 0.0
@@ -140,6 +148,23 @@ func clear_feedback() -> void:
 	_window_amount = 0.0
 	_perfect_amount = 0.0
 	_miss_amount = 0.0
+	_cortejo_charge = 0.0
+
+
+## Inicia o "enchimento de fogo" da carga ao longo de `duration` (espelho da bolha).
+func start_cortejo_charge(duration: float) -> void:
+	if _charge_tween != null:
+		_charge_tween.kill()
+	_cortejo_charge = 0.0
+	_charge_tween = create_tween()
+	_charge_tween.tween_property(self, "_cortejo_charge", 1.0, maxf(0.05, duration))
+
+
+## Apaga o fogo da carga (soltou/estourou/expirou).
+func clear_cortejo_charge() -> void:
+	if _charge_tween != null:
+		_charge_tween.kill()
+	_cortejo_charge = 0.0
 
 
 ## Ativa/desativa o estado de janela de defesa (esta seta = ação esperada agora).
@@ -221,6 +246,18 @@ func _draw() -> void:
 	if _window_amount > 0.0:
 		bg = bg.lerp(PLATE_BG_ACTIVE, _window_amount)
 	draw_rect(_plate_rect.grow(-border_w), bg, true)
+
+	# ── Golpe Carregado: fogo subindo de baixo pra cima + borda flamejante. ──
+	if _cortejo_charge > 0.001:
+		var inner := _plate_rect.grow(-border_w)
+		var flick := sin(Time.get_ticks_msec() * 0.001 * TAU * 7.0) * 0.5 + 0.5
+		var fill_h := inner.size.y * _cortejo_charge
+		var fill := Constants.COLOR_AMBER.lerp(Constants.COLOR_CHAMA_HOT, flick)
+		fill.a = 0.55
+		draw_rect(Rect2(inner.position.x, inner.position.y + inner.size.y - fill_h, inner.size.x, fill_h), fill, true)
+		var fire_border := Constants.COLOR_CHAMA_HOT
+		fire_border.a = 0.5 + 0.45 * _cortejo_charge
+		draw_rect(_plate_rect, fire_border, false, maxf(border_w * 0.7, 1.0))
 
 	# ── Anel pulsante de janela ativa (3 Hz) ──
 	if _window_amount > 0.001:

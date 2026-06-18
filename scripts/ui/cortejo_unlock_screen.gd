@@ -16,6 +16,12 @@ const DOT_SIZE: int = 10
 const DOT_GAP: int = 8
 const MAX_LINKS: int = 4
 
+# Demo do Golpe Carregado: a seta de fogo NOVA carrega por segundos e solta, em loop —
+# ensina o gesto segurar→soltar com o MESMO widget que aparece no combate (TimingBubble).
+const DEMO_CHARGE_DURATION: float = 2.2   # "segurada por segundos"
+const DEMO_RELEASE_AT: float = 0.7        # solta a 70% (dentro da zona confortável)
+const DEMO_REST: float = 0.7              # pausa antes de repetir o ciclo
+
 const BOSS_SPRITE_PATH: Dictionary = {
 	1: "res://assets/sprites/mula_sprite_frames.tres",
 	2: "res://assets/sprites/boitata_sprite_frames.tres",
@@ -38,6 +44,7 @@ var _link_count: int = 0
 var _phase: int = 0
 var _ready_to_dismiss: bool = false
 var _last_input_frame: int = -1
+var _demo_bubble: TimingBubble = null
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
@@ -50,6 +57,8 @@ func start(link_count: int) -> void:
 	_build()
 	_run_animation()
 	get_tree().create_timer(MIN_SKIP_DELAY).timeout.connect(func() -> void: _ready_to_dismiss = true)
+	if _demo_bubble != null:  # começa o loop da demo após a varredura dos painéis
+		get_tree().create_timer(SWEEP_DURATION).timeout.connect(_run_charge_demo)
 
 # ─── Input ─────────────────────────────────────────
 func _input(event: InputEvent) -> void:
@@ -207,6 +216,26 @@ func _build() -> void:
 	desc_lbl.name = &"DescLabel"
 	add_child(desc_lbl)
 
+	# Demo do Golpe Carregado (só na 1ª liberação): a seta de fogo NOVA carregando e
+	# soltando em loop, no painel direito (laranja Caipora). Mesmo widget do combate.
+	if is_first:
+		var demo := TimingBubble.new()
+		demo.position = Vector2(cx * 1.5, cy * 0.6)
+		demo.name = &"ChargeDemo"
+		add_child(demo)
+		_demo_bubble = demo
+
+		var demo_cap := Label.new()
+		demo_cap.text = Lang.t(&"cortejo.unlock.demo")
+		demo_cap.add_theme_font_size_override("font_size", Constants.FONT_SM)
+		demo_cap.add_theme_color_override("font_color", Constants.COLOR_CHAMA_HOT)
+		demo_cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		demo_cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		demo_cap.size = Vector2(cx * 0.9, 44.0)
+		demo_cap.position = Vector2(cx * 1.5 - cx * 0.45, cy * 0.6 + 44.0)
+		demo_cap.name = &"DemoCaption"
+		add_child(demo_cap)
+
 	# Hint (pisca)
 	var hint_lbl := Label.new()
 	hint_lbl.text = Lang.t(&"cortejo.unlock.hint")
@@ -285,6 +314,23 @@ func _start_hint_pulse(hint: Label) -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	pulse.tween_property(hint, "modulate:a", 0.8, 0.65) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+# ─── Demo do Golpe Carregado (loop segurar→soltar) ──
+## Re-arma a si mesmo a cada ciclo; para sozinho quando a tela sai da árvore (free).
+func _run_charge_demo() -> void:
+	if not is_inside_tree() or _demo_bubble == null or not is_instance_valid(_demo_bubble):
+		return
+	_demo_bubble.show_bubble(
+		_demo_bubble.position, DEMO_CHARGE_DURATION,
+		Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE,
+		false, Constants.COLOR_CHAMA_HOT, "up", true
+	)
+	get_tree().create_timer(DEMO_CHARGE_DURATION * DEMO_RELEASE_AT).timeout.connect(_demo_release)
+	get_tree().create_timer(DEMO_CHARGE_DURATION * DEMO_RELEASE_AT + DEMO_REST).timeout.connect(_run_charge_demo)
+
+func _demo_release() -> void:
+	if is_instance_valid(_demo_bubble):
+		_demo_bubble.burst_success()   # "solta" no momento perfeito → estouro de luz
 
 # ─── Helpers ───────────────────────────────────────
 func _viewport_size() -> Vector2:

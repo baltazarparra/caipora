@@ -33,6 +33,19 @@ func test_each_hit_deals_one_damage() -> void:
 	assert_eq(Constants.CORTEJO_HIT_DAMAGE, 1.0,
 		"cada hit do Golpe Perfeito sangra exatamente 1, sem escalar com dano/crit")
 
+func test_charge_release_window_is_comfortable() -> void:
+	# Golpe Carregado: a zona de SOLTAR é larga de propósito (golpe-recompensa).
+	assert_lt(Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE,
+		"carga cheia vem antes do overcharge")
+	assert_gte(Constants.CORTEJO_OVERCHARGE - Constants.CORTEJO_CHARGE_FULL, 0.35,
+		"a janela de soltar é confortável (>= 35% da janela)")
+
+func test_charge_window_respects_floor_every_phase() -> void:
+	# O piso de conforto vale em TODA fase (nunca vira frame-perfect nas fases altas).
+	for phase: int in [1, 2, 3, 4, 5]:
+		assert_gte(Constants.cortejo_window_for_phase(phase), Constants.CORTEJO_WINDOW_FLOOR,
+			"fase %d respeita o piso confortável" % phase)
+
 func test_chance_matches_double_attack() -> void:
 	assert_eq(Constants.CORTEJO_CHANCE, Constants.TIMING_DOUBLE_CHANCE,
 		"o Golpe Perfeito rola na mesma chance do ataque duplo")
