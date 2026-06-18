@@ -4,7 +4,10 @@
 > tap de crítico e ao ataque duplo já existentes. Desbloqueado ao libertar o
 > primeiro chefe; cresce a cada encantado libertado.
 >
-> **Status:** conceito aprovado (2026-06-13). Implementação em sessões seguintes.
+> **Status:** IMPLEMENTADO (2026-06-17). Etapas 1–6 entregues (ver §9). A etapa 1
+> (núcleo + tela de unlock) já existia; as etapas 2–6 entraram juntas ao consertar
+> o KI-018 (a tela "OBTIDO" anunciava um golpe que nunca chegava ao combate).
+> Pendente apenas: os .wav dedicados do áudio (hoje em fallback canônico).
 > Escopo deste doc: mecânica, integração com o sistema vigente, narrativa,
 > direção de arte AAA e direção de áudio/música AAA.
 
@@ -356,6 +359,22 @@ normalização de loudness).
    padrão `AudioDirector`.)
 
 ---
+
+**Estado da implementação (2026-06-17):**
+
+1. ✅ Núcleo `HoldTimingSystem` + constantes + testes.
+2. ✅ Integração no turno: roll, `_start_cortejo_turn`, encadeamento, dano por elo,
+   killing-blow no meio, teardown.
+3. ✅ Anel de carga `ChargeBubble` (segura ↑) + touch (wedge UP segurável, haptics
+   via `attack_result_*`).
+4. ✅ Aparições: `CortejoApparition` reusa o sprite canônico do boss libertado como
+   espírito translúcido tingido na aura (em vez de 4 sprites novos — a aparição É o
+   chefe que você libertou). _Nicety futura:_ sprites de golpe dedicados por espírito.
+5. ✅ VFX da corrente: trilha de luz ligando os impactos. _Pendente:_ crescendo de
+   vinheta (evitado para não tocar o shader compartilhado de `Atmosphere`).
+6. ✅ Áudio: hooks `AudioDirector.play_cortejo_*`/`set_cortejo_active` (charge loop,
+   trinco, stinger por espírito, perdido, full-chain, STEM_TOP + duck), com fallback
+   aos sons canônicos. _Pendente:_ os .wav dedicados via `gen_sfx.py`.
 
 ## 10. Pendências a balancear (registrar em PLAN.md ao implementar)
 

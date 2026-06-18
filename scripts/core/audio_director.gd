@@ -143,6 +143,10 @@ var _stinger_player: AudioStreamPlayer
 var _last_hover_msec: int = -UI_HOVER_COOLDOWN_MSEC
 var _last_dpad_tap_msec: int = -DPAD_TAP_COOLDOWN_MSEC
 var _dpad_tap_variant: int = 0
+## Cortejo dos Encantados: loop de carga (pitch sobe com o progresso) + flag que
+## acende o STEM_TOP da música durante a corrente. Dormentes até os .wav existirem.
+var _cortejo_charge_player: AudioStreamPlayer
+var _cortejo_active: bool = false
 ## Scheduler dos eventos raros da mata. Filho do autoload; morto em toda troca de
 ## tela por _apply_screen_audio — nenhum timer sobrevive fora da exploração.
 var _mata_timer: Timer
@@ -179,6 +183,10 @@ func _ready() -> void:
 	_stinger_player = AudioStreamPlayer.new()
 	_stinger_player.bus = BUS_MUSIC
 	add_child(_stinger_player)
+
+	_cortejo_charge_player = AudioStreamPlayer.new()
+	_cortejo_charge_player.bus = BUS_SFX
+	add_child(_cortejo_charge_player)
 
 	_mata_timer = Timer.new()
 	_mata_timer.one_shot = true
@@ -471,6 +479,77 @@ func play_combat_victory() -> void:
 	_play_stinger(STING_VICTORY)
 
 
+# ─── Cortejo dos Encantados ────────────────────────
+## Direção de áudio do conceito §7: charge loop que sobe de pitch, trinco no armado,
+## stinger por espírito (assinatura sônica do chefe), perdido morto, acento de
+## maracatu no full-chain, STEM_TOP aceso na corrente + ducking. Tudo DORMENTE até os
+## .wav dedicados existirem, com fallback aos sons canônicos para não ficar mudo hoje.
+
+## Loop de carga do elo (sopro grave). Dormente até cortejo_charge.wav.
+func play_cortejo_charge() -> void:
+	if not _audio_unlocked:
+		return
+	var path := SFX_DIR + "cortejo_charge.wav"
+	if not ResourceLoader.exists(path):
+		return
+	var stream: AudioStream = load(path)
+	_force_loop(stream)
+	_cortejo_charge_player.stream = stream
+	_cortejo_charge_player.pitch_scale = 0.85
+	_cortejo_charge_player.volume_db = -4.0
+	_cortejo_charge_player.play()
+
+## Pitch do loop sobe com o progresso (0..1). No-op se não estiver tocando.
+func set_cortejo_charge_progress(progress: float) -> void:
+	if _cortejo_charge_player != null and _cortejo_charge_player.playing:
+		_cortejo_charge_player.pitch_scale = 0.85 + clampf(progress, 0.0, 1.0) * 0.6
+
+func stop_cortejo_charge() -> void:
+	if _cortejo_charge_player != null and _cortejo_charge_player.playing:
+		_cortejo_charge_player.stop()
+
+## Trinco curto no topo do anel (armado). Reusa o tap do D-pad até cortejo_armed.wav.
+func play_cortejo_armed() -> void:
+	if not _audio_unlocked:
+		return
+	var path := SFX_DIR + "cortejo_armed.wav"
+	if ResourceLoader.exists(path):
+		_play_oneshot_sfx(path, -2.0)
+	else:
+		play_dpad_tap()
+
+## Resultado do elo: landado toca o stinger do espírito; perdido dissolve sem brilho.
+## Fallback do landado = morte canônica do chefe (mais baixa) — mesma identidade sônica.
+func play_cortejo_link(phase: int, landed: bool) -> void:
+	if not _audio_unlocked:
+		return
+	if landed:
+		duck(PERFECT_DUCK_DB, PERFECT_DUCK_SECS)
+		var spirit := "cortejo_" + _boss_name(phase)
+		if ResourceLoader.exists(STING_DIR + spirit + ".wav"):
+			_play_stinger(spirit)
+		else:
+			_play_stinger("boss_death_" + _boss_name(phase), -6.0)
+	else:
+		var miss := SFX_DIR + "cortejo_miss.wav"
+		_play_oneshot_sfx(miss if ResourceLoader.exists(miss) else SFX_DIR + "combat_miss.wav", -4.0)
+
+## Acento de maracatu quando a corrente fecha com TODOS os elos acertados.
+func play_cortejo_full_chain() -> void:
+	if not _audio_unlocked:
+		return
+	var accent := "cortejo_full"
+	_play_stinger(accent if ResourceLoader.exists(STING_DIR + accent + ".wav") else STING_CHAMA)
+
+## Acende o STEM_TOP do combate durante a corrente; fade de volta ao fim.
+func set_cortejo_active(active: bool) -> void:
+	if _cortejo_active == active:
+		return
+	_cortejo_active = active
+	if _stems_active:
+		_apply_stem_intensity(MUSIC_FADE)
+
+
 ## Player transiente (default bus SFX — audível mesmo com música desligada;
 ## eventos da mata usam o bus Ambience). Asset ausente é no-op (graceful).
 func _play_oneshot_sfx(path: String, volume_db: float = 0.0, bus: String = BUS_SFX) -> void:
@@ -761,6 +840,9 @@ func _stem_target_db(layer: String) -> float:
 		STEM_MID:
 			return 0.0 if _music_intensity >= 1 else STEM_SILENCE_DB
 		STEM_TOP:
+			# O Cortejo acende a camada percussiva mais aguda por cima do loop base.
+			if _cortejo_active:
+				return 0.0
 			return 0.0 if _music_intensity >= 2 else STEM_SILENCE_DB
 		_:
 			return 0.0

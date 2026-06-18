@@ -44,8 +44,11 @@ var _caipora: CombatActor
 var _enemy: Criatura
 var _enemy_id: StringName = &""
 var _timing_system: TimingSystem
+var _hold_timing: HoldTimingSystem
 var _timing_bubble: Node2D
 var _timing_bubble_b: Node2D
+var _charge_bubble: ChargeBubble
+var _apparition: CortejoApparition
 var _feedback: FeedbackSystem
 var _sfx: SfxSystem
 var _active_enemy_pattern: AttackPattern
@@ -80,6 +83,20 @@ func _ready() -> void:
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
 	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
+	# Cortejo dos Encantados: núcleo de carga (hold ↑) + anel visual. Ambos criados
+	# por código (nó de runtime) para não tocar os .tscn das 5 arenas — gotcha #7.
+	_hold_timing = HoldTimingSystem.new()
+	add_child(_hold_timing)
+	_charge_bubble = ChargeBubble.new()
+	_charge_bubble.z_index = 10
+	_charge_bubble.set_color_gain(feedback_gain)
+	add_child(_charge_bubble)
+	_hold_timing.link_charging.connect(_charge_bubble.set_progress)
+	_hold_timing.link_charging.connect(AudioDirector.set_cortejo_charge_progress)
+	_hold_timing.link_armed.connect(_on_cortejo_link_armed)
+	_apparition = CortejoApparition.new()
+	_apparition.set_color_gain(feedback_gain)
+	add_child(_apparition)
 	# Feedback tátil a cada input na janela de combate (conectado uma única vez).
 	_timing_system.input_registered.connect(_on_input_registered)
 	_feedback.hit_stop_started.connect(_on_hit_stop_started)
@@ -325,6 +342,12 @@ func _both_alive() -> bool:
 func _start_caipora_turn() -> void:
 	if _combat_over or not _both_alive():
 		return
+	# Cortejo dos Encantados: só existe depois do 1º chefe libertado. Tem precedência
+	# sobre o ataque duplo (mutuamente exclusivos no mesmo turno). Ver
+	# docs/CONCEITO-corrente-encantados.md §3.1.
+	if not MetaProgression.freed_bosses.is_empty() and randf() < Constants.CORTEJO_CHANCE:
+		_start_cortejo_turn()
+		return
 	_is_double_attack = randf() < Constants.TIMING_DOUBLE_CHANCE
 	_sfx.play(_sfx.attack_sound)
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
@@ -503,6 +526,103 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
 
+# ─── Cortejo dos Encantados (corrente de carga) ────
+## Turno especial da Caipora: convoca os encantados libertados em sequência. Cada
+## elo é uma CARGA (segura ↑); soltar no cheio = golpe (2 hits). Errar um elo NÃO
+## interrompe a corrente — só não soma o dano daquele elo. Mata no meio encerra.
+func _start_cortejo_turn() -> void:
+	if _combat_over or not _both_alive():
+		return
+	var links: int = mini(MetaProgression.freed_bosses.size(), Constants.CORTEJO_MAX_LINKS)
+	_sfx.play(_sfx.attack_sound)
+	_animator.play_pose(_caipora, &"windup")
+	_apparition.begin()
+	# Stem TOP sobe durante a corrente + ducking da ambiência (dormente até os stems).
+	AudioDirector.set_cortejo_active(true)
+	var landed_all: bool = true
+	for i: int in range(links):
+		if _combat_over or not _both_alive():
+			break
+		# Ordem da corrente = ordem das fases libertadas (Mula → Boitatá → …).
+		var phase: int = MetaProgression.freed_bosses[i]
+		var landed: bool = await _run_cortejo_link(phase, i)
+		landed_all = landed_all and landed
+		# Morte no meio (golpe matador num elo) encerra a corrente: _on_actor_died
+		# já cuidou do teardown + transição. Os elos restantes não disparam.
+		if _combat_over or not _both_alive():
+			break
+		# Beat percussivo entre os elos.
+		await get_tree().create_timer(Constants.CORTEJO_LINK_GAP).timeout
+		if _combat_over or not _both_alive():
+			break
+	# Corrente perfeita (todos os elos acertados) ganha o acento de maracatu.
+	if landed_all and not _combat_over and _both_alive():
+		AudioDirector.play_cortejo_full_chain()
+	_apparition.finish()
+	AudioDirector.set_cortejo_active(false)
+	if not _combat_over and _enemy.health.is_alive():
+		await get_tree().create_timer(_caipora.attack_cooldown).timeout
+		_start_enemy_turn()
+
+## Abre um elo do espírito da fase `phase`: mostra o anel, espera o resultado da
+## carga (await terminal) e, se landado, invoca a aparição + aplica dano. close_link
+## no teardown desbloqueia este await com false. Retorna se o elo foi acertado.
+func _run_cortejo_link(phase: int, index: int) -> bool:
+	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
+	_charge_bubble.show_ring(pos)
+	_hold_timing.open_link("ui_up")
+	AudioDirector.play_cortejo_charge()
+	var landed: bool = await _hold_timing.link_finished
+	AudioDirector.stop_cortejo_charge()
+	if _combat_over or not _both_alive():
+		_charge_bubble.hide_ring()
+		return landed
+	if landed:
+		_charge_bubble.burst_landed()
+		# A aparição entra alternando o lado (a "passagem" do cortejo pela arena).
+		_apparition.strike(phase, _enemy.position, index % 2 == 0)
+		AudioDirector.play_cortejo_link(phase, true)
+		# attack_result_perfect só alimenta o haptic de recompensa na ControlsHud.
+		SignalBus.attack_result_perfect.emit()
+		await _apply_cortejo_hits(pos)
+	else:
+		# O espírito hesita: dissolve sem bater (errar não interrompe a corrente).
+		_charge_bubble.burst_missed()
+		_feedback.spawn_fail_particles(pos)
+		AudioDirector.play_cortejo_link(phase, false)
+		SignalBus.attack_result_miss.emit()
+	return landed
+
+func _on_cortejo_link_armed() -> void:
+	_charge_bubble.set_armed()
+	AudioDirector.play_cortejo_armed()
+
+## Cada elo landado = CORTEJO_LINK_HITS golpes de dano-base (sem crítico). Dois
+## números, duas faíscas — leitura clara de "bateu duas vezes". Reaproveita todo o
+## pipeline de golpe (execute_attack/take_damage/killing-blow zoom).
+func _apply_cortejo_hits(pos: Vector2) -> void:
+	for h: int in range(Constants.CORTEJO_LINK_HITS):
+		if _combat_over or not _enemy.health.is_alive():
+			return
+		var damage: float = _caipora.execute_attack(false)
+		var is_killing_blow: bool = damage >= _enemy.health.current_health
+		if is_killing_blow:
+			_sfx.play_outcome(SfxSystem.Outcome.HIT)
+			_feedback.spawn_bubble_burst(pos, Constants.COLOR_TELEGRAPH_ENEMY)
+			_animator.strike(_caipora)
+			await _play_killing_blow_zoom()
+		_enemy.take_damage(damage)
+		if is_killing_blow:
+			return
+		_sfx.play_outcome(SfxSystem.Outcome.HIT)
+		_feedback.trigger_screenshake(13.0, 0.3)
+		_feedback.spawn_bubble_burst(pos, Constants.COLOR_TELEGRAPH_ENEMY)
+		_feedback.trigger_hit_stop(3)
+		_animator.strike(_caipora)
+		_caipora_step_forward()
+		if h < Constants.CORTEJO_LINK_HITS - 1:
+			await get_tree().create_timer(0.12).timeout
+
 # ─── Turno do Inimigo (Defesa) ─────────────────────
 func _start_enemy_turn() -> void:
 	if _combat_over or not _both_alive():
@@ -652,6 +772,7 @@ func _on_input_registered() -> void:
 func _on_hit_stop_started(_duration: float) -> void:
 	_timing_bubble.set_frozen(true)
 	_timing_bubble_b.set_frozen(true)
+	_charge_bubble.set_frozen(true)
 	if _caipora != null and is_instance_valid(_caipora):
 		_caipora.animated_sprite.speed_scale = 0.0
 	if _enemy != null and is_instance_valid(_enemy):
@@ -660,6 +781,7 @@ func _on_hit_stop_started(_duration: float) -> void:
 func _on_hit_stop_ended() -> void:
 	_timing_bubble.set_frozen(false)
 	_timing_bubble_b.set_frozen(false)
+	_charge_bubble.set_frozen(false)
 	if _caipora != null and is_instance_valid(_caipora):
 		_caipora.animated_sprite.speed_scale = 1.0
 	if _enemy != null and is_instance_valid(_enemy):
@@ -773,6 +895,17 @@ func _teardown_combat() -> void:
 	_disconnect_timing(_on_defense_timing_result)
 	if _timing_system.timing_first_hit.is_connected(_on_double_first_hit):
 		_timing_system.timing_first_hit.disconnect(_on_double_first_hit)
+	# Cortejo: fecha o elo aberto (emite link_finished(false) → desbloqueia o await
+	# pendente em _run_cortejo_link, sem corrotina pendurada), some o anel/aparição e
+	# garante que o loop de carga e o STEM_TOP nunca vazem para a próxima tela.
+	if _hold_timing != null:
+		_hold_timing.close_link()
+	if _charge_bubble != null:
+		_charge_bubble.hide_ring()
+	if _apparition != null:
+		_apparition.finish()
+	AudioDirector.stop_cortejo_charge()
+	AudioDirector.set_cortejo_active(false)
 	if _enemy != null and is_instance_valid(_enemy):
 		_enemy.state_machine.stop()
 	_feedback.force_clear_hit_stop()
