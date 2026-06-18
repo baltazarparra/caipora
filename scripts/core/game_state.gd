@@ -81,6 +81,21 @@ func advance_phase_via_hub(next_exploration: SignalBus.Screen) -> void:
 func map_seed_for_phase(phase: int) -> int:
 	return (run_seed * 1000003) ^ (phase * 2654435761 + 12345)
 
+## Tela de exploração de uma fase (ponto único do mapeamento fase → tela de exploração).
+func exploration_screen_for_phase(phase: int) -> SignalBus.Screen:
+	match phase:
+		5: return SignalBus.Screen.EXPLORATION_PHASE5
+		4: return SignalBus.Screen.EXPLORATION_PHASE4
+		3: return SignalBus.Screen.EXPLORATION_PHASE3
+		2: return SignalBus.Screen.EXPLORATION_PHASE2
+		_: return SignalBus.Screen.EXPLORATION
+
+## Gate do boss (função pura): pisar na saída só AVANÇA de fase se o guardião foi libertado;
+## senão a Caipora volta à MESMA fase (sempre passando pelo aprimoramento no HUB). Só avança
+## quem derrota o boss da fase — a saída sozinha não vence a fase.
+func exit_destination(phase: int, boss_freed: bool, next_screen: SignalBus.Screen) -> SignalBus.Screen:
+	return next_screen if boss_freed else exploration_screen_for_phase(phase)
+
 ## Recupera HP cheio (chamado ao entrar no Hub).
 func heal_to_full() -> void:
 	var meta_max_hp := float(Constants.CAIPORA_MAX_HEALTH + MetaProgression.get_health_bonus())

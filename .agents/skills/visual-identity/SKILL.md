@@ -41,6 +41,12 @@ Jesuita (boss final P5, o padre-guerreiro) deriva desta identidade:
 - `scripts/tools/gen_bosses.py`
 - `tests/unit/test_jesuita_sprite_assets.gd`
 
+Terra Rara (a economia do jogo, antes "fragmentos") deriva desta identidade:
+- `docs/CONCEITO-terra-rara.md` (lei visual do minério bruto cristalino)
+- `assets/sprites/terra_rara_icon.png` / `assets/sprites/terra_rara_node.png`
+- `scripts/tools/gen_terra_rara.py`
+- `tests/unit/test_terra_rara_sprite_assets.gd`
+
 ## 1. Principio-marca
 
 A Caipora aprovada define a marca do jogo. Ela deve ser reconhecivel como:
