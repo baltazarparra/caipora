@@ -667,12 +667,15 @@ func _start_enemy_turn() -> void:
 	_boss_special_hit_index = 0
 	_last_boss_bubble_pos = Vector2(-999.0, -999.0)
 	_active_enemy_pattern = RemotePatterns.apply(_enemy.get_attack_pattern())
-	# Tag sutil de identidade do golpe, acima do inimigo (1x por turno, não por hit).
+	# Identidade do golpe (1x por turno, não por hit): tag sutil + som próprio. NÃO
+	# substitui o tell de timing (timing_alert segue por hit) — é leitura, não interrupção.
 	if not _active_enemy_pattern.display_name.is_empty():
 		_feedback.spawn_move_name(
 			_active_enemy_pattern.display_name,
 			_enemy.position + Vector2(0, _enemy_head_top_y() - 6.0)
 		)
+	if not _active_enemy_pattern.audio_event.is_empty():
+		_sfx.play_named(_active_enemy_pattern.audio_event)
 	_enemy.state_machine.start_pattern(_active_enemy_pattern)
 
 func _on_enemy_attack_started() -> void:

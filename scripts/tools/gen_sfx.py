@@ -771,6 +771,245 @@ def erva_vida_wav():
     return _normalize(schroeder(body, mix=0.18, decay=0.6, tail=0.35), 0.7)
 
 
+# ─── Moves nomeados (PRD docs/PRD-moves-nomeados.md) ───────────────────────
+# Som PRÓPRIO por golpe (modelo Pokémon), 1 variante só (budget de browser).
+# Tocados por SfxSystem.play_named em _start_enemy_turn. Curtos (~0.2-0.4s),
+# fiéis ao caráter descrito no PRD. NÃO substituem o tell de timing (timing_alert),
+# que segue por hit — isto é identidade, não interrompe a dinâmica reativa.
+
+def _noise_burst(dur, lp=None, hp=None, attack=0.004, release=0.5, amp=0.6):
+    n = int(SAMPLE_RATE * dur)
+    out = [_noise() * _env(i, n, attack, release) * amp for i in range(n)]
+    if lp:
+        out = biquad(out, "lp", lp)
+    if hp:
+        out = biquad(out, "hp", hp)
+    return out
+
+def _moan(dur=0.22, freq=180.0, drop=0.4, vib=5.0):
+    # Gemido frio: saw caindo de tom com tremolo + ar, LP escuro.
+    n = int(SAMPLE_RATE * dur)
+    out = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        f = freq * (1.0 - drop * (i / n))
+        ph = (t * f) % 1.0
+        saw = 2.0 * ph - 1.0
+        trem = 0.8 + 0.2 * math.sin(2 * math.pi * vib * t)
+        e = _env(i, n, 0.02, 0.5)
+        out.append((0.5 * saw * trem + 0.3 * _noise()) * e * 0.5)
+    return biquad(out, "lp", 1200.0, q=1.0)
+
+def _swirl(dur, center, amp=0.6):
+    # Rajada giratória: ruído banda-passa com AM rápida (redemoinho).
+    n = int(SAMPLE_RATE * dur)
+    out = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        am = 0.5 + 0.5 * math.sin(2 * math.pi * 22.0 * t)
+        out.append(_noise() * am * _env(i, n, 0.02, 0.5) * amp)
+    return biquad(out, "bp", center, q=1.2)
+
+# Assombração
+def mv_assovio_cova():
+    cry = assovio(0.30, 1000.0, freq_end=300.0, breath=0.28)
+    snap = _noise_burst(0.05, lp=2600.0, hp=600.0, attack=0.001, release=0.4, amp=0.8)
+    return _normalize(_seq((cry, 0.0, 0.7), (snap, 0.27, 0.7)), 0.6)
+
+def mv_maos_alem():
+    knock = lambda: biquad(alfaia(0.12, base=70.0, punch=0.7), "lp", 900.0)
+    return _normalize(_seq((knock(), 0.0, 0.8), (knock(), 0.16, 0.8)), 0.7)
+
+def mv_procissao_almas():
+    chain = _seq(
+        (_moan(0.20, 200.0), 0.0, 0.7),
+        (_moan(0.20, 170.0), 0.16, 0.6),
+        (_moan(0.20, 220.0), 0.32, 0.6),
+        (_moan(0.20, 160.0), 0.48, 0.5),
+    )
+    return _normalize(echo(chain, time_s=0.18, feedback=0.25, mix=0.3, taps=3), 0.6)
+
+# Criatura / Boss-criatura
+def mv_dilacerar():
+    tear = _noise_burst(0.12, lp=3000.0, hp=800.0, attack=0.001, release=0.55, amp=0.7)
+    body = alfaia(0.14, base=66.0, punch=0.9)
+    return _normalize(_mix(tear, [s * 0.7 for s in body]), 0.8)
+
+def mv_mordida_dobrada():
+    bite = lambda b: _mix(caixa(0.06, bright=b), _noise_burst(0.05, hp=1200.0, amp=0.5))
+    # Cama grave contínua sob as duas mordidas: enche o vão (o fiscal exige corpo RMS).
+    n = int(SAMPLE_RATE * 0.20)
+    growl = biquad([_noise() * _env(i, n, 0.02, 0.5) * 0.4 for i in range(n)], "lp", 800.0)
+    return _normalize(_seq((growl, 0.0, 0.5), (bite(0.5), 0.0, 0.8), (bite(0.6), 0.14, 0.8)), 0.75)
+
+def mv_furia_carnica():
+    g = lambda f: _mix(_moan(0.12, f, drop=0.2, vib=8.0), alfaia(0.10, base=60.0, punch=0.8))
+    return _normalize(_seq((g(160), 0.0, 0.7), (g(200), 0.16, 0.8), (g(260), 0.32, 0.9)), 0.85)
+
+def mv_investida():
+    stomp = alfaia(0.18, base=52.0, punch=1.0)
+    gore = lambda: _noise_burst(0.06, lp=2600.0, hp=700.0, amp=0.6)
+    return _normalize(_seq((stomp, 0.0, 0.9), (gore(), 0.14, 0.7), (gore(), 0.24, 0.7)), 0.85)
+
+def mv_esmaga_ossos():
+    crack = _noise_burst(0.03, hp=2500.0, attack=0.001, release=0.3, amp=0.7)
+    hitb = lambda: _mix(alfaia(0.16, base=50.0, punch=1.0), [s * 0.6 for s in crack])
+    return _normalize(_seq((hitb(), 0.0, 0.95), (hitb(), 0.20, 0.95)), 0.9)
+
+def mv_frenesi():
+    # Estalos mais contidos (menos picudos) sobre uma cama densa e contínua: o rosnado
+    # raivoso que não pausa. Crest factor menor => RMS sobe sem estourar o pico.
+    snap = lambda: _mix(caixa(0.05, bright=0.45), _noise_burst(0.04, hp=1400.0, amp=0.35))
+    n = int(SAMPLE_RATE * 0.34)
+    bed = biquad([_noise() * _env(i, n, 0.04, 0.4) * 0.7 for i in range(n)], "bp", 1000.0, q=0.6)
+    return _normalize(_seq((bed, 0.0, 0.9), (snap(), 0.0, 0.6), (snap(), 0.09, 0.6),
+                           (snap(), 0.18, 0.7), (snap(), 0.27, 0.8)), 0.8)
+
+# Mula sem Cabeça
+def mv_galope_sem_cabeca():
+    hoof = lambda: biquad(pulse(0.05, 150.0 * _jit(0.1), duty=0.5, attack=0.001, release=0.5), "lp", 1200.0)
+    return _normalize(_seq(
+        (hoof(), 0.0, 0.6), (hoof(), 0.12, 0.6), (hoof(), 0.22, 0.7), (hoof(), 0.30, 0.8),
+        (alfaia(0.16, base=56.0, punch=1.0), 0.36, 0.9),
+    ), 0.8)
+
+def mv_coice_brasa():
+    kick = alfaia(0.14, base=60.0, punch=1.0)
+    hiss = _noise_burst(0.22, hp=1500.0, attack=0.01, release=0.4, amp=0.5)
+    n = int(SAMPLE_RATE * 0.22)
+    ember = biquad([(_noise() if random.random() < 0.02 else 0.0) for _ in range(n)], "hp", 2500.0)
+    return _normalize(_seq((kick, 0.0, 0.9), (_mix(hiss, [s * 0.6 for s in ember]), 0.08, 0.6)), 0.75)
+
+# Boitatá
+def mv_brasa_rasteira():
+    n = int(SAMPLE_RATE * 0.28)
+    breath = biquad([_noise() * math.sin(math.pi * i / n) * 0.6 for i in range(n)], "lp", 800.0)
+    crackle = biquad([(_noise() if random.random() < 0.015 else 0.0) for _ in range(n)], "hp", 1800.0)
+    return _normalize(_mix(breath, [s * 0.7 for s in crackle]), 0.6)
+
+def mv_labareda_viva():
+    n = int(SAMPLE_RATE * 0.34)
+    roar = biquad([_noise() * _env(i, n, 0.05, 0.5) * 0.7 for i in range(n)], "bp", 1500.0, q=0.7)
+    up = assovio(0.34, 300.0, freq_end=1200.0, breath=0.4)
+    return _normalize(_mix(roar, [s * 0.4 for s in up]), 0.7)
+
+def mv_fogo_fatuo():
+    n = int(SAMPLE_RATE * 0.26)
+    flick = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        am = 0.5 + 0.5 * math.sin(2 * math.pi * 18.0 * t)
+        ph = (t * 620.0) % 1.0
+        flick.append((2 * ph - 1) * am * _env(i, n, 0.02, 0.5) * 0.4)
+    flick = biquad(flick, "lp", 2000.0)
+    snap = _noise_burst(0.05, hp=1500.0, attack=0.001, release=0.4, amp=0.8)
+    return _normalize(_seq((flick, 0.0, 0.7), (snap, 0.24, 0.8)), 0.6)
+
+def mv_cobra_fogo():
+    n = int(SAMPLE_RATE * 0.38)
+    sear = biquad([_noise() * _env(i, n, 0.04, 0.4) * 0.7 for i in range(n)], "hp", 2200.0)
+    hot = pulse(0.38, 1320.0, duty=0.15, vib=6.0, release=0.4)
+    return _normalize(bitcrush(_mix(sear, [s * 0.3 for s in hot]), bits=7), 0.7)
+
+# Curupira
+def mv_pe_virado():
+    leaves = _noise_burst(0.16, lp=2200.0, attack=0.02, release=0.5, amp=0.5)
+    whip = assovio(0.12, 600.0, freq_end=1600.0, breath=0.3)  # sobe: direção errada
+    return _normalize(_seq((leaves, 0.0, 0.6), (whip, 0.10, 0.7)), 0.6)
+
+def mv_trilha_falsa():
+    step = lambda: biquad(_noise_burst(0.05, lp=1500.0, amp=0.4), "lp", 1200.0)
+    strike = _mix(caixa(0.06, bright=0.5), alfaia(0.10, base=64.0, punch=0.8))
+    return _normalize(_seq((step(), 0.0, 0.5), (step(), 0.10, 0.5),
+                           (step(), 0.20, 0.6), (strike, 0.30, 0.9)), 0.7)
+
+# Saci
+def mv_assovio_mato():
+    # Assobio curto e cortante + cauda de ar suave: o tom puro sozinho fica HOT demais
+    # (RMS acima da faixa); o ar baixa o RMS sem perder o corte.
+    cry = assovio(0.16, 1700.0, freq_end=2100.0, breath=0.06)
+    tail = _noise_burst(0.12, lp=1600.0, attack=0.02, release=0.6, amp=0.18)
+    return _normalize(_seq((cry, 0.0, 0.7), (tail, 0.13, 0.5)), 0.6)
+
+def mv_redemoinho():
+    return _normalize(_seq((_swirl(0.14, 1200.0), 0.0, 0.6),
+                           (_swirl(0.14, 1500.0), 0.12, 0.7),
+                           (_swirl(0.16, 1900.0), 0.24, 0.8)), 0.6)
+
+def mv_travessura():
+    blip = lambda f: pulse(0.05, f, duty=0.25, release=0.5)
+    dark = _mix(caixa(0.06, bright=0.4), _noise_burst(0.05, hp=900.0, amp=0.5))
+    return _normalize(_seq((blip(880.0), 0.0, 0.6), (blip(1100.0), 0.10, 0.6),
+                           (blip(1320.0), 0.20, 0.6), (dark, 0.30, 0.8)), 0.6)
+
+def mv_ventania():
+    whip = lambda up: assovio(0.10, 700.0 if up else 1500.0,
+                              freq_end=1500.0 if up else 700.0, breath=0.35)
+    return _normalize(_seq((whip(True), 0.0, 0.6), (whip(False), 0.10, 0.6),
+                           (whip(True), 0.20, 0.7), (whip(False), 0.30, 0.7)), 0.6)
+
+# Jesuíta
+def mv_catequese():
+    toll = lambda f: gongue(0.18, freq=f)
+    chain = _seq((toll(330.0), 0.0, 0.8), (toll(330.0), 0.22, 0.7), (toll(440.0), 0.44, 0.8))
+    return _normalize(schroeder(chain, mix=0.25, decay=0.7, tail=0.4), 0.7)
+
+def mv_espada_fe():
+    clink = lambda f: _mix(agogo(0.10, freq=f, bend=0.03), _noise_burst(0.03, hp=3000.0, amp=0.3))
+    return _normalize(_seq((clink(1980.0), 0.0, 0.7), (clink(2200.0), 0.10, 0.7),
+                           (clink(1760.0), 0.20, 0.8), (clink(2480.0), 0.30, 0.9)), 0.7)
+
+# Caçador
+def mv_emboscada():
+    cock = pulse(0.03, 1200.0, duty=0.125, attack=0.001, release=0.3)
+    shot = lambda: _mix(_noise_burst(0.06, hp=400.0, attack=0.001, release=0.5, amp=0.8),
+                        alfaia(0.10, base=58.0, punch=0.9))
+    return _normalize(_seq((cock, 0.0, 0.5), (shot(), 0.10, 0.95), (shot(), 0.20, 0.8)), 0.85)
+
+# Caipora (herói)
+def mv_garra_rubra():
+    swipe = assovio(0.10, 1800.0, freq_end=700.0, breath=0.25)
+    impact = _mix(caixa(0.07, bright=0.55), alfaia(0.10, base=62.0, punch=0.9))
+    return _normalize(_seq((swipe, 0.0, 0.6), (impact, 0.07, 0.9)), 0.8)
+
+def mv_acoite_cipo():
+    whip = lambda: assovio(0.10, 1500.0, freq_end=500.0, breath=0.3)
+    snap = _noise_burst(0.03, hp=2000.0, amp=0.4)
+    return _normalize(_seq((whip(), 0.0, 0.7), (snap, 0.08, 0.5),
+                           (whip(), 0.16, 0.7), (snap, 0.24, 0.5)), 0.65)
+
+
+# Catálogo de moves: stem do WAV (= audio_event no .tres) -> gerador.
+MOVES = {
+    "mv_assovio_cova": mv_assovio_cova,
+    "mv_maos_alem": mv_maos_alem,
+    "mv_procissao_almas": mv_procissao_almas,
+    "mv_dilacerar": mv_dilacerar,
+    "mv_mordida_dobrada": mv_mordida_dobrada,
+    "mv_furia_carnica": mv_furia_carnica,
+    "mv_investida": mv_investida,
+    "mv_esmaga_ossos": mv_esmaga_ossos,
+    "mv_frenesi": mv_frenesi,
+    "mv_galope_sem_cabeca": mv_galope_sem_cabeca,
+    "mv_coice_brasa": mv_coice_brasa,
+    "mv_brasa_rasteira": mv_brasa_rasteira,
+    "mv_labareda_viva": mv_labareda_viva,
+    "mv_fogo_fatuo": mv_fogo_fatuo,
+    "mv_cobra_fogo": mv_cobra_fogo,
+    "mv_pe_virado": mv_pe_virado,
+    "mv_trilha_falsa": mv_trilha_falsa,
+    "mv_assovio_mato": mv_assovio_mato,
+    "mv_redemoinho": mv_redemoinho,
+    "mv_travessura": mv_travessura,
+    "mv_ventania": mv_ventania,
+    "mv_catequese": mv_catequese,
+    "mv_espada_fe": mv_espada_fe,
+    "mv_emboscada": mv_emboscada,
+    "mv_garra_rubra": mv_garra_rubra,
+    "mv_acoite_cipo": mv_acoite_cipo,
+}
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -1817,6 +2056,12 @@ def main(only=None):
             for name, gen in GENERATORS.items():
                 _write(f"{name}{suffix}.wav", gen())
 
+    if only in (None, "moves"):
+        print("Gerando sons de golpes nomeados (1 variante cada)...")
+        random.seed(20260618)
+        for name, gen in MOVES.items():
+            _write(f"{name}.wav", gen())
+
     if only in (None, "ambience"):
         print("Gerando ambiências (loops)...")
         for name, gen in AMBIENCES.items():
@@ -1845,6 +2090,6 @@ if __name__ == "__main__":
     arg = None
     if len(sys.argv) > 2 and sys.argv[1] == "--only":
         arg = sys.argv[2]
-        if arg not in ("sfx", "ambience", "music", "stingers"):
-            sys.exit(f"--only deve ser sfx|ambience|music|stingers (recebido: {arg})")
+        if arg not in ("sfx", "moves", "ambience", "music", "stingers"):
+            sys.exit(f"--only deve ser sfx|moves|ambience|music|stingers (recebido: {arg})")
     main(arg)
