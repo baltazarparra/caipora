@@ -35,6 +35,10 @@ CRYSTAL = (0, 250, 154, 255)          # #00fa9a — crystal green
 CRYSTAL_DIM = (0, 180, 110, 255)
 CYAN = (21, 153, 255, 255)            # #1599ff — dodge blue
 DODGE_PALE = (220, 235, 255, 255)     # pale cyan-white streaks
+VOID = (10, 8, 12, 255)               # garra/void da Caipora (quase preto)
+HEART_HOT = (220, 50, 50, 255)        # coração vivo (mesmo que BLOOD_BRIGHT)
+HEART_MID = (200, 20, 20, 255)        # coração comprimido
+HEART_DEAD = (110, 0, 0, 255)         # coração drenado (mais escuro que BLOOD)
 
 
 def _a(col: tuple, alpha: int) -> tuple:
@@ -87,6 +91,33 @@ def _hstreak(d: ImageDraw.Draw, cx: int, cy: int, lengths: list[int],
         x0 = cx - length // 2 + x_offset
         x1 = cx + length // 2 + x_offset
         d.line([x0, y, x1, y], fill=color, width=1)
+
+
+def _heart(d: ImageDraw.Draw, cx: int, cy: int, size: int, color: tuple,
+           squeeze: float = 0.0) -> None:
+    """Pixel heart centered at cx,cy. squeeze 0..1 comprime a largura (esmagado)."""
+    r = max(2, int(round(size * (1.0 - 0.40 * squeeze))))
+    lobe_y = cy - r // 2
+    # Dois lóbulos
+    d.ellipse([cx - 2 * r, lobe_y - r, cx, lobe_y + r], fill=color)
+    d.ellipse([cx, lobe_y - r, cx + 2 * r, lobe_y + r], fill=color)
+    # Ponta inferior (encurta junto com o aperto)
+    tip_y = cy + int(round(size * 1.3 * (1.0 - 0.30 * squeeze)))
+    d.polygon([(cx - 2 * r, lobe_y), (cx + 2 * r, lobe_y), (cx, tip_y)], fill=color)
+
+
+def _talon(d: ImageDraw.Draw, bx: float, by: float, tx: float, ty: float,
+           base_w: float, color: tuple) -> None:
+    """Garra cônica: larga na base (bx,by), pontuda na ponta (tx,ty)."""
+    ang = math.atan2(ty - by, tx - bx)
+    px = math.cos(ang + math.pi / 2)
+    py = math.sin(ang + math.pi / 2)
+    hw = base_w / 2.0
+    d.polygon([
+        (bx + px * hw, by + py * hw),
+        (bx - px * hw, by - py * hw),
+        (tx, ty),
+    ], fill=color)
 
 
 # ─── Outline pass ─────────────────────────────────
@@ -234,6 +265,73 @@ def _gen_dodge_vfx() -> None:
     sheet.save(os.path.join(OUT, "dodge_vfx_sheet.png"))
 
 
+# ─── FINISHER VFX (5 frames × 64×64) ─────────────
+# Golpe final: a garra preta da Caipora agarra o coração do inimigo, esmaga e
+# drena o sangue. Toca em câmera lenta (herda Engine.time_scale) sobre o peito.
+def _gen_finisher_vfx() -> None:
+    W, H, N = 64, 64, 5
+    sheet = Image.new("RGBA", (W * N, H), TRANSPARENT)
+    hx, hy = 32, 36  # centro do coração (peito)
+
+    bases = [(20, 17), (28, 14), (36, 14), (44, 17)]      # base dos talões (dorso)
+    tips_open = [(13, 33), (23, 37), (41, 37), (51, 33)]  # garra aberta
+    tips_close = [(26, 40), (30, 43), (34, 43), (38, 40)]  # garra cravada
+    grips = [0.0, 0.45, 0.72, 0.9, 1.0]
+    sizes = [10, 9, 8, 7, 6]
+    squeezes = [0.0, 0.25, 0.5, 0.78, 0.95]
+    hcols = [HEART_HOT, HEART_HOT, HEART_MID, HEART_DEAD, HEART_DEAD]
+
+    def lerp(a: float, b: float, t: float) -> float:
+        return a + (b - a) * t
+
+    def frame(fi: int) -> Image.Image:
+        img = Image.new("RGBA", (W, H), TRANSPARENT)
+        d = ImageDraw.Draw(img)
+        grip = grips[fi]
+        sq = squeezes[fi]
+
+        # 1) Coração (sob a garra)
+        _heart(d, hx, hy, sizes[fi], hcols[fi], sq)
+        if fi <= 1:  # brilho vivo do órgão pulsante
+            _circle(d, hx - 3, hy - 3, 2, _a(WHITE, 150))
+
+        # 2) Garra (4 talões) cravando por cima
+        for i in range(4):
+            tx = lerp(tips_open[i][0], tips_close[i][0], grip)
+            ty = lerp(tips_open[i][1], tips_close[i][1], grip)
+            bw = lerp(8, 6, grip)
+            _talon(d, bases[i][0], bases[i][1], tx, ty, bw, VOID)
+
+        # 3) Dorso/punho (massa preta) e pulso saindo do topo
+        d.ellipse([hx - 13, 8, hx + 13, 22], fill=VOID)
+        d.rectangle([hx - 7, 0, hx + 7, 12], fill=VOID)
+
+        # 4) Sangue espremido (cresce no aperto, dreia/escorre no fim)
+        if fi == 1:
+            _dots(d, hx, hy, 12, 5, 1, HEART_MID, 0.3)
+        elif fi == 2:
+            _line_radial(d, hx, hy, 11, 20, 8, 2, HEART_HOT, math.pi / 8)
+            _dots(d, hx, hy, 22, 8, 2, BLOOD, 0.0)
+            _dots(d, hx, hy, 16, 6, 1, HEART_HOT, 0.5)
+        elif fi == 3:
+            _line_radial(d, hx, hy, 12, 26, 6, 2, BLOOD, math.pi / 6)
+            _dots(d, hx, hy, 28, 6, 2, _a(BLOOD, 180), 0.2)
+            d.line([hx - 6, hy + 8, hx - 7, hy + 20], fill=BLOOD, width=2)
+            d.line([hx + 5, hy + 10, hx + 6, hy + 22], fill=BLOOD, width=2)
+            _circle(d, hx - 7, hy + 21, 2, BLOOD)
+            _circle(d, hx + 6, hy + 23, 2, BLOOD)
+        elif fi == 4:
+            _dots(d, hx, hy, 26, 6, 1, _a(BLOOD, 90), 0.4)
+            d.line([hx - 6, hy + 12, hx - 7, hy + 24], fill=_a(BLOOD, 140), width=2)
+            _circle(d, hx - 7, hy + 25, 2, _a(BLOOD, 150))
+        return img
+
+    for fi in range(N):
+        f = _add_outline(frame(fi), OUTLINE_COL)
+        sheet.paste(f, (fi * W, 0))
+    sheet.save(os.path.join(OUT, "finisher_vfx_sheet.png"))
+
+
 # ─── Pixel font 5×7 ───────────────────────────────
 # Each entry: list of 7 rows, each row is 5-char string of X/.
 FONT_5x7: dict[str, list[str]] = {
@@ -339,6 +437,9 @@ def main() -> None:
 
     _gen_dodge_vfx()
     print("  ✓ dodge_vfx_sheet.png (4×80×48)")
+
+    _gen_finisher_vfx()
+    print("  ✓ finisher_vfx_sheet.png (5×64×64)")
 
     _gen_label("CRITICO", WHITE, ORANGE,   "result_critico.png")
     print("  ✓ result_critico.png")
