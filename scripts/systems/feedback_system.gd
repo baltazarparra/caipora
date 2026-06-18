@@ -9,6 +9,10 @@ const DEATH_PARTICLES := preload("res://scenes/shared/death_particles.tscn")
 const HIT_VFX_PATH      := "res://assets/effects/hit_vfx_sheet.png"
 const CRITICAL_VFX_PATH := "res://assets/effects/critical_vfx_sheet.png"
 const DODGE_VFX_PATH    := "res://assets/effects/dodge_vfx_sheet.png"
+const FINISHER_VFX_PATH := "res://assets/effects/finisher_vfx_sheet.png"
+# 5 frames a ~15fps fecham em ~0.33s de tempo-de-cena: cabem na janela de
+# slow-mo do golpe final (1.4s reais a time_scale 0.25 = 0.35s de cena).
+const FINISHER_VFX_FPS  := 15.0
 const LABEL_PATHS := {
 	&"critico":  "res://assets/effects/result_critico.png",
 	&"perfeito": "res://assets/effects/result_perfeito.png",
@@ -44,6 +48,7 @@ var _vfx_pool_idx: Dictionary = {}  # StringName → int (round-robin)
 var _tex_hit: Texture2D
 var _tex_crit: Texture2D
 var _tex_dodge: Texture2D
+var _tex_finisher: Texture2D
 
 # ─── Combo tracker ─────────────────────────────────
 var _combo_streak: int = 0
@@ -109,6 +114,7 @@ func _ready() -> void:
 	_tex_hit   = _safe_load(HIT_VFX_PATH)
 	_tex_crit  = _safe_load(CRITICAL_VFX_PATH)
 	_tex_dodge = _safe_load(DODGE_VFX_PATH)
+	_tex_finisher = _safe_load(FINISHER_VFX_PATH)
 
 ## Multiplica só o RGB pelo ganho de cor da fase (preserva alpha).
 func _g(c: Color) -> Color:
@@ -182,6 +188,14 @@ func spawn_critical_vfx(at_position: Vector2) -> void:
 ## Streaks de esquiva: substitui dodge_particles.
 func spawn_dodge_vfx(at_position: Vector2) -> void:
 	_burst_vfx(&"dodge", _tex_dodge, 80, 48, 4, 24.0, at_position)
+
+## Golpe final: garra esmagando o coração sobre o peito do inimigo. Toca em
+## câmera lenta (a animação herda Engine.time_scale). NÃO dispara death_particles
+## aqui — o "respingo extra" é o spawn_death_particles que ArenaMan._on_actor_died
+## já chama em toda morte; evita duplicar gore e custo.
+func spawn_finisher_vfx(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 2.6)
+	_burst_vfx(&"finisher", _tex_finisher, 64, 64, 5, FINISHER_VFX_FPS, at_position)
 
 # ─── Aliases legados (mantém assinatura pública) ───
 func spawn_blood_particles(at_position: Vector2) -> void:
