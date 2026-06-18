@@ -646,7 +646,9 @@ func _apply_cortejo_hits(pos: Vector2, crit: bool, index: int) -> void:
 	for h: int in range(Constants.CORTEJO_LINK_HITS):
 		if _combat_over or not _enemy.health.is_alive():
 			return
-		var damage: float = _caipora.execute_attack(crit)
+		# Dano FIXO por hit (1): a barragem fere pela quantidade de golpes, não pela
+		# magnitude. `crit` segue valendo só para o visual (florição do último espírito).
+		var damage: float = Constants.CORTEJO_HIT_DAMAGE
 		var is_killing_blow: bool = damage >= _enemy.health.current_health
 		var outcome: int = SfxSystem.Outcome.CRIT if crit else SfxSystem.Outcome.HIT
 		if is_killing_blow:

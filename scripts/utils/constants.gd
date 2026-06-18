@@ -101,6 +101,10 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 const CORTEJO_CHANCE: float = TIMING_DOUBLE_CHANCE  # = 0.30, espelha o duplo (pedido)
 const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
 const CORTEJO_LINK_HITS: int = 2            # hits de dano por espírito na barragem
+# Cada hit da barragem é FIXO em 1 (não escala com o dano da Caipora nem com crit): a
+# força do Golpe Perfeito vem do NÚMERO de hits (espíritos × LINK_HITS), não da
+# magnitude por golpe. Antes cada hit usava execute_attack() e estourava o dano.
+const CORTEJO_HIT_DAMAGE: float = 1.0
 # Janela apertada (alto risco/recompensa); afina por fase via timing_window_for_phase.
 const CORTEJO_WINDOW_BASE: float = 0.78
 # Custo do erro: multiplicador do contra-ataque (1.0 = um golpe inteiro do inimigo).

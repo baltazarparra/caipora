@@ -28,6 +28,11 @@ func test_barrage_damage_instances_scale_with_spirits() -> void:
 	assert_eq(four, 4 * Constants.CORTEJO_LINK_HITS, "4 espíritos = 4×LINK_HITS instâncias")
 	assert_gt(four, one, "mais bosses libertados = barragem maior")
 
+func test_each_hit_deals_one_damage() -> void:
+	# Cada hit da barragem é fixo em 1: a força vem do nº de hits, não da magnitude.
+	assert_eq(Constants.CORTEJO_HIT_DAMAGE, 1.0,
+		"cada hit do Golpe Perfeito sangra exatamente 1, sem escalar com dano/crit")
+
 func test_chance_matches_double_attack() -> void:
 	assert_eq(Constants.CORTEJO_CHANCE, Constants.TIMING_DOUBLE_CHANCE,
 		"o Golpe Perfeito rola na mesma chance do ataque duplo")
