@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Redemoinho"
+audio_event = "mv_redemoinho"
+vfx_id = "redemoinho"
 idle_duration = 0.0
 wind_up_duration = 0.4
 attack_duration = 0.75

@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Trilha Falsa"
+audio_event = "mv_trilha_falsa"
+vfx_id = "trilha_falsa"
 idle_duration = 0.0
 wind_up_duration = 0.5
 attack_duration = 0.75

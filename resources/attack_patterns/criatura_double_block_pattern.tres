@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Mordida Dobrada"
+audio_event = "mv_mordida_dobrada"
+vfx_id = "mordida_dobrada"
 idle_duration = 0.0
 wind_up_duration = 0.25
 attack_duration = 0.85

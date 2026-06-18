@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Pé-Virado"
+audio_event = "mv_pe_virado"
+vfx_id = "pe_virado"
 idle_duration = 0.0
 wind_up_duration = 0.35
 attack_duration = 0.85

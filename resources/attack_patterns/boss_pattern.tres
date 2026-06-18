@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Fúria da Carniça"
+audio_event = "mv_furia_carnica"
+vfx_id = "furia_carnica"
 idle_duration = 0.0
 wind_up_duration = 0.15
 attack_duration = 0.8

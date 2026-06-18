@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Espada da Fé"
+audio_event = "mv_espada_fe"
+vfx_id = "espada_fe"
 idle_duration = 0.0
 wind_up_duration = 0.4
 attack_duration = 0.65

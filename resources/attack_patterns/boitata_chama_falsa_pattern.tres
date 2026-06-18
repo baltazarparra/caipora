@@ -4,6 +4,9 @@
 
 [resource]
 script = ExtResource("1_pattern")
+display_name = "Fogo-Fátuo"
+audio_event = "mv_fogo_fatuo"
+vfx_id = "fogo_fatuo"
 idle_duration = 0.0
 wind_up_duration = 0.5
 attack_duration = 0.75

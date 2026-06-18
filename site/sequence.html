@@ -125,6 +125,16 @@
           </div>
         </div>
 
+        <!-- IDENTIDADE DO GOLPE (in-game, modelo Pokémon) -->
+        <div class="section">
+          <h2>IDENTIDADE DO GOLPE</h2>
+          <div class="hint">Nome exibido no combate e som do golpe (modelo Pokémon). Vazio = genérico.</div>
+          <div class="row" style="margin-top:10px;">
+            <div class="f"><label>Nome no jogo</label><input type="text" id="f_display_name" placeholder="ex: Labareda Viva"></div>
+            <div class="f"><label>Som (audio_event)</label><input type="text" id="f_audio_event" placeholder="ex: mv_labareda_viva"></div>
+          </div>
+        </div>
+
         <!-- INTERVALOS ENTRE HITS -->
         <div class="section">
           <h2>INTERVALOS ENTRE HITS</h2>
@@ -257,6 +267,8 @@
 
       document.getElementById("title").textContent = "⚔ " + entry.label;
       document.getElementById("f_label").value = entry.label;
+      document.getElementById("f_display_name").value = entry.display_name || "";
+      document.getElementById("f_audio_event").value = entry.audio_event || "";
       document.getElementById("f_wind_up").value = entry.wind_up_duration;
       document.getElementById("f_attack").value = entry.attack_duration;
       document.getElementById("f_strikes").value = entry.strike_count;
@@ -299,6 +311,8 @@
       });
       return {
         label: document.getElementById("f_label").value.trim(),
+        display_name: document.getElementById("f_display_name").value.trim(),
+        audio_event: document.getElementById("f_audio_event").value.trim(),
         wind_up_duration: num(document.getElementById("f_wind_up").value, NaN),
         attack_duration: attack,
         strike_count: strikes,
