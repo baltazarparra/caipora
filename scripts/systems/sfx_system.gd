@@ -13,7 +13,7 @@ extends Node
 ## Resultado de uma troca de golpes. O arena_manager só DECLARA o resultado; o
 ## vocabulário sonoro (quais SFX, em que volume, com ou sem duck) vive aqui, num
 ## lugar só — assim o "errou" nunca volta a soar como o clique de menu.
-enum Outcome { MISS, HIT, CRIT, DODGE, HURT }
+enum Outcome { MISS, HIT, CRIT, DODGE, HURT, BLOCK }
 
 # ─── Constants ─────────────────────────────────────
 const SFX_BUS: String = "SFX"
@@ -126,6 +126,12 @@ func play_outcome(outcome: Outcome, combo_step: int = 0) -> void:
 			# A guardiã sangra: voz própria; hit_sound é o impacto NO inimigo.
 			if not play_named("hurt_caipora"):
 				play(hit_sound)
+		Outcome.BLOCK:
+			# Bloqueio parcial (faixa GOOD): "aparada" seca, mais leve que o crit; duck suave
+			# (não o duck profundo do perfeito). Fallback: dodge a volume baixo.
+			if not play_named("combat_block"):
+				play(dodge_sound, -6.0)
+			AudioDirector.duck(-6.0, 0.2)
 
 # ─── Private helpers ───────────────────────────────
 ## Round-robin entre as variantes do som; se não houver registro, devolve o próprio.

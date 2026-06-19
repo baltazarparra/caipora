@@ -444,6 +444,25 @@ func play_dpad_tap() -> void:
 	add_child(player)
 	player.play()
 
+## Tique sutil de APROXIMAÇÃO da janela (cue "prepare", modelo Patapon): reusa dpad_tap.wav
+## bem baixo e agudo, distinto do tap de press e do pico "AGORA" (timing_alert).
+const APPROACH_TICK_VOLUME_DB: float = -18.0
+const APPROACH_TICK_PITCH: float = 1.5
+func play_approach_tick() -> void:
+	if not _audio_unlocked:
+		return
+	var path := SFX_DIR + "dpad_tap.wav"
+	if not ResourceLoader.exists(path):
+		return
+	var player := AudioStreamPlayer.new()
+	player.stream = load(path)
+	player.bus = BUS_SFX
+	player.volume_db = APPROACH_TICK_VOLUME_DB
+	player.pitch_scale = APPROACH_TICK_PITCH
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
+
 ## Beat percussivo por sílaba no loader de combate (Pe → Pele → Pelejar).
 ## Pitch escala 0.8 → 1.0 → 1.3 para tensão crescente. Reutiliza dpad_tap.wav.
 func play_syllable_beat(index: int) -> void:

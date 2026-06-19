@@ -50,3 +50,30 @@ func test_show_bubble_resets_stale_flash() -> void:
 	assert_gt(_bubble._flash_timer, 0.0, "flash ativo")
 	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
 	assert_eq(_bubble._flash_timer, 0.0, "bolha re-mostrada não herda flash")
+
+# ─── Faixa GOOD (bloqueio parcial) ─────────────────
+# Cue de aproximação dispara ao ENTRAR na faixa GOOD (antes do perfeito) + halo âmbar.
+func test_approach_cue_fires_on_good_band_entry() -> void:
+	var fired: Array = [false]
+	_bubble.approach_entered.connect(func(): fired[0] = true)
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7, false, Color.TRANSPARENT, "up", false, 0.3, 0.9)
+	_bubble._process(0.2)   # progress 0.2 — antes do good
+	assert_false(fired[0], "antes do good: sem cue")
+	_bubble._process(0.15)  # progress 0.35 — entrou no good (antes do perfeito)
+	assert_true(fired[0], "entrada no good dispara o cue de aproximação")
+	assert_gt(_bubble._good_alpha, 0.0, "halo âmbar aceso no good")
+
+# Sem faixa GOOD explícita (binário/Cortejo): good=perfect, sem cue antes do perfeito.
+func test_no_approach_cue_without_good_band() -> void:
+	var fired: Array = [false]
+	_bubble.approach_entered.connect(func(): fired[0] = true)
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7)
+	_bubble._process(0.35)  # antes do perfeito (= good, pois good=perfect)
+	assert_false(fired[0], "sem good explícito, não há cue antes do perfeito")
+
+func test_burst_good_is_amber_and_not_fail() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.5, 0.7, false, Color.TRANSPARENT, "up", false, 0.3, 0.9)
+	_bubble.burst_good()
+	assert_true(_bubble._burst_good, "burst_good liga o estouro âmbar")
+	assert_false(_bubble._burst_fail, "burst_good não é falha")
+	assert_gt(_bubble._burst_timer, 0.0, "burst ativo")

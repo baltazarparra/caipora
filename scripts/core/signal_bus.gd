@@ -33,8 +33,12 @@ signal boss_died(phase: int)
 signal defense_window_opened(action: String)
 ## Janela fechou (resultado já foi processado — perfeito ou miss).
 signal defense_window_closed()
+## A bolha entrou na faixa GOOD: cue de aproximação "prepare → AGORA" (tique + háptico leve).
+signal combat_approach_cue()
 ## Jogador acertou o timing perfeito.
 signal defense_result_perfect()
+## Jogador acertou a faixa GOOD (bloqueio parcial): dano reduzido, sem contra-ataque.
+signal defense_result_good()
 ## Janela expirou sem input correto, ou input veio no timing errado.
 signal defense_result_miss()
 
@@ -49,6 +53,8 @@ signal cortejo_charge_closed()
 ## Jogador acertou o timing perfeito do ATAQUE (crítico). Espelha o de defesa para o
 ## D-pad poder vibrar distinto por desfecho (a arena já dava feedback visual/sonoro).
 signal attack_result_perfect()
+## Jogador acertou a faixa GOOD do ataque (golpe normal, sem crítico; combo preservado).
+signal attack_result_good()
 ## Jogador furou a janela do ataque.
 signal attack_result_miss()
 

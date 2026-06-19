@@ -82,8 +82,8 @@ func test_every_pattern_audio_event_has_asset():
 
 # ─── Áudio v4 Etapa 1: a escada de impacto do combate ──
 func test_combat_outcome_assets_exist():
-	# Os dois sons novos da escada (errou / crítico) com primário + _2/_3.
-	for sound_name in ["combat_miss", "hit_heavy"]:
+	# Os sons da escada (errou / crítico / bloqueio) com primário + _2/_3.
+	for sound_name in ["combat_miss", "hit_heavy", "combat_block"]:
 		assert_true(_sfx.play_named(sound_name),
 			"%s deve existir com geração procedural" % sound_name)
 		var list: Array = _sfx._variants.get("res://assets/audio/sfx/%s.wav" % sound_name, [])
@@ -96,7 +96,8 @@ func test_play_outcome_routes_every_result():
 	_sfx.timing_perfect_sound = load("res://assets/audio/sfx/timing_perfect.wav")
 	_sfx.ui_click_sound = load("res://assets/audio/sfx/ui_click.wav")
 	for outcome in [SfxSystem.Outcome.MISS, SfxSystem.Outcome.HIT,
-			SfxSystem.Outcome.CRIT, SfxSystem.Outcome.DODGE, SfxSystem.Outcome.HURT]:
+			SfxSystem.Outcome.CRIT, SfxSystem.Outcome.DODGE, SfxSystem.Outcome.HURT,
+			SfxSystem.Outcome.BLOCK]:
 		_sfx.play_outcome(outcome)
 	var players := 0
 	for child in _sfx.get_children():

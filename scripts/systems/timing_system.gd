@@ -1,7 +1,10 @@
 class_name TimingSystem
 extends Node
 
-enum TimingResult { PERFECT, MISS }
+## PERFEITO = crítico/contra-ataque (+combo); GOOD = bloqueio parcial (combo preservado);
+## MISS = dano cheio. GOOD só é emitido quando a faixa good difere da perfeita (ver
+## open_window); chamadas binárias (hold/Cortejo) nunca emitem GOOD.
+enum TimingResult { PERFECT, GOOD, MISS }
 
 # ─── Signals ───────────────────────────────────────
 signal timing_result(result: TimingResult)
@@ -20,6 +23,11 @@ var _perfect_start: float = 0.35
 var _perfect_end: float = 0.65
 var _perfect_start_2: float = 0.35
 var _perfect_end_2: float = 0.65
+## Faixa GOOD (bloqueio parcial). Default = faixa perfeita ⇒ binário (PERFEITO/MISS).
+var _good_start: float = 0.35
+var _good_end: float = 0.65
+var _good_start_2: float = 0.35
+var _good_end_2: float = 0.65
 var _double_mode: bool = false
 var _first_hit_done: bool = false
 var _expected_action: String = "ui_up"
@@ -30,13 +38,18 @@ var _hold_mode: bool = false
 var _charging: bool = false
 
 # ─── Public API ────────────────────────────────────
-func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end: float = 0.65, double: bool = false, perfect_start_2: float = 0.0, perfect_end_2: float = 0.0, action: String = "ui_up", action_2: String = "ui_right", hold: bool = false) -> void:
+func open_window(duration: float = 1.5, perfect_start: float = 0.35, perfect_end: float = 0.65, double: bool = false, perfect_start_2: float = 0.0, perfect_end_2: float = 0.0, action: String = "ui_up", action_2: String = "ui_right", hold: bool = false, good_start: float = 0.0, good_end: float = 0.0, good_start_2: float = 0.0, good_end_2: float = 0.0) -> void:
 	_is_window_open = true
 	_window_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
 	_perfect_start_2 = perfect_start_2 if perfect_start_2 > 0.0 else perfect_start
 	_perfect_end_2 = perfect_end_2 if perfect_end_2 > 0.0 else perfect_end
+	# Faixa GOOD: ausente (0.0) ⇒ coincide com a perfeita ⇒ comportamento binário (hold/Cortejo).
+	_good_start = good_start if good_start > 0.0 else _perfect_start
+	_good_end = good_end if good_end > 0.0 else _perfect_end
+	_good_start_2 = good_start_2 if good_start_2 > 0.0 else _perfect_start_2
+	_good_end_2 = good_end_2 if good_end_2 > 0.0 else _perfect_end_2
 	_double_mode = double
 	_first_hit_done = false
 	_window_progress = 0.0
@@ -95,17 +108,28 @@ func _in_perfect_zone() -> bool:
 		return _window_progress >= _perfect_start_2 and _window_progress <= _perfect_end_2
 	return _window_progress >= _perfect_start and _window_progress <= _perfect_end
 
+func _in_good_zone() -> bool:
+	if _double_mode and _first_hit_done:
+		return _window_progress >= _good_start_2 and _window_progress <= _good_end_2
+	return _window_progress >= _good_start and _window_progress <= _good_end
+
+## Classifica o instante atual em PERFEITO / GOOD / MISS (good ⊇ perfect).
+func _grade() -> TimingResult:
+	if _in_perfect_zone():
+		return TimingResult.PERFECT
+	if _in_good_zone():
+		return TimingResult.GOOD
+	return TimingResult.MISS
+
 func _evaluate_timing() -> void:
 	if not _double_mode:
 		_is_window_open = false
-		if _in_perfect_zone():
-			timing_result.emit(TimingResult.PERFECT)
-		else:
-			timing_result.emit(TimingResult.MISS)
+		timing_result.emit(_grade())
 		return
 
 	if not _first_hit_done:
-		if _in_perfect_zone():
+		# O 1º golpe do duplo engata em PERFEITO OU GOOD (não exige perfeito).
+		if _in_good_zone():
 			_first_hit_done = true
 			timing_first_hit.emit()
 		else:
@@ -113,7 +137,4 @@ func _evaluate_timing() -> void:
 			timing_result.emit(TimingResult.MISS)
 	else:
 		_is_window_open = false
-		if _in_perfect_zone():
-			timing_result.emit(TimingResult.PERFECT)
-		else:
-			timing_result.emit(TimingResult.MISS)
+		timing_result.emit(_grade())

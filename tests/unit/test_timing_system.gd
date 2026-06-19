@@ -41,6 +41,57 @@ func test_phase_timing_windows():
         0.001
     )
 
+# ─── Tier GOOD (bloqueio parcial) ──────────────────
+# Faixa good 0.40..0.90 envolvendo a perfeita 0.60..0.70.
+func _open_with_good() -> void:
+    _timing.open_window(1.0, 0.60, 0.70, false, 0.0, 0.0, "ui_up", "ui_right", false, 0.40, 0.90)
+
+# Dentro do good mas FORA do perfeito → GOOD.
+func test_good_zone_emits_good():
+    var result: Array = [TimingSystem.TimingResult.MISS]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _open_with_good()
+    _timing._window_progress = 0.50   # no good, antes do perfeito
+    _timing._evaluate_timing()
+    assert_eq(result[0], TimingSystem.TimingResult.GOOD)
+
+# Dentro do perfeito segue PERFEITO (perfeito tem precedência sobre good).
+func test_perfect_still_perfect_with_good_band():
+    var result: Array = [TimingSystem.TimingResult.MISS]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _open_with_good()
+    _timing._window_progress = 0.65
+    _timing._evaluate_timing()
+    assert_eq(result[0], TimingSystem.TimingResult.PERFECT)
+
+# Fora do good → MISS.
+func test_outside_good_is_miss():
+    var result: Array = [TimingSystem.TimingResult.PERFECT]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _open_with_good()
+    _timing._window_progress = 0.20
+    _timing._evaluate_timing()
+    assert_eq(result[0], TimingSystem.TimingResult.MISS)
+
+# Sem faixa good explícita (default), a janela é binária: intermediário = MISS.
+func test_binary_when_no_good_band():
+    var result: Array = [TimingSystem.TimingResult.GOOD]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _timing.open_window(1.0, 0.60, 0.70)
+    _timing._window_progress = 0.50
+    _timing._evaluate_timing()
+    assert_eq(result[0], TimingSystem.TimingResult.MISS, "good=perfect por default")
+
+# Hold mode (Cortejo) nunca emite GOOD: soltar fora da zona perfeita = MISS.
+func test_hold_never_emits_good():
+    var result: Array = [TimingSystem.TimingResult.PERFECT]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _open_hold()
+    _timing._input(_action_event("ui_up", true))
+    _timing._window_progress = 0.30   # fora da zona de soltar
+    _timing._input(_action_event("ui_up", false))
+    assert_eq(result[0], TimingSystem.TimingResult.MISS)
+
 # cancel_window destrava quem dá `await timing_result` (ex.: o batuque do Cortejo no
 # teardown): emite MISS uma vez quando a janela está aberta.
 func test_cancel_window_emits_miss_when_open():

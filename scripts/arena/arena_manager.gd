@@ -88,6 +88,8 @@ func _ready() -> void:
 	_sfx = $SfxSystem
 	_timing_bubble.vulnerable_entered.connect(_on_bubble_vulnerable)
 	_timing_bubble_b.vulnerable_entered.connect(_on_bubble_vulnerable)
+	_timing_bubble.approach_entered.connect(_on_bubble_approach)
+	_timing_bubble_b.approach_entered.connect(_on_bubble_approach)
 	# Cortejo dos Encantados (Golpe Perfeito): aparição dos espíritos da barragem.
 	# Criada por código (nó de runtime) para não tocar os .tscn das 5 arenas — gotcha
 	# #7. A janela única reusa _timing_system/_timing_bubble (o tap do ataque normal).
@@ -362,30 +364,38 @@ func _start_caipora_turn() -> void:
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
 	_animator.play_pose(_caipora, &"windup")
 	_first_bubble_pos = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
-	var atk_window: float = _phase_window(Constants.TIMING_WINDOW_ATTACK)
+	# Faixas absolutas (PERFEITO/GOOD) dentro da janela; piso garante que a banda caiba.
+	var atk_window: float = maxf(_phase_window(Constants.TIMING_WINDOW_ATTACK), Constants.MIN_ACTION_DURATION)
+	var band: Dictionary = Constants.band_fractions(atk_window)
+	var ps: float = band["perfect_start"]
+	var pe: float = band["perfect_end"]
+	var gs: float = band["good_start"]
+	var ge: float = band["good_end"]
 	_timing_bubble.show_bubble(
 		_first_bubble_pos,
 		atk_window,
-		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END,
-		false, Color.TRANSPARENT, "up"
+		ps, pe,
+		false, Color.TRANSPARENT, "up", false, gs, ge
 	)
 	if _is_double_attack:
 		var total: float = Constants.TIMING_DOUBLE_INTERVAL + atk_window
-		var p1s: float = Constants.TIMING_PERFECT_START * atk_window / total
-		var p1e: float = Constants.TIMING_PERFECT_END * atk_window / total
-		var p2s: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_START * atk_window) / total
-		var p2e: float = (Constants.TIMING_DOUBLE_INTERVAL + Constants.TIMING_PERFECT_END * atk_window) / total
-		_timing_system.open_window(total, p1s, p1e, true, p2s, p2e, "ui_up", "ui_right")
+		var p1s: float = ps * atk_window / total
+		var p1e: float = pe * atk_window / total
+		var g1s: float = gs * atk_window / total
+		var g1e: float = ge * atk_window / total
+		var p2s: float = (Constants.TIMING_DOUBLE_INTERVAL + ps * atk_window) / total
+		var p2e: float = (Constants.TIMING_DOUBLE_INTERVAL + pe * atk_window) / total
+		var g2s: float = (Constants.TIMING_DOUBLE_INTERVAL + gs * atk_window) / total
+		var g2e: float = (Constants.TIMING_DOUBLE_INTERVAL + ge * atk_window) / total
+		_timing_system.open_window(total, p1s, p1e, true, p2s, p2e, "ui_up", "ui_right", false, g1s, g1e, g2s, g2e)
 		_timing_system.timing_first_hit.connect(_on_double_first_hit)
 		_timing_system.timing_result.connect(_on_double_final_result)
 		get_tree().create_timer(Constants.TIMING_DOUBLE_INTERVAL).timeout.connect(_spawn_second_bubble)
 	else:
 		_timing_system.open_window(
 			atk_window,
-			Constants.TIMING_PERFECT_START,
-			Constants.TIMING_PERFECT_END,
-			false, 0.0, 0.0, "ui_up"
+			ps, pe,
+			false, 0.0, 0.0, "ui_up", "ui_right", false, gs, ge
 		)
 		_timing_system.timing_result.connect(_on_attack_timing_result)
 
@@ -417,12 +427,15 @@ func _spawn_second_bubble() -> void:
 	# garante a 2ª bolha inteira dentro do que a câmera vê.
 	spread = ArenaFraming.clamp_to_bubble_rect(spread, ArenaFraming.bubble_rect(
 		_camera.position, get_viewport().get_visible_rect().size, _camera.zoom.x))
+	var win_b: float = maxf(_phase_window(Constants.TIMING_WINDOW_ATTACK), Constants.MIN_ACTION_DURATION)
+	var band_b: Dictionary = Constants.band_fractions(win_b)
 	_timing_bubble_b.show_bubble(
 		spread,
-		_phase_window(Constants.TIMING_WINDOW_ATTACK),
-		Constants.TIMING_PERFECT_START,
-		Constants.TIMING_PERFECT_END,
-		false, Color.TRANSPARENT, "right"
+		win_b,
+		band_b["perfect_start"],
+		band_b["perfect_end"],
+		false, Color.TRANSPARENT, "right", false,
+		band_b["good_start"], band_b["good_end"]
 	)
 
 func _on_double_first_hit() -> void:
@@ -481,6 +494,19 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(4 + Constants.combo_hitstop_bonus(step))
 		_animator.strike(_caipora)
+	elif result == TimingSystem.TimingResult.GOOD:
+		# 2º golpe do duplo na faixa GOOD: golpe normal (sem crítico), combo preservado.
+		_timing_bubble_b.burst_good()
+		_feedback.track_good()
+		SignalBus.attack_result_good.emit()
+		var damage := _caipora.execute_attack(false)
+		_enemy.take_damage(damage)
+		if _enemy.health.is_alive():
+			_sfx.play_outcome(SfxSystem.Outcome.HIT)
+			_feedback.trigger_screenshake(10.0, 0.25)
+			_feedback.spawn_bubble_burst(_timing_bubble_b.position, Constants.COLOR_GOOD)
+			_feedback.trigger_hit_stop(2)
+			_animator.strike(_caipora)
 	else:
 		_timing_bubble.burst_fail()
 		_timing_bubble_b.burst_fail()
@@ -522,6 +548,21 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.trigger_hit_stop(6 + Constants.combo_hitstop_bonus(step))
 		_animator.strike(_caipora)
 		_feedback.spawn_result_label(&"critico", _timing_bubble.position + Vector2(0, -55))
+	elif result == TimingSystem.TimingResult.GOOD:
+		# Golpe normal (sem crítico): hoje o ERRO whiffa, então o GOOD ainda fere — o combo
+		# sobrevive mas não sobe. Sem clímax/zoom de killing-blow (a morte dispara via died).
+		_timing_bubble.burst_good()
+		_feedback.track_good()
+		SignalBus.attack_result_good.emit()
+		var damage := _caipora.execute_attack(false)
+		_enemy.take_damage(damage)
+		if _enemy.health.is_alive():
+			_sfx.play_outcome(SfxSystem.Outcome.HIT)
+			_feedback.trigger_screenshake(10.0, 0.25)
+			_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_GOOD)
+			_feedback.trigger_hit_stop(2)
+			_animator.strike(_caipora)
+			_feedback.spawn_move_name("BOM", _timing_bubble.position + Vector2(0, -55))
 	else:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
@@ -738,8 +779,12 @@ func _on_enemy_attack_started() -> void:
 		hint = "down"
 	var bubble_pos: Vector2 = _boss_spread_pos() if is_special else _caipora.position + Vector2(0, -70)
 	var vuln: Color = BOSS_BUBBLE_COLOR if is_special else Color.TRANSPARENT
-	_timing_bubble.show_bubble(bubble_pos, window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, true, vuln, hint)
-	_timing_system.open_window(window, Constants.TIMING_PERFECT_START, Constants.TIMING_PERFECT_END, false, 0.0, 0.0, action)
+	var win: float = maxf(window, Constants.MIN_ACTION_DURATION)
+	var band: Dictionary = Constants.band_fractions(win)
+	var ps: float = band["perfect_start"]
+	var pe: float = band["perfect_end"]
+	_timing_bubble.show_bubble(bubble_pos, win, ps, pe, true, vuln, hint, false, band["good_start"], band["good_end"])
+	_timing_system.open_window(win, ps, pe, false, 0.0, 0.0, action, "ui_right", false, band["good_start"], band["good_end"])
 	SignalBus.defense_window_opened.emit(action)
 
 func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
@@ -749,6 +794,8 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	SignalBus.defense_window_closed.emit()
 	if result == TimingSystem.TimingResult.PERFECT:
 		SignalBus.defense_result_perfect.emit()
+	elif result == TimingSystem.TimingResult.GOOD:
+		SignalBus.defense_result_good.emit()
 	else:
 		SignalBus.defense_result_miss.emit()
 
@@ -765,6 +812,18 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.trigger_hit_stop(5 + Constants.combo_hitstop_bonus(step))
 		_animator.perfect_dodge(_caipora)
 		_feedback.spawn_result_label(&"perfeito", _timing_bubble.position + Vector2(0, -55))
+	elif result == TimingSystem.TimingResult.GOOD:
+		# Bloqueio parcial: toma ~50% do dano, SEM contra-ataque; o combo SOBREVIVE.
+		# Reusa _enemy_counter_damage() (mesma fórmula canônica do erro: execute_attack +
+		# bonus de fase + piso F5).
+		_timing_bubble.burst_good()
+		_caipora.take_damage(_enemy_counter_damage() * Constants.GOOD_BLOCK_MULT)
+		_sfx.play_outcome(SfxSystem.Outcome.BLOCK)
+		_feedback.trigger_screenshake(10.0, 0.25)
+		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_GOOD)
+		_feedback.trigger_hit_stop(2)
+		_feedback.spawn_result_label(&"bloqueio", _timing_bubble.position + Vector2(0, -55))
+		_feedback.track_good()
 	else:
 		_timing_bubble.burst_fail()
 		var damage := _enemy.execute_attack(false, _active_enemy_pattern.damage_multiplier)
@@ -831,6 +890,11 @@ func _on_enemy_health_changed(new_health: float, max_health: float) -> void:
 # ─── Bolha ─────────────────────────────────────────
 func _on_bubble_vulnerable() -> void:
 	_sfx.play(_sfx.timing_alert_sound)
+
+## Cue de aproximação (faixa GOOD): tique sutil de som + háptico ("prepare → AGORA").
+func _on_bubble_approach() -> void:
+	AudioDirector.play_approach_tick()
+	SignalBus.combat_approach_cue.emit()
 
 # ─── Feedback por input ────────────────────────────
 ## Resposta tátil imediata a qualquer ação na janela (mesmo fora da zona perfeita).

@@ -46,6 +46,10 @@ const HAPTIC_REWARD_WEB: String = "[14,36,26]"  # tap-pausa-tap, recompensa
 const HAPTIC_REWARD_NATIVE_MS: int = 30
 const HAPTIC_FAIL_WEB: String = "[26]"          # pulso único seco
 const HAPTIC_FAIL_NATIVE_MS: int = 26
+const HAPTIC_GOOD_WEB: String = "[20]"          # bloqueio: pulso médio único (entre reward e fail)
+const HAPTIC_GOOD_NATIVE_MS: int = 20
+const HAPTIC_APPROACH_WEB: String = "[8]"       # cue de aproximação: toque bem curto
+const HAPTIC_APPROACH_NATIVE_MS: int = 8
 const TOUCH_SAFE_MARGIN: float = 28.0
 
 const MODE_EXPLORATION: int = 0
@@ -86,9 +90,12 @@ func _ready() -> void:
 	SignalBus.defense_window_opened.connect(_on_defense_window_opened)
 	SignalBus.defense_window_closed.connect(_on_defense_window_closed)
 	SignalBus.defense_result_perfect.connect(_on_defense_result_perfect)
+	SignalBus.defense_result_good.connect(_on_defense_result_good)
 	SignalBus.defense_result_miss.connect(_on_defense_result_miss)
 	SignalBus.attack_result_perfect.connect(_pulse_reward_haptic)
+	SignalBus.attack_result_good.connect(_pulse_good_haptic)
 	SignalBus.attack_result_miss.connect(_pulse_fail_haptic)
+	SignalBus.combat_approach_cue.connect(_on_combat_approach_cue)
 	SignalBus.cortejo_charge_opened.connect(_on_cortejo_charge_opened)
 	SignalBus.cortejo_charge_closed.connect(_on_cortejo_charge_closed)
 
@@ -504,6 +511,16 @@ func _on_defense_result_perfect() -> void:
 			b.flash_perfect()
 
 
+func _on_defense_result_good() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	_pulse_good_haptic()
+	for btn in _keys:
+		var b := btn as CombatArrowButton
+		if b._window_open:
+			b.flash_good()
+
+
 func _on_defense_result_miss() -> void:
 	if _button_mode != MODE_COMBAT:
 		return
@@ -512,6 +529,13 @@ func _on_defense_result_miss() -> void:
 		var b := btn as CombatArrowButton
 		if b._window_open:
 			b.flash_miss()
+
+
+## Cue de aproximação (modelo Patapon): tique tátil curtíssimo quando a janela GOOD entra.
+func _on_combat_approach_cue() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	_vibrate(HAPTIC_APPROACH_WEB, HAPTIC_APPROACH_NATIVE_MS)
 
 
 func _feed_event(action: String, pressed: bool) -> void:
@@ -536,6 +560,13 @@ func _pulse_reward_haptic() -> void:
 	if _button_mode != MODE_COMBAT:
 		return
 	_vibrate(HAPTIC_REWARD_WEB, HAPTIC_REWARD_NATIVE_MS)
+
+
+## Háptico de bloqueio (faixa GOOD): pulso médio único, entre a recompensa e a falha.
+func _pulse_good_haptic() -> void:
+	if _button_mode != MODE_COMBAT:
+		return
+	_vibrate(HAPTIC_GOOD_WEB, HAPTIC_GOOD_NATIVE_MS)
 
 
 ## Háptico de falha: pulso único seco para erro de timing / dano levado.
