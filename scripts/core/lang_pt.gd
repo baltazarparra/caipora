@@ -44,10 +44,8 @@ const STRINGS: Dictionary = {
 	&"hud.fragment.pl":         "+%s Terra Rara",
 
 	# End Screen
-	&"end.hint.touch.won":      "Toque para inserir suas iniciais",
-	&"end.hint.key.won":        "Espaço para inserir suas iniciais",
-	&"end.hint.touch.lost":     "Toque para voltar ao menu",
-	&"end.hint.key.lost":       "Espaço para voltar ao menu",
+	&"end.hint.touch":          "Toque para voltar ao menu",
+	&"end.hint.key":            "Espaço para voltar ao menu",
 	&"win.title":               "A CRIATURA TOMBOU",
 	&"gameover.title":          "... E desperta de outra premonição ...",
 	&"gameover.terra_lost":     "Terra Rara perdida: %d — volte ao local da queda para recuperá-la.",
@@ -73,16 +71,6 @@ const STRINGS: Dictionary = {
 	&"menu.start":              "Iniciar",
 	&"menu.quit":               "Sair",
 	&"menu.update":             "⟳  Novo balanceamento — Atualizar",
-	&"menu.podio":              "Pódio",
-
-	# Initials Screen
-	&"initials.title":          "PODIO",
-	&"initials.sub":            "INSIRA SUAS INICIAIS",
-	&"initials.confirm":        "CONFIRMAR",
-	&"initials.skip":           "PULAR",
-	&"initials.sending":        "ENVIANDO...",
-	&"initials.saved":          "SALVO!",
-	&"initials.error":          "ERRO AO SALVAR",
 
 	# Dialogues — nomes próprios idênticos em ambas as línguas
 	&"dialogue.caipora":        "CAIPORA",

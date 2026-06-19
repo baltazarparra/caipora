@@ -45,10 +45,8 @@ const STRINGS: Dictionary = {
 	&"hud.fragment.pl":         "+%s Rare Earth",
 
 	# End Screen
-	&"end.hint.touch.won":      "Tap to enter your initials",
-	&"end.hint.key.won":        "Space to enter your initials",
-	&"end.hint.touch.lost":     "Tap to go back to menu",
-	&"end.hint.key.lost":       "Space to go back to menu",
+	&"end.hint.touch":          "Tap to go back to menu",
+	&"end.hint.key":            "Space to go back to menu",
 	&"win.title":               "THE CRIATURA FELL",
 	&"gameover.title":          "... And wakes from another premonition ...",
 	&"gameover.terra_lost":     "Rare Earth dropped: %d — return to where you fell to recover it.",
@@ -74,16 +72,6 @@ const STRINGS: Dictionary = {
 	&"menu.start":              "Start",
 	&"menu.quit":               "Quit",
 	&"menu.update":             "⟳  New balance patch — Update",
-	&"menu.podio":              "Leaderboard",
-
-	# Initials Screen
-	&"initials.title":          "PODIUM",
-	&"initials.sub":            "ENTER YOUR INITIALS",
-	&"initials.confirm":        "CONFIRM",
-	&"initials.skip":           "SKIP",
-	&"initials.sending":        "SENDING...",
-	&"initials.saved":          "SAVED!",
-	&"initials.error":          "SAVE FAILED",
 
 	# Dialogues — proper nouns: identical in both languages
 	&"dialogue.caipora":        "CAIPORA",

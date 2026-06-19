@@ -5,9 +5,9 @@ extends CanvasLayer
 ## Cada entrada é uma instância nova (change_scene_to_file), então o _ready dispara
 ## end_run exatamente uma vez por entrada.
 ##
-## Roteamento de saída (a run JÁ acabou — end_run desativou run_active): a derrota volta
-## ao MENU PRINCIPAL, não ao acampamento. O hub só entra ENTRE fases (advance_phase_via_hub);
-## morrer não é avanço de fase. A vitória terminal mantém o acampamento.
+## Roteamento de saída (a run JÁ acabou — end_run desativou run_active): vitória e derrota
+## voltam ao MENU PRINCIPAL. O hub só entra ENTRE fases (advance_phase_via_hub); fim de run
+## (morte ou vitória terminal) não é avanço de fase.
 
 @export var won: bool = false
 
@@ -59,16 +59,15 @@ func _fit_portrait() -> void:
 		_terra_label.custom_minimum_size.x = maxw
 
 ## Tela-alvo ao dispensar (puro, sem efeitos colaterais — testável destacado da árvore).
-## Derrota → MENU PRINCIPAL (a caçada acabou); vitória → INITIALS (entrada no PODIO).
+## Vitória e derrota → MENU PRINCIPAL (a caçada acabou nos dois casos).
 func _dismiss_target() -> SignalBus.Screen:
-	return SignalBus.Screen.INITIALS if won else SignalBus.Screen.MAIN_MENU
+	return SignalBus.Screen.MAIN_MENU
 
 ## Dica de saída coerente com o destino e a plataforma (web/toque não têm barra de espaço).
+## Ambos os desfechos voltam ao menu, então a dica não depende de vitória/derrota.
 func _hint_text() -> String:
 	var touch := OS.has_feature("web") or DisplayServer.is_touchscreen_available()
-	if won:
-		return Lang.t(&"end.hint.touch.won" if touch else &"end.hint.key.won")
-	return Lang.t(&"end.hint.touch.lost" if touch else &"end.hint.key.lost")
+	return Lang.t(&"end.hint.touch" if touch else &"end.hint.key")
 
 # Usa _input (não _unhandled_input): o Background/CenterContainer cobrem a tela inteira com
 # mouse_filter=STOP por padrão, engolindo o toque na fase de GUI. No mobile, sem barra de

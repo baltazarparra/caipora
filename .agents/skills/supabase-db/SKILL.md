@@ -1,11 +1,11 @@
 ---
 name: supabase-db
-description: Como usar o Supabase via MCP e o banco de dados do caipora. Consulte sempre que mexer em banco de dados, tabela, schema caipora, migration, Edge Function, leaderboard, telemetria ou cloud save.
+description: Como usar o Supabase via MCP e o banco de dados do caipora. Consulte sempre que mexer em banco de dados, tabela, schema caipora, migration, Edge Function, telemetria ou cloud save.
 ---
 
 # Banco de Dados do caipora (Supabase via MCP)
 
-Backend do jogo: **leaderboard**, **telemetria** e **cloud save**. Acessado pelas
+Backend do jogo: **telemetria** e **cloud save**. Acessado pelas
 ferramentas MCP do Supabase. Leia esta skill antes de qualquer mudança no banco.
 
 ## 1. Projeto & escopo
@@ -53,8 +53,6 @@ ferramentas MCP do Supabase. Leia esta skill antes de qualquer mudança no banco
 |--------|---------|----------|
 | `check_tag` | `{ tag }` | `{ available, reason? }` |
 | `register_tag` | `{ tag }` | `{ player_id, player_token, tag }` ou 409 `tag_taken` |
-| `submit_score` | `{ player_id, player_token, score, max_phase, run_seconds?, died_to?, client_version? }` | `{ id, created_at }` ou 401 `auth_failed` |
-| `get_leaderboard` | `{ limit? }` (def 20, máx 100) | `{ leaderboard: [{ tag, score, max_phase, run_seconds, died_to, created_at }] }` |
 | `log_events` | `{ player_id?, session_id?, client_version?, events: [{ event_type, payload }] }` (máx 50) | `{ inserted }` |
 | `get_save` | `{ player_id, player_token }` | `{ data, save_version, updated_at }` (data `null` se não existe) |
 | `put_save` | `{ player_id, player_token, data, save_version }` | `{ ok: true }` |
@@ -65,7 +63,7 @@ Exemplo:
 curl -s https://mlykeulezzfwljriytuf.supabase.co/functions/v1/caipora-api \
   -H "Authorization: Bearer <ANON_JWT>" -H "apikey: <ANON_JWT>" \
   -H "Content-Type: application/json" \
-  -d '{"action":"get_leaderboard","limit":10}'
+  -d '{"action":"log_events","events":[{"event_type":"run_start","payload":{}}]}'
 ```
 
 ## 5. Tabelas do jogo (schema `caipora`)
@@ -73,8 +71,6 @@ curl -s https://mlykeulezzfwljriytuf.supabase.co/functions/v1/caipora-api \
 - **`players`** — registro de tags (identidade). `id uuid pk`, `tag`
   (`^[A-Za-z0-9_]{4,12}$`), `tag_lower` (único, unicidade ignora case), `token_hash`
   (SHA-256 do `player_token`; nunca o segredo), `created_at`, `last_seen_at`.
-- **`scores`** — leaderboard. `player_id` (FK→players), `score`, `max_phase`,
-  `run_seconds`, `died_to`, `client_version`, `created_at`. Top-N por `(score desc, created_at desc)`.
 - **`events`** — telemetria. `player_id?`, `session_id?`, `event_type`, `payload jsonb`,
   `client_version`, `created_at`.
 - **`saves`** — cloud save. `player_id` (PK, FK→players), `data jsonb` (espelha

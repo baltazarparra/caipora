@@ -4,7 +4,7 @@ extends RefCounted
 ## Config do backend caipora (Supabase Edge Function `caipora-api`). A anon key é
 ## pública por design — o schema `caipora` é oculto da Data API, então a chave no
 ## bundle web não dá acesso às tabelas (tudo passa pela Edge Function validada).
-## Primeiro ponto de rede do jogo; reusado por futuros leaderboard/cloud save.
+## Primeiro ponto de rede do jogo; reusado por cloud save.
 
 const URL := "https://mlykeulezzfwljriytuf.supabase.co"
 const ANON_KEY := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1seWtldWxlenpmd2xqcml5dHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTIzMTksImV4cCI6MjA5NTgyODMxOX0.i9jQGbtQrxbcyR4M-XNZpwPYwJ_GcxrP-VE4Gniamqg"

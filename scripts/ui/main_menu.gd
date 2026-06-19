@@ -28,7 +28,6 @@ var _logo: TextureRect
 var _lang_row: HBoxContainer
 var _btn_pt: Button
 var _btn_en: Button
-var _podio_link: LinkButton
 
 func _ready() -> void:
 	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
@@ -37,7 +36,6 @@ func _ready() -> void:
 	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
 	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
 	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
-	_setup_podio_link()
 	_setup_fade()
 	_setup_logo()
 	_setup_version_label()
@@ -202,20 +200,6 @@ func _begin_run() -> void:
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
-## Injeta o link do PODIO via código (após GithubLink) para evitar editar o .tscn
-## com scripts que referenciam autoloads — gotcha #7 de AGENTS.md.
-func _setup_podio_link() -> void:
-	var podio := LinkButton.new()
-	podio.name = "PodioLink"
-	podio.text = Lang.t(&"menu.podio")
-	_podio_link = podio
-	podio.add_theme_font_size_override("font_size", 14)
-	podio.size_flags_horizontal = Control.SIZE_FILL
-	$Center/VBox.add_child(podio)
-	podio.pressed.connect(_on_podio_pressed)
-	podio.focus_entered.connect(AudioDirector.play_ui_hover)
-	podio.mouse_entered.connect(AudioDirector.play_ui_hover)
-
 ## Duas bandeiras lado a lado: clica na bandeira do idioma desejado.
 ## A bandeira do idioma ativo fica destacada (opacidade plena), a inativa fica esmaecida.
 func _setup_lang_toggle() -> void:
@@ -258,8 +242,6 @@ func _on_select_en() -> void:
 func _on_language_changed(_lang: StringName) -> void:
 	_start_button.text = Lang.t(&"menu.start")
 	_quit_button.text = Lang.t(&"menu.quit")
-	if is_instance_valid(_podio_link):
-		_podio_link.text = Lang.t(&"menu.podio")
 	_refresh_lang_flags()
 
 func _refresh_lang_flags() -> void:
@@ -286,6 +268,3 @@ func active_border(active: bool) -> int:
 
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")
-
-func _on_podio_pressed() -> void:
-	OS.shell_open("../podio.html")

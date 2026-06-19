@@ -285,6 +285,6 @@ jogo jogável ponta-a-ponta.
 - Acampamento progressivamente mais corrompido por fase (visual temático por `phase`).
 - Re-spawn imediato da erva liberada por `requires` dentro do mesmo hub.
 - Layout do acampamento gerado proceduralmente (hoje fixo basta).
-- Daily-seed / leaderboard do loop novo.
+- Daily-seed do loop novo.
 </content>
 </invoke>

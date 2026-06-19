@@ -42,7 +42,6 @@ Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop
 - Gamepad support
 - Multiplayer
 - ~~Cloud saves~~ → backend pronto pós-MVP (Supabase, schema `caipora`); falta integrar no cliente Godot
-- ~~Leaderboards~~ → backend pronto pós-MVP (Supabase, Edge Function `caipora-api`); falta integrar no cliente Godot
 - Achievements
 - ~~Música (SFX apenas no MVP)~~ → adicionada pós-MVP: maracatu adaptativo + ambiência + stingers (ver §12)
 
@@ -509,7 +508,7 @@ flood-fill → hazards → entidades) e gate de invariantes em GUT. O char-grid
   - Testes: `test_scene_transition.gd` (lógica de flavor + roteamento de TODA tela do
     enum p/ uma cena .tscn única); contagem por fase atualizada para 6/6/6/6. Gate
     verde: smoke OK, 134 testes / ~12.6k asserts.
-  - **Adiado (follow-up):** daily-seed + leaderboard; variar canto do boss.
+  - **Adiado (follow-up):** daily-seed; variar canto do boss.
 
 ### Fase 9: Hub de Aprimoramentos Jogável 🚧
 
