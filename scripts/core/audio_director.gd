@@ -642,12 +642,17 @@ func _play_ambience(path: String) -> void:
 	if path == _current_ambience:
 		return
 	_current_ambience = path
-	if path == "" or not ResourceLoader.exists(path):
+	var resolved := _resolve_audio(path)
+	if resolved == "":
 		# Sem asset (ainda) ou tela sem ambiência: fade-out e para.
 		if _ambience_player.playing:
 			_fade_player(_ambience_player, -40.0, true)
 		return
-	var stream: AudioStream = load(path)
+	var stream: AudioStream = _load_music_stream(resolved)
+	if stream == null:
+		if _ambience_player.playing:
+			_fade_player(_ambience_player, -40.0, true)
+		return
 	_force_loop(stream)
 	_ambience_player.stream = stream
 	_ambience_player.volume_db = -40.0
@@ -747,21 +752,36 @@ func _play_music(path: String) -> void:
 		_fade_player(outgoing, STEM_SILENCE_DB, true, MUSIC_FADE)
 	_music_active = incoming
 
+## Resolve a extensão real de um caminho lógico (.wav): prefere o irmão .ogg (codec
+## de música/ambiência v5) e cai para o .wav legado. "" se nenhum existir. Mantém o
+## roteamento (_music_for_screen/AMB_*) em nomes .wav — os testes não mudam.
+func _resolve_audio(path: String) -> String:
+	if path == "":
+		return ""
+	var ogg := path.get_basename() + ".ogg"
+	if ResourceLoader.exists(ogg) or FileAccess.file_exists(ogg):
+		return ogg
+	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
+		return path
+	return ""
+
 func _music_stream_path(path: String) -> String:
 	if path == "":
 		return ""
-	if ResourceLoader.exists(path) or FileAccess.file_exists(path):
-		return path
-	var base_stem_path := "%s_base.%s" % [path.get_basename(), path.get_extension()]
-	if ResourceLoader.exists(base_stem_path) or FileAccess.file_exists(base_stem_path):
-		return base_stem_path
-	return ""
+	var resolved := _resolve_audio(path)
+	if resolved != "":
+		return resolved
+	return _resolve_audio("%s_base.%s" % [path.get_basename(), path.get_extension()])
 
 func _load_music_stream(path: String) -> AudioStream:
 	if ResourceLoader.exists(path):
 		return load(path) as AudioStream
-	if path.get_extension().to_lower() == "wav" and FileAccess.file_exists(path):
+	# Fallback sem .import (headless/CI, gitignore): carrega direto do arquivo.
+	var ext := path.get_extension().to_lower()
+	if ext == "wav" and FileAccess.file_exists(path):
 		return AudioStreamWAV.load_from_file(path)
+	if ext == "ogg" and FileAccess.file_exists(path):
+		return AudioStreamOggVorbis.load_from_file(path)
 	return null
 
 func _new_music_player() -> AudioStreamPlayer:
@@ -780,8 +800,7 @@ func _has_stems(path: String) -> bool:
 	if path == "":
 		return false
 	for layer in STEM_LAYERS:
-		var stem := _stem_path(path, layer)
-		if not (ResourceLoader.exists(stem) or FileAccess.file_exists(stem)):
+		if _resolve_audio(_stem_path(path, layer)) == "":
 			return false
 	return true
 
@@ -801,7 +820,7 @@ func _play_stems(path: String) -> void:
 		_fade_player(_music_b, STEM_SILENCE_DB, true, MUSIC_FADE)
 	for layer in STEM_LAYERS:
 		var player := _stem_player(layer)
-		var stream := _load_music_stream(_stem_path(path, layer))
+		var stream := _load_music_stream(_resolve_audio(_stem_path(path, layer)))
 		if stream == null:
 			_stop_stems(0.0)
 			return
@@ -863,6 +882,12 @@ func _force_loop(stream: AudioStream) -> void:
 		# loop_end é em FRAMES: 1 byte por frame em 8-bit, 2 em 16-bit (mono).
 		var bytes_per_frame := 1 if wav.format == AudioStreamWAV.FORMAT_8_BITS else 2
 		wav.loop_end = wav.data.size() / bytes_per_frame
+	elif stream is AudioStreamOggVorbis:
+		# Codec de música/ambiência v5: o loop é o arquivo inteiro (grid periódico,
+		# costurado pelo wrap do gerador). O .import é gitignored, então forçamos aqui.
+		var ogg := stream as AudioStreamOggVorbis
+		ogg.loop = true
+		ogg.loop_offset = 0.0
 
 func _fade_player(player: AudioStreamPlayer, to_db: float, stop_after: bool, dur: float = AMBIENCE_FADE) -> void:
 	var tween := create_tween()

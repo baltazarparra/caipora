@@ -62,7 +62,10 @@ body {
   background-color: var(--bg-void);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* clip (não hidden) recorta na horizontal SEM criar scroll container —
+     hidden faria overflow-y computar p/ auto e quebraria position:sticky
+     (ex.: a cena scroll-scrub do coração). */
+  overflow-x: clip;
 }
 
 img {
@@ -1415,6 +1418,69 @@ a {
 @keyframes clipPlay {
   from { background-position-x: 0%; }
   to   { background-position-x: 100%; }
+}
+
+/* --------------------------------------------------------------
+   Cena scroll-scrub: clipe GRANDE, fixo na viewport, avançado pela
+   ROLAGEM. A seção é alta (~250vh); o .scrollscene-sticky fixa por 1
+   viewport e os ~150vh restantes (~1.5 tela) são a "trilha" de scrub.
+   O quadro é setado pelo JS via background-position-x (ver main.js,
+   [data-scrub]) — rolar p/ baixo avança 0→100%, p/ cima reverte.
+   .clip--scrub desliga a animação CSS (controle é do scroll).
+   Aspecto fixo 270×480 (finisher é retrato): a moldura-pai não herda
+   --cell-w/-h, que o JS seta no .clip filho.
+   -------------------------------------------------------------- */
+.scrollscene {
+  position: relative;
+  height: 250vh;
+  background: var(--bg-void);
+}
+
+.scrollscene-sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  overflow: hidden;
+}
+
+.scrollscene-frame {
+  height: min(100svh, calc(100vw * (480 / 270)));
+  aspect-ratio: 270 / 480;
+  max-width: 100vw;
+}
+
+.scrollscene-frame .clip {
+  height: 100%;
+  width: 100%;
+  aspect-ratio: auto;
+}
+
+.clip--scrub { animation: none; }
+
+.scrollscene-caption {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 1rem;
+}
+
+/* Movimento reduzido: sem pin/scrub — colapsa a trilha alta e vira um clipe
+   contido. A animação fica parada no 1º quadro (== poster) pela regra global
+   `.clip { animation: none !important }` lá embaixo, mantendo a convenção do site. */
+@media (prefers-reduced-motion: reduce) {
+  .scrollscene { height: auto; padding: 2.5rem 0; }
+  .scrollscene-sticky { position: static; height: auto; }
+  .scrollscene-frame { height: auto; aspect-ratio: auto; width: min(78vw, 320px); }
+  .scrollscene-frame .clip {
+    height: auto;
+    width: 100%;
+    aspect-ratio: var(--cell-w, 270) / var(--cell-h, 480);
+  }
 }
 
 /* Selo "AO VIVO" — reforça que é o jogo de verdade rodando. */

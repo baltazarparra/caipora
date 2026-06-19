@@ -92,12 +92,33 @@ def _conform_sfx(samples):
     return cand
 
 
+def _encode_ogg(path, samples, rate):
+    """Grava OGG Vorbis (PRD-audio-v5 — codec de música/ambiência: ~5-8x menor que
+    WAV, paga loops longos e ricos dentro do budget). Usa soundfile+libvorbis já
+    presentes no ambiente (sem ffmpeg/oggenc). Mono float [-1,1]; o grão lo-fi
+    (bitcrush + MUSIC_RATE) já está no sinal — o Vorbis só comprime o arquivo."""
+    import numpy as np
+    import soundfile as sf
+    data = np.clip(np.asarray(samples, dtype=np.float32), -1.0, 1.0)
+    sf.write(path, data, rate, format="OGG", subtype="VORBIS")
+
+
+def _remove_stale(name, subdir):
+    """Apaga um asset legado (ex.: .wav substituído por .ogg) para o budget refletir
+    a realidade e o runtime não achar dois arquivos. O .gitignore cobre o .import."""
+    p = os.path.join(AUDIO_DIR, subdir, name)
+    if os.path.exists(p):
+        os.remove(p)
+
+
 def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None, width=2):
-    """Grava o WAV já conforme ao padrão (PRD-audio-v2 §3). `gain=None` calcula o
+    """Grava o asset já conforme ao padrão (PRD-audio-v2 §3). `gain=None` calcula o
     ganho pelo alvo da categoria (= subdir), MEDINDO NO RATE FINAL (o mesmo que o
     fiscal mede); `gain: float` aplica ganho linear direto (caminho dos stems).
     `width=1` grava PCM 8-bit unsigned: a música já é bitcrushada a 7 bits, então
-    8-bit é quase lossless aqui — e corta o peso pela metade (browser-first)."""
+    8-bit é quase lossless aqui — e corta o peso pela metade (browser-first).
+    Se `name` terminar em .ogg, grava Vorbis (codec de música v5) — a mesma cadeia
+    de LP/resample/conform roda antes; só o encode final muda."""
     # Passada escura: low-pass global por categoria. Catch-all "suave" que abafa o ruído
     # agudo (chimbais NES, estouro de brasa, chiados) sem caçar cada filtro à mão.
     # Aplicado AQUI (no SAMPLE_RATE, antes de resample/conform), o único funil de todos
@@ -121,6 +142,10 @@ def _write(name, samples, subdir="sfx", rate=SAMPLE_RATE, gain=None, width=2):
             print(f"  AVISO: {name} clampado em {peak:.1f} dBFS (balanço relativo alterado)")
             g = _db_to_gain(_PEAK_CEIL_DB - peak)
             samples = [s * g for s in samples]
+    if name.lower().endswith(".ogg"):
+        _encode_ogg(path, samples, rate)
+        print(f"  {name}: {len(samples)} samples → {os.path.getsize(path)} bytes (ogg)")
+        return
     with wave.open(path, "w") as w:
         w.setnchannels(1)
         w.setsampwidth(width)
@@ -1404,6 +1429,45 @@ def _bass():
     return lambda d, f: triangle(d, f, release=0.15)
 
 
+# ─── Tijolos de arranjo (PRD-audio-v5) ─────────────
+# A lacuna do estudo Pokémon: faltava a 2ª voz de pulso (contra-melodia) e a forma
+# longa. _counter() é o Pulse 2 — timbre oco (duty largo), registro mais baixo que o
+# lead, para RESPONDER a melodia nos vãos (call-and-response), nunca dobrá-la.
+def _counter(duty=0.5, vib=0.0):
+    return lambda d, f: pulse(d, f, duty=duty, vib=vib, attack=0.006, release=0.22)
+
+
+# Violão/pluck de terreiro: arpejo curto p/ a cama harmônica (sem sustentar = sem
+# sirene). Reaproveitado por _chord nas faixas v5.
+def _pluck(attack=0.01, release=0.32):
+    return lambda d, f: triangle(d, f, attack=attack, release=release)
+
+
+def _shift(events, steps):
+    """Desloca uma lista de eventos (step, ...) por `steps` semicolcheias. O step é
+    sempre o 1º elemento (vale p/ drums (st,g) e melody (st,deg,ln,g)). Monta forma
+    longa (A/B, intro+loop) compondo motivos curtos — o que falta hoje."""
+    return [(e[0] + steps,) + tuple(e[1:]) for e in events]
+
+
+def _tarol(bars, accent_every=4):
+    """Tarol/caixa aguda do maracatu: esteira estalada em síncope, mais miúda que a
+    caixa. Adensa o baque sem encher o tempo forte (que é do surdo)."""
+    ev = []
+    for st in range(16 * bars):
+        if st % 2 == 0:
+            continue  # deixa o tempo e a contra-tempo p/ surdo/caixa; tarol nas frações
+        g = 0.30 if st % accent_every == 3 else 0.18
+        ev.append((st, g))
+    return ev
+
+
+def _poly3(bars, gain=0.22):
+    """Polirritmia 3-contra-4: um agogô/sino a cada 3 semicolcheias sobre o grid de
+    4 — o 'balanço' que faz o terreiro respirar (hemíola). Eventos (step, gain)."""
+    return [(st, gain) for st in range(0, 16 * bars, 3)]
+
+
 def _music_air(buf, root, gain=0.04, pulse_hz=0.11):
     """Cama organica discreta para loops musicais: ar lowpass + sub muito baixo.
     Entra antes do bitcrush para colar os eventos sem virar ruido constante."""
@@ -1530,27 +1594,65 @@ def mus_hub():
 
 
 def mus_explore_p1():
-    """Fase 1 — mata noturna: 3 compassos assimetricos. Baque de pele, resposta
-    de assovio distante e baixo em passos curtos; menos sirene, mais bicho na mata."""
-    buf, step = _new_buf(92, 3)
+    """Fase 1 — mata noturna (PRD-audio-v5, faixa-piloto): forma longa A-B de 8
+    compassos com HOOK melódico + contra-melodia (Pulse 2 respondendo nos vãos) +
+    BAIXO QUE ANDA sobre cama harmônica (i–♭VI–♭VII–iv | i–♭VII–♭VI–v) + maracatu
+    mais denso (surdo/baque + tarol + ganzá + polirritmia 3-contra-4 na seção B).
+    Mi menor natural, grave, noturno — mais notas e mais terreiro sem virar alarme.
+    Codec OGG: o loop longo cabe no budget."""
+    buf, step = _new_buf(92, 8)
     root = E2
-    _music_air(buf, root, gain=0.035, pulse_hz=0.10)
-    _drums(buf, step, lambda: alfaia(0.2, base=root * 0.5, punch=0.75),
-           [(0, 0.78), (10, 0.46), (16, 0.72), (22, 0.38), (27, 0.5),
-            (32, 0.7), (42, 0.46), (46, 0.34)], humanize=True)
-    _drums(buf, step, lambda: ganza(0.05, rising=False), _samba_shaker(3))
-    _bone_clicks(buf, step, [(7, 0.18), (15, 0.22), (25, 0.18), (31, 0.16),
-                             (39, 0.22), (45, 0.18)])
-    _melody(buf, step, root, MINOR_HARM, _bass(),
-            [(0, 0, 5, 0.62), (6, 4, 2, 0.38), (10, 3, 4, 0.48),
-             (16, 3, 6, 0.58), (24, 4, 3, 0.42), (28, 2, 2, 0.34),
-             (32, 0, 4, 0.56), (38, 2, 3, 0.42), (43, 3, 3, 0.5)])
-    _melody(buf, step, root, MINOR_HARM, _lead(duty=0.25, vib=0.006),
-            [(4, 7, 2, 0.30), (8, 9, 1, 0.26), (14, 11, 2, 0.30),
-             (21, 9, 2, 0.28), (29, 7, 2, 0.28), (36, 11, 1, 0.26),
-             (40, 12, 2, 0.28), (46, 9, 1, 0.24)])
-    _put(buf, echo(assovio(1.1, freq=note(root, 19), breath=0.08),
-                   time_s=0.22, feedback=0.22, mix=0.18, taps=2), 18, step, 0.20)
+    _music_air(buf, root, gain=0.035, pulse_hz=0.09)
+
+    # ── Percussão de terreiro (8 compassos) ──
+    _drums(buf, step, lambda: alfaia(0.2, base=root * 0.5, punch=0.78),
+           _baque_alfaia(8), humanize=True)              # surdo/baque virado par-ímpar
+    _drums(buf, step, lambda: gongue(0.14, 300.0),
+           [(b * 16, 0.34) for b in range(8)], humanize=True)  # gonguê no tempo 1
+    _drums(buf, step, lambda: ganza(0.05, rising=False), _samba_shaker(8))
+    _drums(buf, step, lambda: caixa(0.045, bright=1.25), _tarol(8), humanize=True)  # tarol
+    _drums(buf, step, lambda: caixa(0.05, bright=0.8), _ghost_fill(8, every=2))      # viradas
+    _bone_clicks(buf, step, [(b * 16 + s, 0.16) for b in range(8) for s in (7, 13)])
+    # Seção B (compassos 4-7): o "balanço" 3-contra-4 levanta a energia.
+    _drums(buf, step, lambda: agogo(0.12, freq=880.0, bend=0.0), _shift(_poly3(4, 0.18), 64))
+
+    # ── Baixo que anda (raiz → quinta → terça de passagem por compasso) ──
+    bar_roots = [0, 5, 6, 3, 0, 6, 5, 4]  # i ♭VI ♭VII iv | i ♭VII ♭VI v
+    bass_notes = []
+    for b, r in enumerate(bar_roots):
+        o = b * 16
+        bass_notes += [(o, r, 6, 0.6), (o + 8, r + 4, 3, 0.44), (o + 13, r + 2, 2, 0.38)]
+    _melody(buf, step, root, MINOR_HARM, _bass(), bass_notes)
+
+    # ── Cama harmônica: tríades dedilhadas curtas (sem sustentar = sem sirene) ──
+    chords = []
+    for b, r in enumerate(bar_roots):
+        o = b * 16
+        triad = [r, r + 2, r + 4]
+        chords += [(o, triad, 2, 0.22), (o + 8, triad, 2, 0.18)]
+    _chord(buf, step, root, MINOR_HARM, _pluck(release=0.30), chords)
+
+    # ── HOOK (lead, Pulse 1): motivo cantável; A apresenta, B varia subindo ──
+    lead_a = [(0, 7, 2, 0.30), (2, 9, 1, 0.28), (3, 11, 1, 0.30), (4, 10, 4, 0.32),
+              (8, 11, 1, 0.28), (9, 12, 1, 0.30), (10, 11, 2, 0.30), (12, 9, 4, 0.30),
+              (16, 9, 2, 0.28), (18, 10, 1, 0.26), (19, 9, 1, 0.28), (20, 7, 4, 0.30),
+              (24, 8, 1, 0.26), (25, 9, 1, 0.26), (26, 8, 2, 0.28), (28, 7, 4, 0.30)]
+    lead_b = [(64, 7, 1, 0.30), (65, 9, 1, 0.30), (66, 11, 1, 0.32), (67, 12, 1, 0.32),
+              (68, 14, 4, 0.34),
+              (80, 12, 2, 0.32), (82, 11, 1, 0.28), (83, 9, 1, 0.28), (84, 10, 4, 0.32),
+              (96, 11, 1, 0.30), (97, 9, 1, 0.28), (98, 7, 2, 0.30), (100, 9, 2, 0.28),
+              (112, 8, 1, 0.26), (113, 9, 1, 0.26), (114, 8, 1, 0.26), (116, 7, 6, 0.32)]
+    _melody(buf, step, root, MINOR_HARM, _lead(duty=0.25, vib=0.006), lead_a + lead_b)
+
+    # ── Contra-melodia (Pulse 2): responde nos vãos do hook, registro mais baixo ──
+    counter = [(6, 4, 2, 0.18), (14, 2, 2, 0.18), (22, 4, 2, 0.18), (30, 4, 2, 0.20),
+               (72, 5, 3, 0.20), (88, 4, 3, 0.20), (104, 5, 3, 0.20), (122, 4, 4, 0.22)]
+    _melody(buf, step, root, MINOR_HARM, _counter(duty=0.5, vib=0.008), counter)
+
+    # ── Assovio-leitmotif (a voz da mata) ecoa uma vez por seção ──
+    for at in (34, 98):
+        _put(buf, echo(assovio(1.1, freq=note(root, 19), breath=0.08),
+                       time_s=0.22, feedback=0.22, mix=0.18, taps=2), at, step, 0.20)
     return _normalize(bitcrush(buf, bits=7), 0.78)
 
 
@@ -1822,6 +1924,10 @@ def mus_boss_jesuita():
     return {"base": bitcrush(base, bits=7), "mid": bitcrush(mid, bits=7),
             "top": bitcrush(top, bits=7)}
 
+
+# Faixas de música já migradas para OGG (PRD-audio-v5). Fora da lista = WAV legado.
+# A migração é incremental: a Fase 1 expande este conjunto até cobrir tudo.
+OGG_MUSIC = {"mus_explore_p1"}
 
 # Loops únicos (telas sem intensidade dinâmica).
 MUSIC = {
@@ -2150,7 +2256,11 @@ def main(only=None):
         print("Gerando música por contexto (maracatu 8-bits dark)...")
         for name, gen in MUSIC.items():
             random.seed(11)
-            _write(f"{name}.wav", gen(), subdir="music", rate=MUSIC_RATE, width=1)
+            if name in OGG_MUSIC:
+                _write(f"{name}.ogg", gen(), subdir="music", rate=MUSIC_RATE)
+                _remove_stale(f"{name}.wav", "music")  # legado substituído pelo OGG
+            else:
+                _write(f"{name}.wav", gen(), subdir="music", rate=MUSIC_RATE, width=1)
         print("Gerando stems de arena/boss (música adaptativa)...")
         for name, gen in MUSIC_STEMS.items():
             random.seed(11)

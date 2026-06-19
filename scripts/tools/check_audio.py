@@ -72,6 +72,21 @@ def read_wav(path):
     return samples, rate
 
 
+def read_ogg(path):
+    """Lê OGG Vorbis mono -> (samples [-1..1], rate). Codec de música/ambiência v5;
+    usa soundfile (libvorbis já presente). Mono garantido (canal 0 se vier estéreo)."""
+    import soundfile as sf
+    data, rate = sf.read(path, dtype="float64", always_2d=False)
+    if getattr(data, "ndim", 1) > 1:
+        data = data[:, 0]
+    return data.tolist(), rate
+
+
+def read_audio(path):
+    """Despacha leitura por extensão: .ogg (Vorbis) ou .wav (PCM)."""
+    return read_ogg(path) if path.lower().endswith(".ogg") else read_wav(path)
+
+
 # ─── Filtros ───────────────────────────────────────
 def biquad(samples, b0, b1, b2, a1, a2):
     """Biquad em forma direta II transposta (coeficientes já normalizados por a0)."""
@@ -158,7 +173,7 @@ def rms_db(samples):
 def check_file(path, category):
     """-> (ok: bool, métricas: str). Aplica o alvo da categoria ao arquivo."""
     target = TARGETS[category]
-    samples, rate = read_wav(path)
+    samples, rate = read_audio(path)
     peak = sample_peak_db(samples)
     fails = []
     cols = [f"peak {peak:6.1f}"]
@@ -195,12 +210,13 @@ def main(root=None):
         if not os.path.isdir(cat_dir):
             continue
         for name in sorted(os.listdir(cat_dir)):
-            if not name.endswith(".wav"):
+            if not name.endswith((".wav", ".ogg")):
                 continue
             path = os.path.join(cat_dir, name)
             bytes_by_category[category] = bytes_by_category.get(category, 0) \
                 + os.path.getsize(path)
-            effective = "stem" if name.endswith(STEM_SUFFIXES) else category
+            stem_name = os.path.splitext(name)[0]  # detecção de stem é agnóstica de ext
+            effective = "stem" if stem_name.endswith(("_base", "_mid", "_top")) else category
             ok, info = check_file(path, effective)
             failures += 0 if ok else 1
             rows.append(("✅" if ok else "❌", f"{category}/{name}", info))

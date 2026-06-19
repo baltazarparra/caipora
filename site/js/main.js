@@ -209,6 +209,44 @@
   }
 
   // ----------------------------------------------------------
+  // Scroll-scrub: a ROLAGEM controla o quadro do clipe.
+  // Progresso pela trilha alta (.scrollscene, ~250vh) -> índice de
+  // quadro -> background-position-x. Rolar p/ baixo avança 0→100%,
+  // p/ cima reverte; velocidade/direção seguem o scroll (frame-accurate,
+  // sem o jank de <video>.currentTime no mobile).
+  // ----------------------------------------------------------
+  const scrubEls = document.querySelectorAll('[data-scrub]');
+
+  if (scrubEls.length && !prefersReducedMotion) {
+    let scrubTicking = false;
+
+    function paintScrub() {
+      scrubTicking = false;
+      scrubEls.forEach(function (el) {
+        const sec = el.closest('.scrollscene');
+        if (!sec) return;
+        const range = sec.offsetHeight - window.innerHeight; // px de scrub
+        const progressed = Math.min(Math.max(-sec.getBoundingClientRect().top, 0), range);
+        const p = range > 0 ? progressed / range : 0;
+        const frames = parseInt(getComputedStyle(el).getPropertyValue('--frames'), 10) || 26;
+        const idx = Math.min(frames - 1, Math.floor(p * frames));
+        el.style.backgroundPositionX = frames > 1 ? (idx / (frames - 1)) * 100 + '%' : '0%';
+      });
+    }
+
+    function onScrub() {
+      if (!scrubTicking) {
+        scrubTicking = true;
+        requestAnimationFrame(paintScrub);
+      }
+    }
+
+    window.addEventListener('scroll', onScrub, { passive: true });
+    window.addEventListener('resize', onScrub);
+    paintScrub(); // estado inicial
+  }
+
+  // ----------------------------------------------------------
   // Hero parallax (mouse)
   // ----------------------------------------------------------
   const heroBackdrop = document.querySelector('.hero-backdrop');
