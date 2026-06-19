@@ -13,6 +13,11 @@ const FINISHER_VFX_PATH := "res://assets/effects/finisher_vfx_sheet.png"
 # 5 frames a ~15fps fecham em ~0.33s de tempo-de-cena: cabem na janela de
 # slow-mo do golpe final (1.4s reais a time_scale 0.25 = 0.35s de cena).
 const FINISHER_VFX_FPS  := 15.0
+# Finisher do Cortejo (esquartejamento espectral): 6 frames a 14fps ≈ 0.43s de
+# cena — cabem na janela mais longa do clímax do Golpe Carregado (ver
+# ArenaManager.CORTEJO_FINISHER_HOLD × CORTEJO_FINISHER_TIME_SCALE).
+const FINISHER_CORTEJO_VFX_PATH := "res://assets/effects/finisher_cortejo_vfx_sheet.png"
+const FINISHER_CORTEJO_VFX_FPS  := 14.0
 const LABEL_PATHS := {
 	&"critico":  "res://assets/effects/result_critico.png",
 	&"perfeito": "res://assets/effects/result_perfeito.png",
@@ -50,6 +55,7 @@ var _tex_hit: Texture2D
 var _tex_crit: Texture2D
 var _tex_dodge: Texture2D
 var _tex_finisher: Texture2D
+var _tex_finisher_cortejo: Texture2D
 
 # ─── Combo tracker ─────────────────────────────────
 var _combo_streak: int = 0
@@ -116,6 +122,7 @@ func _ready() -> void:
 	_tex_crit  = _safe_load(CRITICAL_VFX_PATH)
 	_tex_dodge = _safe_load(DODGE_VFX_PATH)
 	_tex_finisher = _safe_load(FINISHER_VFX_PATH)
+	_tex_finisher_cortejo = _safe_load(FINISHER_CORTEJO_VFX_PATH)
 
 ## Multiplica só o RGB pelo ganho de cor da fase (preserva alpha).
 func _g(c: Color) -> Color:
@@ -197,6 +204,14 @@ func spawn_dodge_vfx(at_position: Vector2) -> void:
 func spawn_finisher_vfx(at_position: Vector2) -> void:
 	blood_spilled.emit(at_position, 2.6)
 	_burst_vfx(&"finisher", _tex_finisher, 64, 64, 5, FINISHER_VFX_FPS, at_position)
+
+## Finisher do Cortejo (esquartejamento espectral): os quatro espíritos rasgam o
+## inimigo em quatro direções e o fogo verde-fantasma consome o tronco. Quadro
+## 96×96 (os pedaços voam para fora do 64) e mais sangue que o finisher normal.
+## Mesma convenção do spawn_finisher_vfx: NÃO dispara death_particles aqui.
+func spawn_cortejo_finisher_vfx(at_position: Vector2) -> void:
+	blood_spilled.emit(at_position, 3.2)
+	_burst_vfx(&"finisher_cortejo", _tex_finisher_cortejo, 96, 96, 6, FINISHER_CORTEJO_VFX_FPS, at_position)
 
 # ─── Aliases legados (mantém assinatura pública) ───
 func spawn_blood_particles(at_position: Vector2) -> void:

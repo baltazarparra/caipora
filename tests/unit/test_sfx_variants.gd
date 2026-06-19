@@ -89,6 +89,15 @@ func test_combat_outcome_assets_exist():
 		var list: Array = _sfx._variants.get("res://assets/audio/sfx/%s.wav" % sound_name, [])
 		assert_eq(list.size(), 3, "%s deve ter primário + _2/_3" % sound_name)
 
+# ─── Finisher do Cortejo: som próprio do esquartejamento espectral ──
+func test_cortejo_finisher_sound_exists_with_variants():
+	# O clímax do Golpe Carregado toca um som dedicado (coro espectral + dilaceração
+	# + chama verde) por play_named, com primário + _2/_3 para o round-robin.
+	assert_true(_sfx.play_named("finisher_cortejo"),
+		"finisher_cortejo deve existir com geração procedural")
+	var list: Array = _sfx._variants.get("res://assets/audio/sfx/finisher_cortejo.wav", [])
+	assert_eq(list.size(), 3, "finisher_cortejo deve ter primário + _2/_3")
+
 func test_play_outcome_routes_every_result():
 	# O dispatch declara o resultado; o vocabulário sonoro vive no SfxSystem. Aqui
 	# provamos que os 5 resultados tocam sem erro (com os assets presentes).

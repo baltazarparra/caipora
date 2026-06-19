@@ -41,6 +41,11 @@ const KILLING_BLOW_ZOOM_FACTOR: float = 2.0
 const KILLING_BLOW_ZOOM_CAP: float = 3.0
 # Peito = acima do pé do sprite (offset -40 × escala): onde a garra esmaga o coração.
 const FINISHER_CHEST_OFFSET_Y: float = -20.0
+# Clímax EXCLUSIVO do Golpe Carregado (Cortejo): esquartejamento espectral. Slow-mo
+# um pouco mais longo e profundo que o normal (0.35s de cena). INVARIANTE: HOLD ×
+# TIME_SCALE ≥ frames/fps do VFX (FeedbackSystem: 6/14 ≈ 0.43s); aqui 2.0×0.22=0.44s.
+const CORTEJO_FINISHER_TIME_SCALE: float = 0.22
+const CORTEJO_FINISHER_HOLD: float = 2.0
 
 @onready var _camera: Camera2D = $Camera2D
 # D-pad é um autoload persistente (TouchControls), não mais um nó por cena.
@@ -59,6 +64,10 @@ var _active_enemy_pattern: AttackPattern
 var _last_boss_bubble_pos: Vector2 = Vector2(-999.0, -999.0)
 var _first_bubble_pos: Vector2 = Vector2.ZERO
 var _is_double_attack: bool = false
+# Marca que o golpe MORTAL veio da barragem do Cortejo: _on_actor_died troca o
+# finisher-coração padrão pelo esquartejamento espectral. Setado em
+# _apply_cortejo_hits (killing blow), zerado ao iniciar cada Cortejo.
+var _killed_by_cortejo: bool = false
 var _boss_special_hit_index: int = 0
 # Encerramento de combate: a morte de um ator dispara teardown + transição UMA única vez.
 # _combat_over barra qualquer reentrância de turno/timing após a morte; _screen_changed
@@ -589,6 +598,7 @@ func _start_cortejo_turn() -> void:
 	if spirits.is_empty():
 		_start_enemy_turn()  # defensivo: o roll exige freed_bosses não vazio
 		return
+	_killed_by_cortejo = false  # reset por defesa antes da barragem
 	AudioDirector.set_cortejo_active(true)
 	# 1. Lead-in telegrafado (slow-mo + cue): avisa que vem algo grande.
 	await _cortejo_lead_in()
@@ -646,7 +656,9 @@ func _cortejo_lead_in() -> void:
 ## O último floresce em crítico. Killing-blow no meio reusa o zoom; o clímax usa o
 ## finisher VFX. Mata no meio encerra (os espíritos restantes não disparam).
 func _cortejo_barrage(spirits: Array[int], pos: Vector2) -> void:
-	_feedback.spawn_finisher_vfx(_enemy.position + Vector2(0.0, FINISHER_CHEST_OFFSET_Y))
+	# O clímax do Cortejo é o esquartejamento espectral no GOLPE MORTAL
+	# (_on_actor_died via _killed_by_cortejo); a barragem não abre mais com o
+	# finisher-coração (era o finisher errado). As aparições dão a leitura visual.
 	for i: int in range(spirits.size()):
 		if _combat_over or not _enemy.health.is_alive():
 			return
@@ -703,6 +715,7 @@ func _apply_cortejo_hits(pos: Vector2, crit: bool, index: int) -> void:
 		var is_killing_blow: bool = damage >= _enemy.health.current_health
 		var outcome: int = SfxSystem.Outcome.CRIT if crit else SfxSystem.Outcome.HIT
 		if is_killing_blow:
+			_killed_by_cortejo = true  # _on_actor_died usa o esquartejamento espectral
 			_sfx.play_outcome(outcome)
 			_feedback.spawn_bubble_burst(pos, Constants.COLOR_TELEGRAPH_ENEMY)
 			_feedback.spawn_critical_particles(_enemy.position)
@@ -983,11 +996,22 @@ func _on_actor_died(actor: CombatActor) -> void:
 		MetaProgression.drop_fragment_bag(GameState.active_phase, GameState.player_map_pos)
 	GameState.caipora_current_hp = maxf(0.0, _caipora.health.current_health)
 	if caipora_won and _killing_blow_zoom_base > 0.0:
-		Engine.time_scale = 0.25
-		# Golpe final em câmera lenta: a garra esmaga o coração sobre o peito. O VFX
-		# herda o time_scale (a animação avança pelo clock da cena) — slow-mo de graça.
-		_feedback.spawn_finisher_vfx(actor.position + Vector2(0.0, FINISHER_CHEST_OFFSET_Y))
-		await get_tree().create_timer(1.4, true, false, true).timeout
+		# Golpe final em câmera lenta: o VFX herda o time_scale (a animação avança
+		# pelo clock da cena) — slow-mo de graça. Dois finishers:
+		#   • Cortejo (Golpe Carregado): ESQUARTEJAMENTO espectral + som próprio,
+		#     slow-mo mais longo/profundo (o golpe mais raro e ritualístico).
+		#   • Normal/crítico: a garra esmaga o coração sobre o peito.
+		var chest_pos := actor.position + Vector2(0.0, FINISHER_CHEST_OFFSET_Y)
+		if _killed_by_cortejo:
+			Engine.time_scale = CORTEJO_FINISHER_TIME_SCALE
+			AudioDirector.duck(AudioDirector.PERFECT_DUCK_DB, AudioDirector.PERFECT_DUCK_SECS)
+			_sfx.play_named("finisher_cortejo")
+			_feedback.spawn_cortejo_finisher_vfx(chest_pos)
+			await get_tree().create_timer(CORTEJO_FINISHER_HOLD, true, false, true).timeout
+		else:
+			Engine.time_scale = 0.25
+			_feedback.spawn_finisher_vfx(chest_pos)
+			await get_tree().create_timer(1.4, true, false, true).timeout
 		Engine.time_scale = 1.0
 		var zoom_tween := create_tween()
 		zoom_tween.set_ease(Tween.EASE_IN_OUT)

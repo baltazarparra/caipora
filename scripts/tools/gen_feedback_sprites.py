@@ -40,6 +40,11 @@ VOID = (10, 8, 12, 255)               # garra/void da Caipora (quase preto)
 HEART_HOT = (220, 50, 50, 255)        # coração vivo (mesmo que BLOOD_BRIGHT)
 HEART_MID = (200, 20, 20, 255)        # coração comprimido
 HEART_DEAD = (110, 0, 0, 255)         # coração drenado (mais escuro que BLOOD)
+# Verde espectral PRÓPRIO do Cortejo (esquartejamento). DISTINTO do verde-cristal
+# (0,250,154) e do laranja-juba (255,69,0), reservados à Caipora e PROIBIDOS no
+# finisher pela lei de marca (test_finisher_sprite_assets / test_cortejo_finisher).
+SPIRIT_GHOST = (130, 255, 190, 255)   # chama/garra fantasma viva
+SPIRIT_GHOST_DIM = (60, 170, 120, 255)  # brasa/aura fantasma drenada
 
 
 def _a(col: tuple, alpha: int) -> tuple:
@@ -333,6 +338,106 @@ def _gen_finisher_vfx() -> None:
     sheet.save(os.path.join(OUT, "finisher_vfx_sheet.png"))
 
 
+# ─── FINISHER DO CORTEJO (6 frames × 96×96) ──────
+# Golpe final do Golpe Carregado: os QUATRO espíritos agarram o inimigo pelos
+# cantos e o ESQUARTEJAM — o corpo (massa VOID) rasga ao meio, vísceras jorram e
+# o fogo verde-fantasma do cortejo consome o tronco oco. Frame maior (96) porque
+# os pedaços voam para fora. Verde = SPIRIT_GHOST (próprio do cortejo), NUNCA o
+# verde-cristal nem o laranja-juba reservados à Caipora.
+def _gen_finisher_cortejo_vfx() -> None:
+    W, H, N = 96, 96, 6
+    sheet = Image.new("RGBA", (W * N, H), TRANSPARENT)
+    cx, cy = 48, 48
+    dirs = [(-1, -1), (1, -1), (-1, 1), (1, 1)]  # quatro cantos (espíritos)
+    pulls = [0.0, 0.18, 0.42, 0.70, 0.88, 1.0]   # quanto os pedaços são puxados
+
+    def lerp(a: float, b: float, t: float) -> float:
+        return a + (b - a) * t
+
+    def _flame(d: ImageDraw.Draw, fx: int, fy: int, size: int) -> None:
+        # Chama verde-fantasma: línguas verticais (base larga DIM, miolo HOT).
+        for k in range(3):
+            ox = (k - 1) * size // 2
+            base = size
+            d.polygon([(fx + ox - base // 2, fy + base // 2),
+                       (fx + ox + base // 2, fy + base // 2),
+                       (fx + ox, fy - base)], fill=SPIRIT_GHOST_DIM)
+            d.polygon([(fx + ox - base // 3, fy + base // 3),
+                       (fx + ox + base // 3, fy + base // 3),
+                       (fx + ox, fy - base + base // 3)], fill=SPIRIT_GHOST)
+
+    def frame(fi: int) -> Image.Image:
+        img = Image.new("RGBA", (W, H), TRANSPARENT)
+        d = ImageDraw.Draw(img)
+        pull = pulls[fi]
+
+        # 1) Quatro pedaços do corpo (massa VOID): agrupados no centro (pull 0) e
+        #    arrastados para os cantos conforme o esquartejamento avança.
+        chunk_off = lerp(7.0, 36.0, pull)
+        chunk_r = int(round(lerp(15.0, 10.0, pull)))
+        chunks = []
+        for dx, dy in dirs:
+            chx = cx + int(round(dx * chunk_off))
+            chy = cy + int(round(dy * chunk_off))
+            chunks.append((chx, chy))
+            _circle(d, chx, chy, chunk_r, VOID)
+            _circle(d, chx - dx * 3, chy - dy * 2, chunk_r - 4, VOID)  # borda irregular
+
+        # 2) Fenda central + vísceras (jorra ao rasgar; drena no fim).
+        if fi == 0:
+            _heart(d, cx, cy, 9, HEART_HOT, 0.0)           # coração intacto sob a massa
+        elif fi == 1:
+            _heart(d, cx, cy, 8, HEART_HOT, 0.3)
+            _line_radial(d, cx, cy, 4, 12, 6, 2, HEART_MID, math.pi / 8)
+            _dots(d, cx, cy, 14, 6, 1, BLOOD, 0.2)
+        elif fi == 2:
+            _heart(d, cx, cy, 6, HEART_MID, 0.6)
+            _line_radial(d, cx, cy, 6, 22, 10, 2, HEART_HOT, math.pi / 10)
+            _dots(d, cx, cy, 24, 10, 2, BLOOD, 0.0)
+            _dots(d, cx, cy, 16, 8, 1, HEART_HOT, 0.5)
+
+        # 3) Cordões de sangue ligando os pedaços ao centro (esticam e se rompem).
+        if 1 <= fi <= 4:
+            cord_col = BLOOD if fi <= 3 else _a(BLOOD, 130)
+            for chx, chy in chunks:
+                d.line([cx, cy, chx, chy], fill=cord_col, width=2)
+                _circle(d, (cx + chx) // 2, (cy + chy) // 2, 1, BLOOD)
+
+        # 4) Fogo verde-fantasma do cortejo tomando o tronco oco (cresce no fim).
+        if fi >= 3:
+            _flame(d, cx, cy, int(round(lerp(8.0, 20.0, (fi - 3) / 2.0))))
+        if fi >= 4:
+            _dots(d, cx, cy, 12, 7, 1, SPIRIT_GHOST, 0.3 * fi)
+
+        # 5) Poças/gotas de sangue drenando ao final.
+        if fi == 4:
+            _dots(d, cx, cy, 30, 6, 2, _a(BLOOD, 150), 0.4)
+            d.line([cx - 5, cy + 14, cx - 6, cy + 26], fill=BLOOD, width=2)
+            _circle(d, cx - 6, cy + 27, 2, BLOOD)
+        elif fi == 5:
+            _dots(d, cx, cy, 30, 6, 1, _a(BLOOD, 90), 0.5)
+            _circle(d, cx - 6, cy + 28, 2, _a(BLOOD, 140))
+            _circle(d, cx + 7, cy + 30, 2, _a(BLOOD, 120))
+
+        # 6) Garras espectrais dos quatro espíritos: nascem nos cantos e cravam
+        #    nos pedaços, puxando para fora (aura DIM + talão HOT).
+        for (dx, dy), (chx, chy) in zip(dirs, chunks):
+            bx = cx + dx * 46
+            by = cy + dy * 46
+            # ponta crava na face externa do pedaço, recuando com o puxão
+            tx = lerp(chx, bx, 0.35)
+            ty = lerp(chy, by, 0.35)
+            _circle(d, int(round(lerp(chx, bx, 0.18))),
+                    int(round(lerp(chy, by, 0.18))), 4, SPIRIT_GHOST_DIM)  # aura no pulso
+            _talon(d, bx, by, tx, ty, lerp(9, 6, pull), SPIRIT_GHOST)
+        return img
+
+    for fi in range(N):
+        f = _add_outline(frame(fi), OUTLINE_COL)
+        sheet.paste(f, (fi * W, 0))
+    sheet.save(os.path.join(OUT, "finisher_cortejo_vfx_sheet.png"))
+
+
 # ─── Pixel font 5×7 ───────────────────────────────
 # Each entry: list of 7 rows, each row is 5-char string of X/.
 FONT_5x7: dict[str, list[str]] = {
@@ -441,6 +546,9 @@ def main() -> None:
 
     _gen_finisher_vfx()
     print("  ✓ finisher_vfx_sheet.png (5×64×64)")
+
+    _gen_finisher_cortejo_vfx()
+    print("  ✓ finisher_cortejo_vfx_sheet.png (6×96×96)")
 
     _gen_label("CRITICO", WHITE, ORANGE,   "result_critico.png")
     print("  ✓ result_critico.png")

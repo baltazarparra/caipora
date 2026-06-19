@@ -1023,6 +1023,69 @@ MOVES = {
 }
 
 
+def finisher_cortejo_wav():
+    # Clímax do Golpe Carregado (Cortejo): os espíritos ESQUARTEJAM o inimigo.
+    # Três camadas: (1) coro/uivo espectral grave SUSTENTADO — cama contínua que
+    # garante corpo RMS (à la mata_event); (2) DILACERAÇÃO carnuda no impacto
+    # (alfaia grave + estalo de caixa + rasgo de ruído filtrado, na escada do
+    # hit_heavy); (3) cauda de CHAMA verde-fantasma crepitando + sopro de espírito
+    # que floresce. Echo dá o caráter de cortejo (mata responde).
+    dur = 0.7
+    n = int(SAMPLE_RATE * dur)
+
+    # (1) Coro fantasma: drone detunado grave + quinta + ar respirado com AM lenta.
+    choir = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        drone = (math.sin(2 * math.pi * 98.0 * t)
+                 + math.sin(2 * math.pi * 99.5 * t)          # detune -> batimento
+                 + 0.6 * math.sin(2 * math.pi * 147.0 * t))  # quinta acima
+        am = 0.6 + 0.4 * math.sin(2 * math.pi * 5.5 * t + 0.7)
+        breath = _noise() * 0.55 * am
+        e = _env(i, n, 0.04, 0.8)
+        choir.append((0.5 * drone + breath) * e * 0.72)
+    choir = biquad(choir, "lp", 1000.0, q=1.1)
+
+    # (2) Dilaceração: carne/osso cedendo no ataque (transiente domado para não
+    #     estourar o crest factor — o corpo RMS vem da cama, não do baque).
+    rip = _noise_burst(0.26, lp=2600.0, hp=300.0, attack=0.006, release=0.85, amp=0.65)
+    tear = _mix(
+        alfaia(0.30, base=48.0, punch=0.55),
+        caixa(0.12, bright=0.5),
+        [s * 0.7 for s in rip],
+        [s * 0.4 for s in gongue(0.18, freq=440.0)],
+    )
+
+    # (3) Chama verde-fantasma: crepitar filtrado decaindo + sopro que sobe.
+    n_fl = int(SAMPLE_RATE * 0.5)
+    crackle = []
+    for i in range(n_fl):
+        t = i / SAMPLE_RATE
+        spark = _noise() * (0.6 + 0.4 * math.sin(2 * math.pi * 30.0 * t * _jit(0.2)))
+        crackle.append(spark * _env(i, n_fl, 0.05, 0.7) * 0.7)
+    crackle = biquad(crackle, "lp", 2400.0)
+    wail = assovio(0.5, 520.0, freq_end=820.0, breath=0.2)  # espírito subindo
+
+    body = _seq(
+        (choir, 0.0, 1.0),
+        (tear, 0.04, 0.8),
+        (crackle, 0.2, 0.95),
+        (wail, 0.18, 0.45),
+    )
+    # Cama de ar contínua sob o evento (padrão mata_event): preenche os vãos para
+    # o fiscal achar corpo RMS mesmo com transiente forte, e cola tudo na
+    # respiração da mata.
+    n_total = len(body)
+    bed = biquad([_noise() * 0.55 * _env(i, n_total, 0.06, 0.45) for i in range(n_total)],
+                 "lp", 800.0)
+    mixed = echo(_mix(body, bed), time_s=0.26, feedback=0.32, mix=0.32, taps=4)
+    # Soft-clip (tanh): comprime o pico isolado que o echo pode construir e adensa
+    # o corpo — mantém o RMS dentro da faixa em TODAS as variantes (seeds), sem
+    # depender só da saturação progressiva do _conform_sfx.
+    mixed = [math.tanh(s * 1.6) for s in mixed]
+    return _normalize(mixed, 0.6)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -1046,6 +1109,7 @@ GENERATORS = {
     "hit_heavy": hit_heavy_wav,
     "erva_vida": erva_vida_wav,
     "combat_block": combat_block_wav,
+    "finisher_cortejo": finisher_cortejo_wav,
 }
 
 
