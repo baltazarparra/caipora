@@ -750,6 +750,19 @@ def hit_heavy_wav():
     return _normalize(biquad(body, "lowshelf", 120.0, gain_db=4.0), 0.97)
 
 
+def combat_block_wav():
+    # APAROU (faixa GOOD): aparada seca e curta — o golpe bate na guarda da Caipora e
+    # morre. POSITIVA (não é o whiff do erro) e mais LEVE que o crítico (hit_heavy):
+    # estalo de caixa + corpo curto + um tinido metálico abafado de gongue. Low-pass
+    # mantém na passada escura.
+    body = _mix(
+        caixa(0.07, bright=0.6),
+        alfaia(0.08, base=96.0, punch=0.5),
+        [s * 0.4 for s in gongue(0.10, freq=560.0)],
+    )
+    return _normalize(biquad(body, "lp", 3200.0 * _jit(0.1), q=0.8), 0.85)
+
+
 def erva_vida_wav():
     # Colher a Erva da Vida (pickup de HP máx.): som ORGÂNICO, agradável e ÚNICO —
     # a planta cede (folha amassada + chocalho de ganzá subindo) sob um sopro
@@ -1032,6 +1045,7 @@ GENERATORS = {
     "combat_miss": combat_miss_wav,
     "hit_heavy": hit_heavy_wav,
     "erva_vida": erva_vida_wav,
+    "combat_block": combat_block_wav,
 }
 
 

@@ -28,6 +28,7 @@ WHITE = (255, 255, 255, 255)
 OUTLINE_COL = (26, 18, 10, 255)       # #1a120a — same as gen_caipora
 ORANGE = (255, 69, 0, 255)            # #ff4500 — Caipora mane
 ORANGE_DK = (139, 42, 0, 255)         # #8b2a00 — mane shadow
+AMBER = (255, 107, 0, 255)            # #ff6b00 — COLOR_GOOD (faixa GOOD / bloqueio)
 BLOOD = (139, 0, 0, 255)              # #8b0000 — dark blood
 BLOOD_MID = (200, 20, 20, 255)        # intermediate blood
 BLOOD_BRIGHT = (220, 50, 50, 255)
@@ -452,6 +453,10 @@ def main() -> None:
 
     _gen_label("ESQUIVA!", WHITE, CYAN,    "result_esquiva.png")
     print("  ✓ result_esquiva.png")
+
+    # Faixa GOOD (bloqueio parcial). "APAROU" usa só glifos da fonte 5×7 (sem B/L).
+    _gen_label("APAROU", WHITE, AMBER,     "result_bloqueio.png")
+    print("  ✓ result_bloqueio.png")
 
     _gen_combo_digits()
     print("  ✓ combo_digit_sheet.png (11×8×12)")

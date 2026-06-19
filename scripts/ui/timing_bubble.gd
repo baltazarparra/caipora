@@ -3,6 +3,9 @@ extends Node2D
 
 # ─── Signals ───────────────────────────────────────
 signal vulnerable_entered
+## Emitido uma vez ao ENTRAR na faixa GOOD (antes do perfeito): cue "prepare → AGORA"
+## (modelo Patapon). O perfeito segue sinalizado por vulnerable_entered.
+signal approach_entered
 
 # ─── Constants ─────────────────────────────────────
 ## Anel-alvo fixo: marca a janela de acerto. O jogador aperta quando o anel
@@ -20,6 +23,8 @@ const PHASE_IDLE: int = 1
 
 ## Flash verde-cristal ao ENTRAR na janela perfeita ("o cristal carregou").
 const FLASH_S: float = 0.12
+## Halo âmbar (faixa GOOD = bloqueio parcial) desenhado por fora do anel-alvo.
+const GOOD_HALO_GAP: float = 8.0
 
 # ─── Glifo direcional — Garra Tribal 16×16 (mesmo de CombatArrowButton) ────
 # K = outline preto  O = juba clara  D = juba escura  . = transparente
@@ -53,6 +58,11 @@ const ARROW_NUDGE_DIST: float = 4.0   # px de "toque" na direção durante a jan
 var _duration: float = 0.8
 var _perfect_start: float = 0.65
 var _perfect_end: float = 0.85
+## Faixa GOOD (bloqueio parcial). Default = faixa perfeita ⇒ sem halo (binário/Cortejo).
+var _good_start: float = 0.65
+var _good_end: float = 0.85
+var _good_alpha: float = 0.0
+var _approach_emitted: bool = false
 var _elapsed: float = 0.0
 var _phase: int = PHASE_IDLE
 var _outer_radius: float = RADIUS_MAX
@@ -62,6 +72,7 @@ var _arrow_alpha: float = 0.35
 var _vuln_emitted: bool = false
 var _burst_timer: float = -1.0
 var _burst_fail: bool = false
+var _burst_good: bool = false
 var _burst_radius: float = RADIUS_TARGET
 var _burst_color: Color = Color(1, 1, 1, 0.9)
 var _defense_mode: bool = false
@@ -117,6 +128,17 @@ func _process(delta: float) -> void:
 		_vuln_emitted = true
 		_flash_timer = FLASH_S
 		vulnerable_entered.emit()
+	# Faixa GOOD (bloqueio parcial): cue de aproximação ao entrar + halo âmbar aceso.
+	var in_good: bool = progress >= _good_start and progress <= _good_end
+	if in_good and not _approach_emitted:
+		_approach_emitted = true
+		approach_entered.emit()
+	if in_good and not in_perfect:
+		_good_alpha = 0.55
+	elif in_perfect:
+		_good_alpha = 0.30
+	else:
+		_good_alpha = maxf(0.0, _good_alpha - delta * 3.0)
 
 	# Cor do anel convergente + brilho do alvo + opacidade da seta.
 	var mode_color: Color = _mode_color()
@@ -153,6 +175,11 @@ func _process_burst(delta: float) -> void:
 	if _burst_fail:
 		_burst_color = Color(0.2, 0.05, 0.05, lerpf(0.8, 0.0, t))
 		_burst_radius = lerpf(RADIUS_TARGET * 0.8, RADIUS_TARGET * 0.3, t)
+	elif _burst_good:
+		# Bloqueio: estouro âmbar de expansão média, entre o sucesso (branco) e a falha.
+		var gc: Color = Constants.COLOR_GOOD
+		_burst_color = Color(gc.r, gc.g, gc.b, lerpf(0.85, 0.0, t))
+		_burst_radius = lerpf(RADIUS_TARGET * 0.8, RADIUS_TARGET * 1.3, t)
 	else:
 		_burst_color = Color(1, 1, 1, lerpf(0.9, 0.0, t))
 		_burst_radius = lerpf(RADIUS_TARGET * 0.8, RADIUS_TARGET * 1.6, t)
@@ -196,6 +223,12 @@ func _draw() -> void:
 
 	# 2. Anel convergente (o timer): encolhe em direção ao alvo.
 	draw_arc(Vector2.ZERO, _outer_radius, 0.0, TAU, 40, _g(_color), 2.5)
+
+	# 2b. Halo âmbar = faixa GOOD (bloqueio parcial): aceso quando o input ainda "pega".
+	if _good_alpha > 0.01:
+		var hc: Color = Constants.COLOR_GOOD
+		draw_arc(Vector2.ZERO, RADIUS_TARGET + GOOD_HALO_GAP, 0.0, TAU, 40,
+			_g(Color(hc.r, hc.g, hc.b, _good_alpha)), 2.0)
 
 	# 3. Glifo direcional pixel-art: seta 60×60 px com nudge na janela perfeita.
 	if _arrow_alpha > 0.01:
@@ -344,10 +377,15 @@ func _flashed(c: Color) -> Color:
 
 
 # ─── Public API ────────────────────────────────────
-func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up", charge: bool = false) -> void:
+func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up", charge: bool = false, good_start: float = 0.0, good_end: float = 0.0) -> void:
 	_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
+	# Faixa GOOD: ausente (0.0) ⇒ coincide com a perfeita ⇒ sem halo (binário/Cortejo).
+	_good_start = good_start if good_start > 0.0 else perfect_start
+	_good_end = good_end if good_end > 0.0 else perfect_end
+	_good_alpha = 0.0
+	_approach_emitted = false
 	_elapsed = 0.0
 	_phase = PHASE_ACTIVE
 	_burst_timer = -1.0
@@ -376,8 +414,20 @@ func hide_bubble() -> void:
 func burst_success() -> void:
 	_phase = PHASE_IDLE
 	_burst_fail = false
+	_burst_good = false
 	_burst_timer = 0.12
 	_burst_color = Color(1, 1, 1, 0.9)
+	_burst_radius = RADIUS_TARGET * 0.8
+	visible = true
+	queue_redraw()
+
+
+## Estouro de BLOQUEIO (faixa GOOD): expansão âmbar média, entre sucesso e falha.
+func burst_good() -> void:
+	_phase = PHASE_IDLE
+	_burst_fail = false
+	_burst_good = true
+	_burst_timer = 0.12
 	_burst_radius = RADIUS_TARGET * 0.8
 	visible = true
 	queue_redraw()
@@ -397,6 +447,7 @@ func set_color_gain(gain: Color) -> void:
 func burst_fail() -> void:
 	_phase = PHASE_IDLE
 	_burst_fail = true
+	_burst_good = false
 	_burst_timer = 0.12
 	_burst_color = Color(0.2, 0.05, 0.05, 0.8)
 	_burst_radius = RADIUS_TARGET * 0.8

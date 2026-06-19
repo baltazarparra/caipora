@@ -100,7 +100,7 @@ Toda ação tem feedback visceral: screen shake, partículas de sangue, hit-stop
 - Inimigo telegrafa ataques com cue visual + janela de wind-up
 - Jogador pressiona **Espaço** durante a janela de cue para esquivar + contra-atacar
 - Jogador pressiona **Espaço** durante sua própria janela de ataque para crítico
-- Errar o timing = resultado normal (sem penalidade, sem bônus)
+- **Acerto em 3 tiers (PERFEITO / GOOD / ERRO).** Na **defesa**: PERFEITO = esquiva + contra-ataque (combo↑); **GOOD = bloqueia ~50% do dano, sem contra, combo preservado**; ERRO = dano cheio. No **ataque**: PERFEITO = crítico (combo↑); GOOD = golpe normal (combo preservado); ERRO = **whiff (0 dano)** — corrige a nota antiga "dano normal", o ataque que erra não fere. As faixas PERFEITO/GOOD têm largura **absoluta** (precisão fixa entre fases; só a antecipação encurta) — ver `docs/PRD-combate-refino.md` e `docs/PESQUISA-combate-acao.md`.
 
 ### 4.2 Sistemas Core
 

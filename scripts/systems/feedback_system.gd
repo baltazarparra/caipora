@@ -18,6 +18,7 @@ const LABEL_PATHS := {
 	&"perfeito": "res://assets/effects/result_perfeito.png",
 	&"errou":    "res://assets/effects/result_errou.png",
 	&"esquiva":  "res://assets/effects/result_esquiva.png",
+	&"bloqueio": "res://assets/effects/result_bloqueio.png",
 }
 const COMBO_DIGIT_PATH  := "res://assets/effects/combo_digit_sheet.png"
 const COMBO_DIGIT_W     := 8
@@ -410,6 +411,11 @@ func track_perfect(is_perfect: bool) -> void:
 	if Constants.particle_amount_scale(vp) < 1.0:
 		return  # Budget device: skip combo indicator
 	_update_combo_indicator()
+
+## GOOD (bloqueio parcial): NÃO incrementa nem zera o streak — o combo sobrevive a um
+## quase-acerto, mas só o PERFEITO faz a escada subir. Não renova o timer de idle (Q1).
+func track_good() -> void:
+	pass
 
 ## Passo atual da escada de combo (0..COMBO_MAX_STEP). Fonte única de verdade da
 ## intensidade escalada (shake/hit-stop/zoom/pitch). Streak 1 = passo 0; cresce daí.

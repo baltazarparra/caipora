@@ -56,6 +56,34 @@ const TIMING_TIER2_WINDOW := 0.85  # 2 botões — normal
 const TIMING_TIER3_WINDOW := 0.75  # 3 botões — médio
 const TIMING_TIER4_WINDOW := 0.65  # 4 botões — difícil
 
+# ─── Faixas de acerto (tier PERFEITO / GOOD / ERRO) ─
+# Modelo "faixas absolutas sobre a janela existente" (docs/PRD-combate-refino.md §5): a
+# duração total D (timing_window_for_phase / action_windows) NÃO muda — só ONDE ficam as
+# faixas dentro dela. Os meios-spans são ABSOLUTOS (segundos), então a PRECISÃO do acerto é
+# constante entre fases; só o lead-in (D − banda) encurta quando D encolhe por fase.
+#   PERFEITO = crítico/contra-ataque (+combo); GOOD = bloqueio ~50% (combo preservado);
+#   ERRO = dano cheio. band_fractions() devolve as frações 0..1 para a bolha e o TimingSystem.
+const PERFECT_HALF_SPAN := 0.09     # faixa perfeita = ±0.09s (~0.18s de largura)
+const GOOD_HALF_SPAN := 0.20        # faixa GOOD = ±0.20s (flanco GOOD ~0.11s de cada lado)
+const LATE_GRACE := 0.04            # tolerância SÓ no lado tardio (lag de toque/web)
+const ACTION_TAIL := 0.06           # rabo de colapso após a banda
+const MIN_ACTION_DURATION := 0.55   # piso de D p/ a banda absoluta sempre caber
+const GOOD_BLOCK_MULT := 0.5        # GOOD na defesa bloqueia ~50% do dano
+
+## Frações 0..1 das faixas de acerto dentro de uma janela de `duration` segundos. A precisão
+## (largura perfect/good em segundos) é constante; o que varia entre fases é o lead-in, pois D
+## muda. Default seguro: chamadas que ignoram a faixa GOOD (Cortejo/hold) continuam binárias.
+static func band_fractions(duration: float) -> Dictionary:
+	var d: float = maxf(duration, MIN_ACTION_DURATION)
+	# Centro = o mais tarde possível deixando o flanco GOOD + rabo caberem no fim da janela.
+	var center: float = clampf(d - ACTION_TAIL - GOOD_HALF_SPAN, GOOD_HALF_SPAN, d)
+	return {
+		"perfect_start": clampf((center - PERFECT_HALF_SPAN) / d, 0.0, 1.0),
+		"perfect_end":   clampf((center + PERFECT_HALF_SPAN + LATE_GRACE) / d, 0.0, 1.0),
+		"good_start":    clampf((center - GOOD_HALF_SPAN) / d, 0.0, 1.0),
+		"good_end":      clampf((center + GOOD_HALF_SPAN + LATE_GRACE) / d, 0.0, 1.0),
+	}
+
 # ─── Escada de combo (gatilho de recompensa) ───────
 # Quanto maior o streak de perfeitos, mais o combate "estoura": shake, hit-stop,
 # zoom e pitch da recompensa sobem juntos. Escala SÓ parâmetros já baratos (tween,
@@ -213,6 +241,7 @@ const COLOR_EARTH := Color("#3d1f1f")    # terra / trilha
 const COLOR_MOSS := Color("#1a2f1a")     # folhagem / musgo
 const COLOR_BLOOD := Color("#8b0000")    # sangue / dano
 const COLOR_AMBER := Color("#ff6b00")    # destaque / fogo / cue
+const COLOR_GOOD := COLOR_AMBER          # faixa GOOD (bloqueio parcial) — alias semântico
 const COLOR_TEXT := Color("#c9d1d9")     # texto / branco sujo
 
 # Vida (ícones): ativo usa COLOR_BLOOD/COLOR_AMBER; "vazio" = tom apagado translúcido.

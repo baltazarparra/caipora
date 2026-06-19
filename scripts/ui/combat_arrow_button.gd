@@ -103,8 +103,13 @@ var _miss_amount: float = 0.0:
 	set(value):
 		_miss_amount = value
 		queue_redraw()
+var _good_amount: float = 0.0:
+	set(value):
+		_good_amount = value
+		queue_redraw()
 var _perfect_tween: Tween = null
 var _miss_tween: Tween = null
+var _good_tween: Tween = null
 
 # Golpe Carregado: a garra "enche de fogo" enquanto a janela está aberta (espelho
 # visual da bolha de timing — só feedback, sem tocar no contrato de input).
@@ -139,7 +144,7 @@ func configure(plate_rect: Rect2, wedge_center: Vector2, dead_radius: float) -> 
 
 ## Zera o estado visual de press, janela e resultados.
 func clear_feedback() -> void:
-	for tw: Tween in [_release_tween, _ring_tween, _window_tween, _perfect_tween, _miss_tween, _charge_tween]:
+	for tw: Tween in [_release_tween, _ring_tween, _window_tween, _perfect_tween, _miss_tween, _good_tween, _charge_tween]:
 		if tw != null:
 			tw.kill()
 	_press_amount = 0.0
@@ -148,6 +153,7 @@ func clear_feedback() -> void:
 	_window_amount = 0.0
 	_perfect_amount = 0.0
 	_miss_amount = 0.0
+	_good_amount = 0.0
 	_cortejo_charge = 0.0
 
 
@@ -183,6 +189,15 @@ func flash_perfect() -> void:
 	_perfect_amount = 1.0
 	_perfect_tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	_perfect_tween.tween_property(self, "_perfect_amount", 0.0, PERFECT_SECONDS)
+
+
+## Flash âmbar: bloqueio parcial (faixa GOOD), entre o verde do perfeito e o sangue do erro.
+func flash_good() -> void:
+	if _good_tween != null:
+		_good_tween.kill()
+	_good_amount = 1.0
+	_good_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_good_tween.tween_property(self, "_good_amount", 0.0, PERFECT_SECONDS)
 
 
 ## Pulso sangue escuro: erro ou janela expirada (0.10s sine-out).
@@ -281,6 +296,10 @@ func _draw() -> void:
 		var gc := Constants.COLOR_CRYSTAL_GLOW
 		gc.a = _perfect_amount * 0.55
 		draw_rect(_plate_rect.grow(-border_w), gc, true)
+	if _good_amount > 0.001:
+		var ac := Constants.COLOR_GOOD
+		ac.a = _good_amount * 0.45
+		draw_rect(_plate_rect.grow(-border_w), ac, true)
 	if _miss_amount > 0.001:
 		var bc := Constants.COLOR_BLOOD
 		bc.a = _miss_amount * 0.45
