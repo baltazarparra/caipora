@@ -1464,7 +1464,9 @@ a {
    -------------------------------------------------------------- */
 .scrollscene {
   position: relative;
-  height: 250vh;
+  /* A faixa de scrub = altura - 100vh (sticky). 400vh => 300vh de scrub, o
+     DOBRO do 150vh anterior: o golpe final passa em câmera lenta mais longa. */
+  height: 400vh;
   background: var(--bg-void);
 }
 
