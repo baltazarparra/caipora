@@ -28,13 +28,15 @@
   <!-- Nav -->
   <header class="nav" id="nav">
     <div class="nav-inner">
-      <a href="#" class="nav-brand">
-        <img src="assets/sprites/brand_mark.png" alt="" class="nav-brand-icon" width="32" height="32">
-        <span class="nav-brand-text">CAIPORA</span>
+      <a href="#" class="nav-brand" aria-label="Caipora">
+        <img src="assets/sprites/brand_mark.png" alt="Caipora" class="nav-brand-icon" width="64" height="64">
       </a>
       <nav class="nav-links">
-        <a href="#chefes" class="nav-link" data-i18n="nav.bosses">Chefes</a>
-        <a href="#mecanicas" class="nav-link" data-i18n="nav.mechanics">Mecânicas</a>
+        <a href="https://github.com/baltazarparra/caipora" class="nav-github" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+          <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
         <a href="play/" class="btn btn-primary" data-i18n="nav.play">Jogar</a>
         <div class="lang-selector" role="group" aria-label="Language / Idioma">
           <button id="lang-btn-pt" class="lang-btn lang-btn--active" onclick="CaiporaI18n.setLang('pt')" aria-label="Português (Brasil)" title="Português">
@@ -67,19 +69,9 @@
           <img src="assets/sprites/logo_title.png" alt="Caipora" class="hero-title-img">
           <span class="hero-title-fallback">CAIPORA</span>
         </h1>
-        <p class="hero-subtitle" data-i18n="hero.subtitle">A guardiã da mata acordou. E a floresta cobra em sangue. Rogue-like de horror folclórico que roda direto no navegador — sem baixar nada.</p>
         <div class="hero-ctas">
           <a href="play/" class="btn btn-primary btn-lg" data-i18n="hero.cta.play">Jogar agora</a>
-          <a href="https://github.com/baltazarparra/caipora" class="btn btn-ghost" target="_blank" rel="noopener">GitHub</a>
         </div>
-
-        <figure class="hero-clip">
-          <div class="clip-frame">
-            <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
-            <div class="clip" data-clip="combat" role="img" aria-label="Combate real do jogo Caipora rodando no navegador"></div>
-          </div>
-          <figcaption class="clip-caption" data-i18n="clip.combat.caption">Gameplay real — combate por timing, capturado direto do jogo.</figcaption>
-        </figure>
       </div>
     </section>
 
@@ -91,57 +83,6 @@
           <div class="clip clip--scrub" data-clip="finisher" data-scrub
                role="img" aria-label="Golpe final: a garra da Caipora esmaga o coração do inimigo, quadro a quadro controlado pela rolagem"></div>
         </figure>
-        <figcaption class="scrollscene-caption" data-i18n="scrollscene.caption">A garra que esmaga o coração — role para sentir o golpe.</figcaption>
-      </div>
-    </section>
-
-    <!-- Acessibilidade: roguelike de navegador, sem instalar -->
-    <section class="access section-reveal" id="navegador">
-      <div class="access-inner">
-        <span class="section-tag" data-i18n="access.tag">Sem barreiras</span>
-        <h2 class="access-title" data-i18n="access.title">Um roguelike que roda no seu navegador</h2>
-        <p class="access-lead" data-i18n="access.lead">Nada de loja, nada de download, nada de espera. Abre o link e a mata já está te esperando — no celular, no tablet ou no computador.</p>
-        <div class="access-badges">
-          <div class="access-badge">
-            <div class="access-badge-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9Z"/>
-              </svg>
-            </div>
-            <h3 class="access-badge-title" data-i18n="access.b1.title">Qualquer navegador</h3>
-            <p class="access-badge-body" data-i18n="access.b1.body">Chrome, Safari, Firefox. Se abre uma página, roda Caipora.</p>
-          </div>
-          <div class="access-badge">
-            <div class="access-badge-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>
-              </svg>
-            </div>
-            <h3 class="access-badge-title" data-i18n="access.b2.title">Celular e desktop</h3>
-            <p class="access-badge-body" data-i18n="access.b2.body">Controles de toque no celular, teclado no PC. Retrato ou paisagem.</p>
-          </div>
-          <div class="access-badge">
-            <div class="access-badge-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>
-              </svg>
-            </div>
-            <h3 class="access-badge-title" data-i18n="access.b3.title">Sem instalação</h3>
-            <p class="access-badge-body" data-i18n="access.b3.body">Zero download, zero conta obrigatória. Um clique e você está dentro.</p>
-          </div>
-        </div>
-        <a href="play/" class="btn btn-primary btn-lg" data-i18n="access.cta">Jogar no navegador</a>
-      </div>
-    </section>
-
-    <!-- Manifesto -->
-    <section class="manifesto section-reveal" id="manifesto">
-      <div class="manifesto-inner">
-        <div class="manifesto-sprite" aria-hidden="true">
-          <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="" loading="lazy">
-        </div>
-        <h2 class="manifesto-title" data-i18n="manifesto.title">O que dormia na mata não dormia só.</h2>
-        <p class="manifesto-body" data-i18n="manifesto.body">Entre trilhas tortas, rios escuros e capelas abandonadas, os pactos antigos entre humanos, bichos, mortos e encantados se romperam. Caçadores, padres, bruxos e feras corrompidas patrulham o que um dia foi sagrado. A Caipora despertou. E ela não veio para salvar ninguém.</p>
       </div>
     </section>
 
@@ -238,24 +179,6 @@
       </div>
     </section>
 
-    <!-- Invasores -->
-    <section class="invaders section-reveal" id="invasores">
-      <div class="invaders-inner">
-        <div class="invaders-visual" aria-hidden="true">
-          <img src="assets/sprites/inimigos_contact_sheet.png" alt="" loading="lazy">
-        </div>
-        <div class="invaders-content">
-          <span class="section-tag" data-i18n="invaders.tag">Inimigos</span>
-          <h2 class="invaders-title" data-i18n="invaders.title">Os invasores</h2>
-          <p class="invaders-body" data-i18n="invaders.body">Caçadores, bruxos e criaturas corrompidas rondam a mata. Humanos que quebraram os pactos e pagaram com a própria humanidade. Abaixo do chapéu, só fendas vermelhas. Sob o capuz, só brasa mortiça.</p>
-          <div class="invaders-sprites">
-            <img src="assets/sprites/boss_idle.png" alt="" loading="lazy">
-            <img src="assets/sprites/boss_windup.png" alt="" loading="lazy" aria-hidden="true">
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Mecânicas -->
     <section class="mechanics section-reveal" id="mecanicas">
       <div class="mechanics-inner">
@@ -274,86 +197,6 @@
             <li data-i18n="mechanics.li2">Roguelike procedural</li>
             <li data-i18n="mechanics.li3">Horror folclórico brasileiro</li>
           </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- Clímax: os dois instantes finais, em destaque -->
-    <section class="climax section-reveal" id="climax">
-      <div class="climax-inner">
-        <header class="climax-header">
-          <span class="section-tag" data-i18n="climax.tag">O clímax</span>
-          <h2 class="climax-title" data-i18n="climax.title">Toda caçada termina em sangue</h2>
-          <p class="climax-lead" data-i18n="climax.lead">Os dois instantes que selam o destino da mata — capturados direto do jogo.</p>
-        </header>
-
-        <!-- Momento 1: o golpe final — esmagar o coração -->
-        <article class="moment">
-          <div class="moment-visual moment-visual--portrait">
-            <figure class="clip-frame">
-              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
-              <div class="clip" data-clip="finisher" role="img" aria-label="Golpe final: a garra da Caipora esmaga o coração do inimigo em câmera lenta"></div>
-            </figure>
-          </div>
-          <div class="moment-content">
-            <span class="moment-kicker" data-i18n="climax.finish.kicker">O golpe final</span>
-            <h3 class="moment-title" data-i18n="climax.finish.title">A garra que esmaga o coração</h3>
-            <p class="moment-body" data-i18n="climax.finish.body">No último golpe, o tempo racha. A garra negra da Caipora atravessa o peito do invasor, agarra o coração e aperta até drenar — em câmera lenta, quadro a quadro. A mata cobra com as próprias mãos.</p>
-          </div>
-        </article>
-
-        <!-- Momento 2: a escolha final -->
-        <article class="moment moment--reverse">
-          <div class="moment-visual moment-visual--wide">
-            <figure class="clip-frame clip-frame--still">
-              <span class="clip-badge clip-badge--static" data-i18n="climax.choice.kicker">A escolha final</span>
-              <img src="assets/screenshots/shot_choice.png" alt="A escolha final: a Caipora decide poupar ou executar o Jesuíta caído sob o vitral da igreja" loading="lazy">
-            </figure>
-          </div>
-          <div class="moment-content">
-            <span class="moment-kicker" data-i18n="climax.choice.kicker">A escolha final</span>
-            <h3 class="moment-title" data-i18n="climax.choice.title">Poupar — ou arrancar</h3>
-            <p class="moment-body" data-i18n="climax.choice.body">O catequizador tomba sob o vitral da própria igreja. Ele ainda respira. A floresta inteira aguarda a sua resposta: a misericórdia que custa a vida da Caipora, ou o fim que faz a mata seguir respirando. A decisão é só sua.</p>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- Galeria -->
-    <section class="gallery section-reveal" id="galeria">
-      <div class="gallery-inner">
-        <header class="gallery-header">
-          <span class="section-tag" data-i18n="gallery.tag">Galeria</span>
-          <h2 class="gallery-title" data-i18n="gallery.title">Fragmentos da floresta</h2>
-        </header>
-        <div class="clips-grid">
-          <figure class="clip-card">
-            <div class="clip-frame">
-              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
-              <div class="clip" data-clip="combat" role="img" aria-label="Combate na arena de Caipora"></div>
-            </div>
-            <figcaption class="clip-caption" data-i18n="clip.combat.short">Combate na arena</figcaption>
-          </figure>
-          <figure class="clip-card">
-            <div class="clip-frame">
-              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
-              <div class="clip" data-clip="furia" role="img" aria-label="Fúria máxima: aura de fogo envolvendo a Caipora"></div>
-            </div>
-            <figcaption class="clip-caption" data-i18n="clip.furia.short">Fúria máxima — aura de fogo</figcaption>
-          </figure>
-          <figure class="clip-card">
-            <div class="clip-frame">
-              <span class="clip-badge" data-i18n="clip.live">Ao vivo</span>
-              <div class="clip" data-clip="boss" role="img" aria-label="Encontro com chefe: a Mula sem Cabeça"></div>
-            </div>
-            <figcaption class="clip-caption" data-i18n="clip.boss.short">Frente a frente com os chefes</figcaption>
-          </figure>
-        </div>
-
-        <div class="gallery-stills">
-          <img src="assets/screenshots/shot_menu.png" alt="Menu principal de Caipora" loading="lazy">
-          <img src="assets/sprites/caipora_pop_dark_contact_sheet.png" alt="Sprites da protagonista Caipora" loading="lazy" class="gallery-still-sprite">
-          <img src="assets/screenshots/shot_ending.png" alt="Ending cinematográfico de Caipora" loading="lazy">
         </div>
       </div>
     </section>

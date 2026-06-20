@@ -45,6 +45,11 @@ var _cell: Vector2i = Vector2i.ZERO
 ## slow-mo da garra esmagando o coração começa) para amostrar SÓ a partir dele.
 var _death_seen: bool = false
 var _death_frame: int = 0
+## Finisher: anel rolante com os últimos `_lead_target` frames ANTES da morte (o
+## lance que leva ao baque). Semeia _captured no instante da morte, alongando a
+## tira p/ uma fatia maior da cena (≈ dobro da duração). 0 = sem lead-in.
+var _ring: Array[Image] = []
+var _lead_target: int = 0
 
 
 func _initialize() -> void:
@@ -106,20 +111,31 @@ func _effective_warmup() -> int:
 ## ANTES do fade de vitória (que sujaria as últimas células).
 func _process_finisher() -> bool:
 	if not _death_seen:
+		# Lead-in: enquanto o inimigo está vivo, mantém um anel com os últimos
+		# `_lead_target` frames (o lance que antecede o golpe), na MESMA cadência
+		# do slow-mo, p/ a tira começar antes do baque.
+		if _lead_target > 0 and _frames > _effective_warmup() and _frames % _sample == 0:
+			_ring.append(_grab_image())
+			if _ring.size() > _lead_target:
+				_ring.pop_front()
 		var combat_over: bool = _scene != null and bool(_scene.get("_combat_over"))
 		if _frames > _effective_warmup() and combat_over:
 			_death_seen = true
 			_death_frame = _frames
+			# Semeia _captured com o lead-in bufferizado (cena antes da morte).
+			_captured.append_array(_ring)
+			_ring.clear()
 		elif _frames > _effective_warmup() + 4000:
 			push_error("[capture] finisher: inimigo não morreu a tempo")
 			quit(1)
 			return true
 		return false
 
+	var target: int = _lead_target + _target_frames
 	var since: int = _frames - _death_frame
 	if since > 0 and since % _sample == 0:
 		_grab_frame()
-		if _captured.size() >= _target_frames:
+		if _captured.size() >= target:
 			_build_strip()
 			print("[capture] finisher: %d frames -> %s" % [_captured.size(), _out])
 			return true
@@ -162,6 +178,9 @@ func _setup() -> void:
 			# Inimigo com POUCO HP: morre no golpe perfeito e dispara o FINISHER — a
 			# garra preta esmagando o coração em câmera lenta (PRD do golpe final).
 			# Dano 1, mas a Caipora está invencível (9999): o foco é o clímax.
+			# Lead-in = mesmo nº de células do slow-mo: a tira começa no lance que
+			# antecede o golpe, dobrando a fatia capturada da cena.
+			_lead_target = _target_frames
 			_override_enemy("cacador", 1, 6)
 			gs.active_combat_is_boss = false
 			_scene = _instantiate("res://scenes/arena/arena.tscn")
@@ -232,6 +251,13 @@ func _tap(action: String) -> void:
 
 # ─── Captura + montagem ────────────────────────────────────────────
 func _grab_frame() -> void:
+	_captured.append(_grab_image())
+
+
+## Captura + normaliza UM frame do viewport (resize p/ a célula, RGBA8, ganho de
+## exposição). Devolve a Image pronta — usada tanto pelo _captured quanto pelo
+## anel de lead-in do finisher.
+func _grab_image() -> Image:
 	var img: Image = root.get_texture().get_image()
 	if _cell == Vector2i.ZERO:
 		_cell = Vector2i(img.get_width(), img.get_height())
@@ -241,7 +267,7 @@ func _grab_frame() -> void:
 		img.convert(Image.FORMAT_RGBA8)
 	if _gain != 1.0:
 		_apply_gain(img)
-	_captured.append(img)
+	return img
 
 
 ## Multiplica RGB pelo ganho (preto continua preto, ação iluminada aparece). Alpha

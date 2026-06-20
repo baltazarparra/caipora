@@ -286,17 +286,10 @@ a {
 }
 
 .nav-brand-icon {
-  width: 32px;
-  height: 32px;
+  width: 64px;
+  height: 64px;
   image-rendering: pixelated;
   filter: drop-shadow(0 0 8px rgba(255, 69, 0, 0.35));
-}
-
-.nav-brand-text {
-  font-family: var(--font-display);
-  font-size: 0.75rem;
-  color: var(--text-primary);
-  letter-spacing: 0.1em;
 }
 
 .nav-links {
@@ -324,13 +317,31 @@ a {
   display: none;
 }
 
+.nav-github {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
+}
+
+.nav-github:hover {
+  color: var(--accent-flame);
+  opacity: 1;
+  transform: scale(1.08);
+}
+
 .lang-selector {
   display: flex;
-  align-items: center;
-  gap: 2px;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 4px;
 }
 
 .lang-btn {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
   background: none;
   border: 1px solid transparent;
   cursor: pointer;
@@ -358,6 +369,8 @@ a {
 
 .flag-img {
   display: block;
+  height: 100%;
+  width: auto;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
