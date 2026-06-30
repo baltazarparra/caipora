@@ -4,6 +4,11 @@ GODOT   ?= $(HOME)/.local/bin/godot
 PROJECT := .
 GODOT_USER_DATA_DIR ?= /tmp/caipora-godot-data
 GODOT_HEADLESS_ENV := XDG_DATA_HOME=$(GODOT_USER_DATA_DIR)
+# Os modelos de exportação vivem sob o XDG_DATA_HOME real do desenvolvedor. Como
+# os alvos headless redirecionam XDG_DATA_HOME para isolar o user://, o Godot
+# procuraria os modelos dentro do sandbox e não os acharia. O alvo `export`
+# faz um symlink do dir real para dentro do sandbox antes de exportar.
+GODOT_TEMPLATES_SRC ?= $(HOME)/.local/share/godot/export_templates
 
 .PHONY: help smoke test import export gate audio audio-check audio-budget
 
@@ -34,6 +39,9 @@ export: ## build the reproducible HTML5 release
 	DATE=$$(date -u +%F); \
 	printf '# GERADO por `make export` — NÃO editar à mão. Versão alpha-X.Y.Z derivada do git\n# (Z = contagem de commits) e lida pelo menu (main_menu._resolve_version). Gitignored;\n# recriado a cada build.\nextends RefCounted\n\nconst VERSION := "%s"\nconst BUILD := "%s"\nconst DATE := "%s"\n' "$$VERSION" "$$SHA" "$$DATE" > scripts/core/build_info.gd; \
 	echo "build_info.gd -> $$VERSION ($$SHA, $$DATE)"; \
+	if [ ! -d "$(GODOT_TEMPLATES_SRC)" ]; then echo "ERRO: modelos de exportacao ausentes em $(GODOT_TEMPLATES_SRC) (instale via Editor > Gerenciar Modelos de Exportacao, ou defina GODOT_TEMPLATES_SRC=/caminho)" >&2; exit 1; fi; \
+	mkdir -p "$(GODOT_USER_DATA_DIR)/godot"; \
+	ln -sfn "$(GODOT_TEMPLATES_SRC)" "$(GODOT_USER_DATA_DIR)/godot/export_templates"; \
 	$(GODOT_HEADLESS_ENV) $(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html; \
 	cp html/update-notifier.js export/; \
 	printf '{"version":"%s","build":"%s","date":"%s"}\n' "$$VERSION" "$$SHA" "$$DATE" > export/version.json; \
