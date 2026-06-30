@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '\\\\wsl.localhost\\Ubuntu\\home\\baltz\\caipora\\.codex\\hooks\\pre-commit-gate.sh'",
-            "timeout": 120
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/pre-commit-gate.sh\"",
+            "timeout": 600
           }
         ]
       }

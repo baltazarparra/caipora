@@ -2,18 +2,23 @@
 # Override the Godot binary with: make test GODOT=/path/to/godot
 GODOT   ?= $(HOME)/.local/bin/godot
 PROJECT := .
+GODOT_USER_DATA_DIR ?= /tmp/caipora-godot-data
+GODOT_HEADLESS_ENV := XDG_DATA_HOME=$(GODOT_USER_DATA_DIR)
 
-.PHONY: help smoke test export gate audio audio-check audio-budget
+.PHONY: help smoke test import export gate audio audio-check audio-budget
 
 help: ## list available targets
 	@grep -hE '^[a-z]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | sort
 
 smoke: ## boot the game headless for ~50 frames and exit (smoke test)
-	timeout 60 $(GODOT) --headless --path $(PROJECT) --quit-after 50
+	$(GODOT_HEADLESS_ENV) timeout 60 $(GODOT) --headless --path $(PROJECT) --quit-after 50
 
 test: ## run the GUT regression gate
-	$(GODOT) --headless --path $(PROJECT) -s res://addons/gut/gut_cmdln.gd \
+	$(GODOT_HEADLESS_ENV) $(GODOT) --headless --path $(PROJECT) -s res://addons/gut/gut_cmdln.gd \
 		-gdir=res://tests/unit -gprefix=test_ -gsuffix=.gd -gexit
+
+import: ## refresh Godot import/class cache after adding class_name scripts
+	$(GODOT_HEADLESS_ENV) $(GODOT) --headless --path $(PROJECT) --import
 
 # Versão do jogo: alpha-X.Y.Z. A base alpha-X.Y vem do config/version do project.godot
 # (fonte única — bump de MAJOR/MINOR é lá); Z é a contagem de commits do git e
@@ -29,14 +34,14 @@ export: ## build the reproducible HTML5 release
 	DATE=$$(date -u +%F); \
 	printf '# GERADO por `make export` — NÃO editar à mão. Versão alpha-X.Y.Z derivada do git\n# (Z = contagem de commits) e lida pelo menu (main_menu._resolve_version). Gitignored;\n# recriado a cada build.\nextends RefCounted\n\nconst VERSION := "%s"\nconst BUILD := "%s"\nconst DATE := "%s"\n' "$$VERSION" "$$SHA" "$$DATE" > scripts/core/build_info.gd; \
 	echo "build_info.gd -> $$VERSION ($$SHA, $$DATE)"; \
-	$(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html; \
+	$(GODOT_HEADLESS_ENV) $(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html; \
 	cp html/update-notifier.js export/; \
 	printf '{"version":"%s","build":"%s","date":"%s"}\n' "$$VERSION" "$$SHA" "$$DATE" > export/version.json; \
 	echo "version.json -> $$VERSION ($$SHA, $$DATE)"
 
 audio: ## regenerate all procedural audio, reimport and verify loudness
 	python3 scripts/tools/gen_sfx.py
-	$(GODOT) --headless --path $(PROJECT) --import
+	$(GODOT_HEADLESS_ENV) $(GODOT) --headless --path $(PROJECT) --import
 	python3 scripts/tools/check_audio.py
 
 audio-check: ## verify assets/audio against the loudness standard (PRD-audio-v2 §3)
