@@ -197,21 +197,35 @@ doc Anthropic no projeto apontam para `docs.anthropic.com` (agora 301 →
 | 3 | Skills viram symlink p/ `.agents/skills/` + registra `visual-identity` | `.claude/skills/*` | ✅ versionado |
 | 4 | Allow-list ~95→40, consolidada | `.claude/settings.local.json` | gitignored |
 | 5 | Removido `mcp__godot__add_node` do allow (alinha ao `.mcp.json` + gotcha #7) | `.claude/settings.local.json` | gitignored |
+| 6 | **Downgrade Supabase**: `execute_sql`/`apply_migration`/`deploy_edge_function` saem do allow → prompt-por-chamada (prod compartilhada); só read-only em auto (Achado #3) | `.claude/settings.local.json` | gitignored |
+| 7 | **Slim do `session-orient`**: lê só a seção de milestones do `PLAN.md` via grep de header, não o arquivo (~1000 linhas) — just-in-time (Achado #5) | `.agents/skills/session-orient/SKILL.md` | ✅ versionado |
+| 8 | **`.claude/rules/`** path-scoped (Claude-only, não fragmenta o `AGENTS.md` cross-harness): `combat-timing`, `remote-config`, `audio` — auto-surgem ao tocar os arquivos do subsistema (Achado #4, parcial) | `.claude/rules/*.md` | ✅ versionado |
+| 9 | **Guard do gotcha #12** reframado de Stop hook → **teste GUT** `test_every_test_file_compiles` (roda no gate; valida: verde no limpo, vermelho com arquivo quebrado) | `tests/unit/test_suite_integrity.gd` | ✅ versionado |
+
+> **Sobre `.claude/rules/` vs mover os gotchas:** o mapeamento confirmou que o
+> `.codex/` (Codex) lê o `AGENTS.md` nativamente mas **não** lê `.claude/rules/`.
+> Logo, mover conteúdo dos gotchas para `.claude/rules/` **fragmentaria** a fonte
+> única cross-harness. Decisão: `AGENTS.md` continua canônico/cross-harness; as
+> `.claude/rules/` são **enhancement só do Claude Code** (ponteiros estáveis +
+> comandos a rodar, sem números de gotcha porque a numeração está em fluxo).
 
 ---
 
 ## 6. Recomendações pendentes (priorizadas)
 
 1. **Rotacionar a chave SSH** (Achado #1) — ação do usuário.
-2. **Downgrade das permissões de escrita do Supabase** para prompt (Achado #3) —
-   aplico se autorizar.
-3. **Migrar gotchas #15–20 para `.claude/rules/` + skills** e enxugar o `AGENTS.md`
-   raiz (Achado #4) — refator de ~1 sessão, alto retorno em orçamento de contexto.
-4. **Slim no `session-orient`**: ler só o milestone atual de `PLAN.md` (Achado #5).
-5. **Stop hook de verificação**: assert que a contagem de testes subiu (mata o gotcha
-   #12) e/ou gate verde antes de declarar pronto.
-6. **Definir subagents** (`reviewer` read-only, `Explore`) (Achado #9).
-7. **Cosméticos**: reordenar gotchas #19/#20; atualizar links → `code.claude.com`.
+2. **Enxugar o `AGENTS.md` raiz** (Achado #4, parte restante) — **adiado de propósito**:
+   o `AGENTS.md` está sendo editado ao vivo nesta sessão (gotchas renumerados p/ 1–21,
+   #18 reescrito). Fazer agora colidiria. As `.claude/rules/` já surgem o essencial em
+   edit-time; quando a curadoria dos gotchas estabilizar, condensar os blocos de
+   subsistema (#15–20) para entradas curtas + ponteiro para os PRDs.
+3. **Definir subagents** (`reviewer` read-only) (Achado #9) — opcional; hoje
+   `/code-review` cobre o caso.
+4. **Cosméticos**: reordenar gotchas #19/#20; atualizar links → `code.claude.com`
+   (provavelmente já resolvido na curadoria em andamento do `AGENTS.md`).
+5. **`.codex/` (Codex)**: o hook gêmeo sempre sai 0 (não bloqueia). Verificar se o
+   protocolo de hook do Codex suporta bloqueio — fora do escopo desta revisão (você
+   está editando `.codex/` em paralelo).
 
 ---
 

@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 Executa o Session Protocol do projeto caipora:
 
-1. Ler `PLAN.md` — identificar o milestone atual e o item mais prioritário incompleto
+1. Ler **só a seção de milestones** do `PLAN.md` (não o arquivo inteiro, ~1000 linhas — é orçamento de contexto): rode `grep -n '^## ' PLAN.md` para achar os limites de `## 11. Milestones` até a próxima `## `, leia **apenas esse range**, e identifique o **primeiro milestone incompleto** (🚧 ou itens `[ ]`). Consulte `## 11.1 Known Issues` só se relevante.
 2. Checar `git status` — verificar estado do repositório
 3. Rodar `make smoke` — abortar se falhar (não tocar em nada com smoke quebrado)
 4. Selecionar **UMA task** (a mais prioritária incompleta do milestone atual em PLAN.md)
