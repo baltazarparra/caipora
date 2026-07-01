@@ -72,6 +72,10 @@ const STRINGS: Dictionary = {
 	&"boss.curupira.name":      "CURUPIRA",
 	&"boss.saci.name":          "SACI",
 	&"boss.jesuita.name":       "JESUÍTA BANDEIRANTE CATEQUIZADOR",
+	&"enemy.cacador.name":      "CAÇADOR",
+	&"enemy.bruxo.name":        "BRUXO",
+	&"enemy.criatura.name":     "CRIATURA",
+	&"enemy.assombracao.name":  "ASSOMBRAÇÃO",
 
 	&"dlg.mula.1":              "Vim terminar o que comecei.",
 	&"dlg.mula.2":              "...",

@@ -29,6 +29,7 @@ var run_seed: int = 0
 var defeated_enemy_ids: Array[String] = []
 var active_map_enemy_id: String = ""
 var active_combat_is_boss: bool = false
+var active_combat_name: String = ""  # nome real da criatura/boss em combate (HUD)
 # Fase 5: os "monstros" são os 4 chefes convertidos, roteados como COMUNS (sem
 # cerimonial), mas devem manter o HP de chefe da própria cena. Quando true, o
 # ArenaManager NÃO sobrescreve o HP pelo uniforme da banda de fase. Volátil.
@@ -48,6 +49,7 @@ func start_run() -> void:
 	defeated_enemy_ids.clear()  # inimigos renascem a cada run (sem persistência entre runs)
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
+	active_combat_name = ""
 	active_combat_keeps_own_hp = false
 	herb_taken = false
 	player_map_pos = Vector2i(-1, -1)

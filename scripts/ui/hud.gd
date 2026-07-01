@@ -150,9 +150,24 @@ func _setup_enemy_bar(max_health: float, is_boss: bool) -> void:
 		Constants.COLOR_AMBER,
 		Constants.COLOR_ARENA_BG,
 		Constants.COLOR_AMBER.darkened(0.15),
-		Lang.t(&"hud.enemy"),
+		_enemy_label(),
 		is_boss
 	)
+
+## Nome da barra do inimigo: nome real da criatura/boss (via GameState), com fallback.
+func _enemy_label() -> String:
+	var n := GameState.active_combat_name
+	return n if not n.is_empty() else Lang.t(&"hud.enemy")
+
+## Resolve o nome por id (boss.<id>.name → enemy.<id>.name → hud.enemy). Lang.t devolve a
+## própria chave quando ausente — usamos isso p/ detectar o miss e cair no fallback.
+static func resolve_enemy_name(enemy_id: StringName) -> String:
+	for prefix: String in ["boss.", "enemy."]:
+		var key := StringName("%s%s.name" % [prefix, enemy_id])
+		var s := Lang.t(key)
+		if s != String(key):
+			return s
+	return Lang.t(&"hud.enemy")
 
 # ─── Signal handlers ───────────────────────────────
 func _on_caipora_health_changed(new_health: float, max_health: float) -> void:

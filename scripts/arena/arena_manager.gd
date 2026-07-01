@@ -338,6 +338,7 @@ func _spawn_enemy() -> void:
 	_enemy.position = ArenaFraming.enemy_pos(get_viewport().get_visible_rect().size)
 	add_child(_enemy)
 	_enemy_id = EnemyStats.id_for(_enemy)
+	GameState.active_combat_name = Hud.resolve_enemy_name(_enemy_id)
 	var hp: int = EnemyStats.max_hp_for(_enemy_id, GameState.active_phase)
 	_enemy.health.max_health = hp
 	_enemy.health.current_health = float(hp)
