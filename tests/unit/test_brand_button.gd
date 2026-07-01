@@ -23,3 +23,11 @@ func test_hero_gets_min_size() -> void:
 func test_label_assignment() -> void:
 	_btn.label = "DESPERTAR"
 	assert_eq(_btn.label, "DESPERTAR")
+
+func test_press_lunges_and_release_returns() -> void:
+	_btn.button_down.emit()
+	assert_eq(_btn.scale, Vector2(Constants.CHROME_PRESS_SCALE, Constants.CHROME_PRESS_SCALE),
+		"press dá o bote (escala)")
+	_btn.button_up.emit()
+	await wait_seconds(Constants.CHROME_PRESS_SECS + 0.1)
+	assert_almost_eq(_btn.scale.x, 1.0, 0.01, "release volta ao repouso")

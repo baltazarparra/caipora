@@ -23,7 +23,7 @@ var _fade: ColorRect
 var _logo: TextureRect
 var _scrim: ColorRect
 var _title: RichTextLabel
-var _start_button: StartButton
+var _start_button: BrandButton
 var _options_button: Button
 var _options_panel: OptionsPanel
 var _footer: MarginContainer
@@ -111,8 +111,9 @@ func _setup_logo() -> void:
 	_schedule_blink()
 
 func _setup_start_button() -> void:
-	_start_button = StartButton.new()
-	_start_button.text = Lang.t(&"menu.start")
+	_start_button = BrandButton.new()
+	_start_button.variant = BrandButton.Variant.HERO
+	_start_button.label = Lang.t(&"menu.start")
 	_start_button.pressed.connect(_on_start_pressed)
 	_start_button.focus_entered.connect(AudioDirector.play_ui_hover)
 	_start_button.mouse_entered.connect(AudioDirector.play_ui_hover)
@@ -295,7 +296,7 @@ func _on_select_en() -> void:
 
 func _on_language_changed(_lang: StringName) -> void:
 	if is_instance_valid(_start_button):
-		_start_button.text = Lang.t(&"menu.start")
+		_start_button.label = Lang.t(&"menu.start")
 	if is_instance_valid(_options_button):
 		_options_button.text = Lang.t(&"options.title")
 	if is_instance_valid(_update_banner):

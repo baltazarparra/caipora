@@ -22,13 +22,14 @@ func test_menu_has_no_removed_exit_control_or_string() -> void:
 
 func test_menu_uses_hero_start_button_and_options_panel() -> void:
 	await _instantiate_menu()
-	assert_true(_menu._start_button is StartButton, "Iniciar virou botao-heroi")
-	assert_eq(_menu._start_button.text, "DESPERTAR")
+	assert_true(_menu._start_button is BrandButton, "Iniciar é o botao-herói do kit")
+	assert_eq(_menu._start_button.variant, BrandButton.Variant.HERO)
+	assert_eq(_menu._start_button.label, "DESPERTAR")
 	assert_not_null(_menu._options_panel, "OptionsPanel mora na tela inicial")
 	assert_eq(_menu._options_button.text, "OPÇÕES")
 
 func test_start_button_label_updates_with_language() -> void:
 	await _instantiate_menu()
 	Lang.set_language(Lang.LANG_EN)
-	assert_eq(_menu._start_button.text, "AWAKEN")
+	assert_eq(_menu._start_button.label, "AWAKEN")
 	assert_eq(_menu._options_button.text, "OPTIONS")

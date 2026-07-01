@@ -3,8 +3,8 @@ extends RefCounted
 
 # "Chrome da Mata" — vocabulário de desenho compartilhado da UI: placa serrilhada,
 # borda dura, garras-chevron e brasa âmbar. Funções estáticas chamadas no _draw() de
-# qualquer CanvasItem (BrandButton, BrandPanel, HudHeader, StartButton...). Extraído de
-# start_button.gd; a geometria vive em Constants.CHROME_*.
+# qualquer CanvasItem (BrandButton, BrandPanel, HudHeader...). A geometria vive em
+# Constants.CHROME_*.
 
 const EMBER_ROWS := 3
 const CLAW_STRING := ">>"

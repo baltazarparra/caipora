@@ -5,7 +5,7 @@ extends BaseButton
 # hoje espalhados (theme nativo, StyleBoxFlat inline, _draw() ad-hoc). Todo desenho vem de
 # BrandFrame; cores de Constants; estados lit/pressed do vocabulário do chrome.
 #
-#  HERO    — placa completa + garras + brasa + rótulo (o antigo StartButton).
+#  HERO    — placa completa + garras + brasa + rótulo (o botão-herói da tela inicial).
 #  PRIMARY — placa + rótulo (ação padrão de menu/painel).
 #  GHOST   — só a moldura serrilhada (fundo transparente) + rótulo.
 #  FLAG    — como PRIMARY, pensado pequeno (bandeiras/toggles); o dono dimensiona.
@@ -41,14 +41,26 @@ func _ready() -> void:
 	mouse_exited.connect(func() -> void: _set_lit(has_focus()))
 	focus_entered.connect(func() -> void: _set_lit(true))
 	focus_exited.connect(func() -> void: _set_lit(is_hovered()))
-	button_down.connect(func() -> void: _pressed_lit = true; queue_redraw())
-	button_up.connect(func() -> void: _pressed_lit = false; queue_redraw())
+	button_down.connect(_on_button_down)
+	button_up.connect(_on_button_up)
 	if variant == Variant.HERO:
 		_start_breath()
 
 func _exit_tree() -> void:
 	if _breath != null:
 		_breath.kill()
+
+## "Bote" do chrome: press escala (não afunda), release volta num tween curto.
+func _on_button_down() -> void:
+	_pressed_lit = true
+	pivot_offset = size * 0.5
+	scale = Vector2(Constants.CHROME_PRESS_SCALE, Constants.CHROME_PRESS_SCALE)
+	queue_redraw()
+
+func _on_button_up() -> void:
+	_pressed_lit = false
+	create_tween().tween_property(self, "scale", Vector2.ONE, Constants.CHROME_PRESS_SECS)
+	queue_redraw()
 
 func _set_lit(value: bool) -> void:
 	_lit = value
@@ -58,8 +70,8 @@ func _start_breath() -> void:
 	if _breath != null:
 		_breath.kill()
 	_breath = create_tween().set_loops()
-	_breath.tween_property(self, "_ember_alpha", 0.62, 1.3)
-	_breath.tween_property(self, "_ember_alpha", 0.32, 1.3)
+	_breath.tween_property(self, "_ember_alpha", 0.62, Constants.CHROME_BREATH_SECS)
+	_breath.tween_property(self, "_ember_alpha", 0.32, Constants.CHROME_BREATH_SECS)
 
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
@@ -97,8 +109,10 @@ func _draw_label(inner: Rect2, color: Color) -> void:
 		return
 	var font := get_theme_default_font()
 	var fs := int(clampf(inner.size.y * 0.27, float(Constants.FONT_SM), 26.0))
+	# HERO divide o espaço com as garras >>/<< — orçamento de largura mais apertado.
+	var budget := 0.58 if variant == Variant.HERO else 0.9
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs).x
-	while width > inner.size.x * 0.9 and fs > Constants.FONT_SM:
+	while width > inner.size.x * budget and fs > Constants.FONT_SM:
 		fs -= 1
 		width = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs).x
 	var pos := Vector2(inner.position.x + (inner.size.x - width) * 0.5,
