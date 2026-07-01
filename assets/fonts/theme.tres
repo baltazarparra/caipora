@@ -86,10 +86,10 @@ bg_color = Color(0.545, 0.165, 0, 1)
 
 [resource]
 default_font = ExtResource("1_font")
-default_font_size = 16
+default_font_size = 18
 Button/colors/font_color = Color(0.788, 0.82, 0.851, 1)
-Button/colors/font_hover_color = Color(1, 0.271, 0, 1)
-Button/colors/font_pressed_color = Color(1, 0.271, 0, 1)
+Button/colors/font_hover_color = Color(1, 0.419608, 0, 1)
+Button/colors/font_pressed_color = Color(1, 0.419608, 0, 1)
 Button/colors/font_focus_color = Color(0.788, 0.82, 0.851, 1)
 Button/colors/font_disabled_color = Color(0.353, 0.353, 0.353, 0.7)
 Button/font_sizes/font_size = 18
@@ -99,10 +99,11 @@ Button/styles/pressed = SubResource("btn_pressed")
 Button/styles/focus = SubResource("btn_focus")
 Button/styles/disabled = SubResource("btn_disabled")
 Label/colors/font_color = Color(0.788, 0.82, 0.851, 1)
+Label/font_sizes/font_size = 18
 LinkButton/colors/font_color = Color(0.788, 0.82, 0.851, 1)
-LinkButton/colors/font_hover_color = Color(1, 0.271, 0, 1)
+LinkButton/colors/font_hover_color = Color(1, 0.419608, 0, 1)
 LinkButton/colors/font_pressed_color = Color(0.545, 0, 0, 1)
-LinkButton/font_sizes/font_size = 14
+LinkButton/font_sizes/font_size = 12
 Panel/styles/panel = SubResource("panel_bg")
 PanelContainer/styles/panel = SubResource("panel_bg")
 ProgressBar/styles/background = SubResource("progress_bg")

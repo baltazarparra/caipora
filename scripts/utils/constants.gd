@@ -254,6 +254,7 @@ const COLOR_BLOOD := Color("#8b0000")    # sangue / dano
 const COLOR_AMBER := Color("#ff6b00")    # destaque / fogo / cue
 const COLOR_GOOD := COLOR_AMBER          # faixa GOOD (bloqueio parcial) — alias semântico
 const COLOR_TEXT := Color("#c9d1d9")     # texto / branco sujo
+const COLOR_TEXT_DIM := Color(0.494, 0.514, 0.541) # texto secundário: versão, rodapé, legendas
 
 # Vida (ícones): ativo usa COLOR_BLOOD/COLOR_AMBER; "vazio" = tom apagado translúcido.
 const COLOR_BLOOD_EMPTY := Color(0.25, 0.04, 0.04, 0.35)
@@ -381,6 +382,34 @@ const UI_CORNER_RADIUS := 0
 const UI_BORDER_WIDTH := 2
 const UI_PADDING_H := 20  # padding horizontal interno de botões/painéis
 const UI_PADDING_V := 12  # padding vertical interno
+
+# ─── Camadas canônicas de UI (z-order único; substitui os layers soltos por tela) ───
+# Regra: nada de leitura crítica abaixo de LAYER_HUD (o Atmosphere vive em LAYER_ATMOSPHERE).
+const LAYER_WORLD := 0
+const LAYER_WORLD_BEACON := 9
+const LAYER_ATMOSPHERE := 50
+const LAYER_HUD := 52
+const LAYER_DPAD := 55
+const LAYER_STORY := 58
+const LAYER_OVERLAY := 60
+const LAYER_TRANSITION := 100
+const LAYER_DEBUG := 127
+
+# ─── Escala tátil do HUD: 2x em telefone-retrato (política única entre telas) ───
+const HUD_TOUCH_SCALE := 2.0
+static func hud_touch_scale(vp: Vector2) -> float:
+	return HUD_TOUCH_SCALE if is_portrait(vp) else 1.0
+
+# ─── Safe-area única (recuos lateral/topo em px de canvas; substitui as 3 fórmulas) ───
+## Deriva do lado curto do viewport. Retorna Vector2(lateral, topo).
+static func safe_insets(vp: Vector2) -> Vector2:
+	var s := minf(vp.x, vp.y)
+	return Vector2(clampf(s * 0.055, 40.0, 80.0), clampf(s * 0.05, 28.0, 64.0))
+
+# ─── Chrome autoral (placa serrilhada + garra — geometria vinda do StartButton/D-pad) ───
+const CHROME_SAW_STEP := 18.0
+const CHROME_SAW_DEPTH := 8.0
+const CHROME_CLAW_INSET := 6.0
 
 # ─── Fase 2 ────────────────────────────────────────
 # Toda janela de ação (ataque e defesa) encurta 0.1s — a floresta fica mais
