@@ -280,10 +280,13 @@ func spawn_result_label(label_key: StringName, at_position: Vector2) -> void:
 ## não interrupção: combate reativo (modelo Expedition 33) não pode perder o foco.
 ## Por isso cor apagada + alpha baixo + fade rápido; o contorno garante leitura sob
 ## o CanvasModulate escuro (gotcha #13) sem precisar de preenchimento berrante.
+## Legibilidade: o tamanho/alpha antigos (10 / 0.5) ficavam ilegíveis em combate (world-space,
+## sujeito ao zoom da câmera + vinheta). Subidos para leitura mantendo o caráter periférico
+## (fade rápido, ancorado no inimigo fora do centro).
 const MOVE_NAME_FONT: String = "res://assets/fonts/PressStart2P.ttf"
-const MOVE_NAME_SIZE: int = 10
-const MOVE_NAME_COLOR: Color = Color(0.82, 0.78, 0.72)  # cinza-osso apagado
-const MOVE_NAME_ALPHA: float = 0.5
+const MOVE_NAME_SIZE: int = 16
+const MOVE_NAME_COLOR: Color = Color(0.9, 0.86, 0.78)  # osso claro (mais contraste)
+const MOVE_NAME_ALPHA: float = 0.85
 
 func spawn_move_name(text: String, at_position: Vector2) -> void:
 	if text.strip_edges().is_empty():
