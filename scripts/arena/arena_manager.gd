@@ -369,7 +369,7 @@ func _start_caipora_turn() -> void:
 	var move: Dictionary = Constants.CAIPORA_MOVE_DOUBLE if _is_double_attack else Constants.CAIPORA_MOVE_NORMAL
 	if not _sfx.play_named(move["audio"]):
 		_sfx.play(_sfx.attack_sound)
-	_feedback.spawn_move_name(Lang.t(move["name_key"]), _caipora.position + Vector2(0, -64.0))
+	_feedback.spawn_move_name(Lang.t(move["name_key"]), _caipora.position + Vector2(0, -64.0), _move_name_rect())
 	_feedback.spawn_attack_vfx(move["vfx"], _caipora.position + Vector2(0, -20.0))
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
 	_animator.play_pose(_caipora, &"windup")
@@ -615,7 +615,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 			_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_GOOD)
 			_feedback.trigger_hit_stop(2)
 			_animator.strike(_caipora)
-			_feedback.spawn_move_name(Lang.t(&"combat.timing.good"), _timing_bubble.position + Vector2(0, -55))
+			_feedback.spawn_move_name(Lang.t(&"combat.timing.good"), _timing_bubble.position + Vector2(0, -55), _move_name_rect())
 			_enemy_recoil(14.0)
 	else:
 		_timing_bubble.burst_fail()
@@ -703,7 +703,7 @@ func _end_cortejo() -> void:
 func _cortejo_lead_in() -> void:
 	_sfx.play(_sfx.attack_sound)
 	# Identidade do Cortejo: tag + VFX de espíritos (o som é o Batuque/summon próprio).
-	_feedback.spawn_move_name(Lang.t(Constants.CAIPORA_MOVE_CORTEJO["name_key"]), _caipora.position + Vector2(0, -64.0))
+	_feedback.spawn_move_name(Lang.t(Constants.CAIPORA_MOVE_CORTEJO["name_key"]), _caipora.position + Vector2(0, -64.0), _move_name_rect())
 	_feedback.spawn_attack_vfx(Constants.CAIPORA_MOVE_CORTEJO["vfx"], _caipora.position + Vector2(0, -20.0))
 	_animator.play_pose(_caipora, &"windup")
 	_apparition.begin()
@@ -811,7 +811,8 @@ func _start_enemy_turn() -> void:
 	if not _active_enemy_pattern.display_name.is_empty():
 		_feedback.spawn_move_name(
 			_active_enemy_pattern.display_name,
-			_enemy.position + Vector2(0, _enemy_head_top_y() - 6.0)
+			_enemy.position + Vector2(0, _enemy_head_top_y() - 6.0),
+			_move_name_rect()
 		)
 	if not _active_enemy_pattern.audio_event.is_empty():
 		_sfx.play_named(_active_enemy_pattern.audio_event)
@@ -924,6 +925,12 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 func _on_enemy_pattern_finished() -> void:
 	if not _combat_over and _both_alive():
 		_start_caipora_turn()
+
+## Rect (world-space) onde os nomes de golpe podem viver: o que a câmera vê ∩ palco
+## (mesma geometria já validada pelo clamp das bolhas). Nome 100% dentro da tela.
+func _move_name_rect() -> Rect2:
+	return ArenaFraming.bubble_rect(
+		_camera.position, get_viewport().get_visible_rect().size, _camera.zoom.x)
 
 func _boss_spread_pos() -> Vector2:
 	# Spawna dentro do que a câmera vê (∩ palco, com margem do raio da bolha):

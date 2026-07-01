@@ -284,11 +284,14 @@ func spawn_result_label(label_key: StringName, at_position: Vector2) -> void:
 ## sujeito ao zoom da câmera + vinheta). Subidos para leitura mantendo o caráter periférico
 ## (fade rápido, ancorado no inimigo fora do centro).
 const MOVE_NAME_FONT: String = "res://assets/fonts/PressStart2P.ttf"
-const MOVE_NAME_SIZE: int = 16
+const MOVE_NAME_SIZE: int = 14
 const MOVE_NAME_COLOR: Color = Color(0.9, 0.86, 0.78)  # osso claro (mais contraste)
 const MOVE_NAME_ALPHA: float = 0.85
+const MOVE_NAME_DRIFT: float = 10.0  # deriva pra cima do tween (o clamp Y reserva)
 
-func spawn_move_name(text: String, at_position: Vector2) -> void:
+## `clamp_rect` (world-space, opcional): mantém o nome 100% dentro do retângulo —
+## o inimigo mora a ~85% da largura do palco e nomes longos vazavam do viewport.
+func spawn_move_name(text: String, at_position: Vector2, clamp_rect: Rect2 = Rect2()) -> void:
 	if text.strip_edges().is_empty():
 		return
 	var font: Font = load(MOVE_NAME_FONT)
@@ -304,7 +307,13 @@ func spawn_move_name(text: String, at_position: Vector2) -> void:
 	label.z_index = 5  # abaixo dos rótulos de resultado (z=20) e da bolha
 	# Label ancora no canto superior-esquerdo: centraliza pela largura medida.
 	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, MOVE_NAME_SIZE).x
-	label.position = at_position - Vector2(w * 0.5, 0)
+	var pos := at_position - Vector2(w * 0.5, 0)
+	if clamp_rect.has_area():
+		var line_h: float = font.get_height(MOVE_NAME_SIZE)
+		pos.x = clampf(pos.x, clamp_rect.position.x, maxf(clamp_rect.end.x - w, clamp_rect.position.x))
+		pos.y = clampf(pos.y, clamp_rect.position.y + MOVE_NAME_DRIFT,
+			maxf(clamp_rect.end.y - line_h, clamp_rect.position.y + MOVE_NAME_DRIFT))
+	label.position = pos
 	var base := _g(MOVE_NAME_COLOR)
 	label.modulate = Color(base.r, base.g, base.b, 0.0)
 	if not _attach_to_scene(label):
