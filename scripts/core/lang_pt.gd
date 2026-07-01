@@ -32,6 +32,7 @@ const STRINGS: Dictionary = {
 	# HUD
 	&"hud.player":              "CAIPORA",
 	&"hud.enemy":               "CRIATURA",
+	&"hud.phase":               "FASE %d",
 	&"hud.chama":               "CHAMA!",
 	&"hud.herb":                "HP máx.",
 	&"hud.fragment.s":          "+%s Terra Rara",

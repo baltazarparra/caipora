@@ -50,3 +50,9 @@ func test_exploration_builds_two_plates() -> void:
 func test_camp_builds_one_plate() -> void:
 	_h.set_mode(HudHeader.Mode.CAMP)
 	assert_eq(_h._plates.size(), 1, "acampamento: só a placa de moeda/mudo")
+
+func test_phase_badge_only_in_combat() -> void:
+	_h.set_mode(HudHeader.Mode.COMBAT)
+	assert_true(_h._phase_badge.visible, "badge de fase aparece no combate")
+	_h.set_mode(HudHeader.Mode.EXPLORATION)
+	assert_false(_h._phase_badge.visible, "badge de fase some fora do combate")

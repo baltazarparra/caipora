@@ -8,12 +8,15 @@ extends Node
 # Precedente: ControlsHud (autoload que escuta screen_changed e reconstrói por modo).
 
 # Telas já migradas ao UiRoot (cresce a cada fase do PRD). F3: exploração.
-const MIGRATED_PREFIXES: PackedStringArray = ["EXPLORATION"]
+const MIGRATED_PREFIXES: PackedStringArray = ["EXPLORATION", "ARENA"]
 const POPUP_FONT_BONUS := 4
 
 var _header_layer: CanvasLayer
 var _header: HudHeader
 var _active: bool = false
+var _combat: bool = false
+var _enemy_max: float = -1.0
+var _enemy_is_boss: bool = false
 
 func _ready() -> void:
 	_header_layer = CanvasLayer.new()
@@ -26,6 +29,7 @@ func _ready() -> void:
 	SignalBus.screen_changed.connect(_on_screen_changed)
 	SignalBus.caipora_health_changed.connect(_on_caipora_health)
 	SignalBus.fragment_gained.connect(_on_fragment_gained)
+	SignalBus.enemy_health_changed.connect(_on_enemy_health)
 	SignalBus.chama_gained.connect(_on_chama_gained)
 	SignalBus.herb_collected.connect(_on_herb_collected)
 	_apply_screen(GameState.current_screen)
@@ -41,23 +45,43 @@ func owns(screen: SignalBus.Screen) -> bool:
 func _on_screen_changed(screen: SignalBus.Screen) -> void:
 	_apply_screen(screen)
 
+func _is_arena(screen: SignalBus.Screen) -> bool:
+	return SignalBus.Screen.keys()[screen].begins_with("ARENA")
+
 func _apply_screen(screen: SignalBus.Screen) -> void:
 	_active = owns(screen)
 	_header_layer.visible = _active
 	if not _active:
 		return
-	# Única tela migrada por ora: exploração.
-	_header.set_mode(HudHeader.Mode.EXPLORATION)
+	_combat = _is_arena(screen)
 	_header.set_player_health(GameState.caipora_current_hp, GameState.caipora_max_hp)
-	_header.set_currency(int(MetaProgression.fragments))
-	_header.set_muted(not AudioDirector.is_music_enabled())
+	if _combat:
+		# Força re-setup da barra do inimigo no próximo enemy_health_changed (spawn).
+		_enemy_max = -1.0
+		_enemy_is_boss = false
+		_header.set_mode(HudHeader.Mode.COMBAT)
+		_header.set_phase(GameState.active_phase)
+	else:
+		_header.set_mode(HudHeader.Mode.EXPLORATION)
+		_header.set_currency(int(MetaProgression.fragments))
+		_header.set_muted(not AudioDirector.is_music_enabled())
 
 func _on_caipora_health(new_health: float, max_health: float) -> void:
 	if _active:
 		_header.set_player_health(new_health, max_health)
 
+func _on_enemy_health(new_health: float, max_health: float) -> void:
+	if not _active or not _combat:
+		return
+	var is_boss: bool = GameState.active_combat_is_boss
+	if not is_equal_approx(max_health, _enemy_max) or is_boss != _enemy_is_boss:
+		_enemy_max = max_health
+		_enemy_is_boss = is_boss
+		_header.setup_enemy(max_health, is_boss, GameState.active_combat_name)
+	_header.set_enemy_health(new_health, max_health)
+
 func _on_fragment_gained(total: float, amount: float) -> void:
-	if not _active:
+	if not _active or _combat:
 		return
 	_header.set_currency(int(total))
 	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
@@ -65,11 +89,11 @@ func _on_fragment_gained(total: float, amount: float) -> void:
 	_spawn_popup(Lang.tf(key, [n]), Constants.COLOR_AMBER)
 
 func _on_chama_gained() -> void:
-	if _active:
+	if _active and not _combat:
 		_spawn_popup(Lang.t(&"hud.chama"), Constants.COLOR_FIRE_HOT)
 
 func _on_herb_collected(bonus: int) -> void:
-	if _active:
+	if _active and not _combat:
 		_spawn_popup("+%d %s" % [bonus, Lang.t(&"hud.herb")], Constants.COLOR_HERB_GLOW)
 
 func _on_mute_toggled() -> void:
