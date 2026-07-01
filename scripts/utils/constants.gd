@@ -255,6 +255,7 @@ const COLOR_AMBER := Color("#ff6b00")    # destaque / fogo / cue
 const COLOR_GOOD := COLOR_AMBER          # faixa GOOD (bloqueio parcial) — alias semântico
 const COLOR_TEXT := Color("#c9d1d9")     # texto / branco sujo
 const COLOR_TEXT_DIM := Color(0.494, 0.514, 0.541) # texto secundário: versão, rodapé, legendas
+const COLOR_BORDER_LOCKED := Color(0.35, 0.18, 0.18, 0.9) # borda de card/controle travado/caro
 
 # Vida (ícones): ativo usa COLOR_BLOOD/COLOR_AMBER; "vazio" = tom apagado translúcido.
 const COLOR_BLOOD_EMPTY := Color(0.25, 0.04, 0.04, 0.35)

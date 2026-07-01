@@ -14,7 +14,6 @@ extends Button
 
 const CARD_HEIGHT := 48               # ficha baixa de uma linha, tocável sem virar parede
 const COST_ICON_PX: int = 22
-const BORDER := 3                     # bordas duras (sem cantos arredondados — guia de UI)
 const TERRA_RARA_ICON: Texture2D = preload("res://assets/sprites/terra_rara_icon.png")
 
 var key: String
@@ -92,18 +91,19 @@ func setup(erva_key: String) -> void:
 	refresh_text()
 
 # Dois styleboxes de borda dura: âmbar quando dá pra pagar, apagado quando não.
+# Larguras/margens/cores vêm dos tokens — o card é da mesma família do chrome.
 func _build_styles() -> void:
 	_style_afford = StyleBoxFlat.new()
 	_style_afford.bg_color = Color(0.06, 0.05, 0.04, 0.92)
 	_style_afford.border_color = Constants.COLOR_AMBER
-	_style_afford.set_border_width_all(BORDER)
-	_style_afford.set_content_margin_all(12)
+	_style_afford.set_border_width_all(Constants.UI_BORDER_WIDTH)
+	_style_afford.set_content_margin_all(Constants.UI_PADDING_V)
 
 	_style_locked = StyleBoxFlat.new()
 	_style_locked.bg_color = Color(0.05, 0.04, 0.045, 0.88)
-	_style_locked.border_color = Color(0.35, 0.18, 0.18, 0.9)
-	_style_locked.set_border_width_all(BORDER)
-	_style_locked.set_content_margin_all(12)
+	_style_locked.border_color = Constants.COLOR_BORDER_LOCKED
+	_style_locked.set_border_width_all(Constants.UI_BORDER_WIDTH)
+	_style_locked.set_content_margin_all(Constants.UI_PADDING_V)
 
 ## Atualiza o estado visual conforme o jogador pode (ou não) pagar a erva. Acessível ganha
 ## borda âmbar, custo âmbar e respiro pulsante; cara fica apagada com custo em sangue.
