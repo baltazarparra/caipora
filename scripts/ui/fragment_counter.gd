@@ -40,11 +40,13 @@ func set_count(value: int) -> void:
 	if grew:
 		_pop()
 
-func configure_size(font_size: int) -> void:
-	_font_size = font_size
-	_glyph_size = clampf(float(font_size) / float(Constants.FONT_MD), 0.7, 1.6)
+## `scale` amplia ícone E número juntos (ex.: 2x no HUD tátil de exploração retrato).
+## Default 1.0 preserva o comportamento atual (HUD normal, loja do acampamento).
+func configure_size(font_size: int, scale: float = 1.0) -> void:
+	_font_size = int(round(float(font_size) * scale))
+	_glyph_size = clampf(float(font_size) / float(Constants.FONT_MD), 0.7, 1.6) * scale
 	if _label != null:
-		_label.add_theme_font_size_override("font_size", font_size)
+		_label.add_theme_font_size_override("font_size", _font_size)
 	_relayout()
 	queue_redraw()
 

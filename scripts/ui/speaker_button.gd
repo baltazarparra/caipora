@@ -10,20 +10,34 @@ signal pressed
 @export var muted: bool = false
 
 # ─── Constants ─────────────────────────────────────
-const SIZE := 28.0
-const HITBOX_PAD := 8.0
+const SIZE := 28.0        # lado base do ícone desenhado
+const HITBOX_PAD := 8.0   # respiro base ao redor (compõe o alvo de toque)
+
+# ─── State ─────────────────────────────────────────
+# Tamanho efetivo do ícone e do respiro. `configure_size` os escala juntos (ex.: 2x no
+# HUD tátil de exploração retrato). Sem chamar, mantém o tamanho base (loja do acampamento).
+var _icon_px: float = SIZE
+var _pad: float = HITBOX_PAD
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
-	custom_minimum_size = Vector2(SIZE + HITBOX_PAD * 2.0, SIZE + HITBOX_PAD * 2.0)
+	custom_minimum_size = Vector2(_icon_px + _pad * 2.0, _icon_px + _pad * 2.0)
 	focus_mode = Control.FOCUS_ALL
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
+## Escala o ícone (e o alvo de toque proporcional) para `icon_px` pixels de lado.
+func configure_size(icon_px: float) -> void:
+	_icon_px = maxf(icon_px, 1.0)
+	_pad = HITBOX_PAD * (_icon_px / SIZE)
+	custom_minimum_size = Vector2(_icon_px + _pad * 2.0, _icon_px + _pad * 2.0)
+	size = custom_minimum_size
+	queue_redraw()
+
 func _draw() -> void:
-	var s := SIZE
-	var ox := HITBOX_PAD
-	var oy := HITBOX_PAD
+	var s := _icon_px
+	var ox := _pad
+	var oy := _pad
 	var col := Color(icon_color, 0.72) if muted else icon_color
 
 	# corpo do alto-falante (retângulo esquerdo)

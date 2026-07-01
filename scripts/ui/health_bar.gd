@@ -38,7 +38,7 @@ var _trail_color: Color = Constants.COLOR_BONE
 var _font_size: int = Constants.FONT_MD
 
 var _name_label: Label
-var _value_label: Label
+var _mirrored: bool = false
 var _fill_tween: Tween
 var _trail_tween: Tween
 
@@ -49,12 +49,6 @@ func _ready() -> void:
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	add_child(_name_label)
-
-	_value_label = Label.new()
-	_value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	add_child(_value_label)
 	_relayout()
 
 # ─── Public API ────────────────────────────────────
@@ -72,7 +66,6 @@ func setup(max_value: float, fill: Color, track: Color, border: Color, label_tex
 	if _name_label != null:
 		_name_label.text = label_text
 	_refresh_text_styles()
-	_update_value_label()
 	queue_redraw()
 
 ## Atualiza só o teto (jogador cresce; spawn de inimigo redefine a escala).
@@ -84,7 +77,6 @@ func set_max(max_value: float) -> void:
 	_value = clampf(_value, 0.0, _max)
 	_display_value = clampf(_display_value, 0.0, _max)
 	_trail_value = clampf(_trail_value, 0.0, _max)
-	_update_value_label()
 	queue_redraw()
 
 ## Define o valor atual e anima fill + rastro de dano.
@@ -92,7 +84,6 @@ func set_value(new_value: float) -> void:
 	var clamped: float = clampf(new_value, 0.0, _max)
 	var took_damage: bool = clamped < _value
 	_value = clamped
-	_update_value_label()
 
 	if _fill_tween != null and _fill_tween.is_valid():
 		_fill_tween.kill()
@@ -129,6 +120,15 @@ func configure_size(bar_width: float, font_size: int) -> void:
 func total_height() -> float:
 	return _total_height()
 
+## Espelha a barra: fill/rastro ancoram na direita e o nome vai para a direita.
+## Usado pela barra do inimigo no header de combate (jogador × adversário).
+func set_mirrored(value: bool) -> void:
+	if _mirrored == value:
+		return
+	_mirrored = value
+	_relayout()
+	queue_redraw()
+
 # ─── Internals ─────────────────────────────────────
 func _set_display_value(v: float) -> void:
 	_display_value = v
@@ -153,25 +153,21 @@ func _bar_rect() -> Rect2:
 	return Rect2(0.0, top, size.x, bh)
 
 func _relayout() -> void:
-	if _name_label == null or _value_label == null:
+	if _name_label == null:
 		return
 	var header_h: float = HEADER_H + (4.0 if _is_boss else 0.0)
+	# Sem o número, o nome ocupa a largura útil do cabeçalho. Espelhado (inimigo no
+	# header de combate), o nome vai para fora — alinhado à direita.
 	_name_label.position = Vector2.ZERO
-	_name_label.size = Vector2(size.x * 0.62, header_h)
-	_value_label.position = Vector2(size.x * 0.38, 0.0)
-	_value_label.size = Vector2(size.x * 0.62, header_h)
+	_name_label.size = Vector2(size.x, header_h)
+	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if _mirrored \
+		else HORIZONTAL_ALIGNMENT_LEFT
 
 func _refresh_text_styles() -> void:
-	if _name_label == null or _value_label == null:
+	if _name_label == null:
 		return
 	_name_label.add_theme_font_size_override("font_size", _font_size)
 	_name_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
-	_value_label.add_theme_font_size_override("font_size", _font_size)
-	_value_label.add_theme_color_override("font_color", _fill_color.lightened(0.35))
-
-func _update_value_label() -> void:
-	if _value_label != null:
-		_value_label.text = "%d/%d" % [ceili(_value), int(_max)]
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:
@@ -184,13 +180,17 @@ func _draw() -> void:
 	# trilho de fundo
 	draw_rect(Rect2(x0, y0, bw, bh), _track_color)
 
-	# rastro de dano (ghost) — atrás do fill, da borda do fill até o trail
+	# rastro de dano (ghost) — atrás do fill, da borda do fill até o trail.
+	# Espelhado (inimigo no header de combate): fill/rastro ancoram na DIREITA e
+	# drenam em direção ao centro. Só a âncora muda; a lógica de valor é a mesma.
 	var fill_w: float = bw * clampf(_display_value / _max, 0.0, 1.0)
 	var trail_w: float = bw * clampf(_trail_value / _max, 0.0, 1.0)
+	var fill_x: float = (x0 + bw - fill_w) if _mirrored else x0
+	var ghost_x: float = (x0 + bw - trail_w) if _mirrored else (x0 + fill_w)
 	if trail_w > fill_w + 0.5:
 		var ghost: Color = _trail_color
 		ghost.a = 0.7
-		draw_rect(Rect2(x0 + fill_w, y0, trail_w - fill_w, bh), ghost)
+		draw_rect(Rect2(ghost_x, y0, trail_w - fill_w, bh), ghost)
 
 	# fill principal
 	if fill_w > 0.5:
@@ -200,11 +200,11 @@ func _draw() -> void:
 			var t: float = Time.get_ticks_msec() / 1000.0
 			var pulse: float = 0.5 + 0.5 * sin(t * TAU * PULSE_HZ)
 			fill = _fill_color.lerp(_fill_color.lightened(0.5), pulse * 0.7)
-		draw_rect(Rect2(x0, y0, fill_w, bh), fill)
+		draw_rect(Rect2(fill_x, y0, fill_w, bh), fill)
 		# brilho superior (faceta) para dar volume
 		var sheen: Color = fill.lightened(0.25)
 		sheen.a = 0.35
-		draw_rect(Rect2(x0, y0, fill_w, bh * 0.28), sheen)
+		draw_rect(Rect2(fill_x, y0, fill_w, bh * 0.28), sheen)
 
 	# ticks de 1 HP (leitura discreta) — só quando não viram ruído
 	var units: int = int(round(_max))

@@ -42,7 +42,18 @@ func test_configure_size_sets_width():
 	_bar.configure_size(300.0, 18)
 	assert_almost_eq(_bar.custom_minimum_size.x, 300.0, 0.01)
 
-func test_value_label_text():
-	_bar.setup(10.0, Color.RED, Color.BLACK, Color.RED, "X")
+func test_header_shows_name_without_number():
+	# A barra fala sozinha: cabeçalho só com o nome, sem leitura numérica de HP.
+	_bar.setup(10.0, Color.RED, Color.BLACK, Color.RED, "CAIPORA")
 	_bar.set_value(6.0)
-	assert_eq(_bar._value_label.text, "6/10")
+	assert_eq(_bar._name_label.text, "CAIPORA")
+	assert_false("_value_label" in _bar, "HealthBar nao deve ter rotulo numerico de HP")
+
+func test_set_mirrored_preserves_value():
+	# Espelhar (barra do inimigo) inverte a ancora do fill, nao a logica de valor.
+	_bar.setup(10.0, Color.RED, Color.BLACK, Color.RED, "X")
+	_bar.set_value(7.0)
+	_bar.set_mirrored(true)
+	assert_eq(_bar._value, 7.0)
+	assert_eq(_bar._max, 10.0)
+	assert_true(_bar._mirrored)

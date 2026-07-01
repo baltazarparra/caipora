@@ -16,6 +16,7 @@ const HERO_HEIGHT_PORTRAIT := 104.0
 const HERO_HEIGHT_LANDSCAPE := 92.0
 const OPTIONS_HEIGHT := 52.0
 const FOOTER_HEIGHT := 48.0
+const GITHUB_URL := "https://github.com/baltazarparra/caipora"
 
 # ─── State ─────────────────────────────────────────
 var _fade: ColorRect
@@ -327,4 +328,4 @@ func _pulse_press_haptic() -> void:
 		Input.vibrate_handheld(18)
 
 func _on_github_pressed() -> void:
-	OS.shell_open("https://github.com/baltazarparra")
+	OS.shell_open(GITHUB_URL)

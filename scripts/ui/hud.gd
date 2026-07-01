@@ -11,6 +11,15 @@ extends CanvasLayer
 #
 # A LÓGICA de dano/vida é a mesma — esta camada só consome os sinais existentes.
 
+# ─── Constants ─────────────────────────────────────
+# Header de combate nítido acima da vinheta do Atmosphere (CanvasLayer 50) e abaixo do
+# ControlsHud (55) — só o combate sobe; o HUD de exploração fica no layer 0 (inalterado).
+const COMBAT_HUD_LAYER: int = 52
+# 2x no HUD tátil de exploração (telefone retrato): botão de mudo + contador de Terra Rara.
+const HUD_TOUCH_SCALE: float = 2.0
+# Respiro central entre as duas barras do header de combate (leitura "eu × ele").
+const HEADER_CENTER_GAP: float = 48.0
+
 # ─── Exports ───────────────────────────────────────
 @export var show_enemy_hp: bool = true
 
@@ -52,8 +61,15 @@ func _ready() -> void:
 	_root.add_child(_music_btn)
 
 	if show_enemy_hp:
+		# Modo combate (arena): header espelhado jogador × adversário, no topo, nítido acima
+		# da vinheta. Terra Rara e mudo não têm função na briga — ficam ocultos (o estado de
+		# áudio persiste; o botão reaparece na exploração).
+		layer = COMBAT_HUD_LAYER
+		_frag_counter.visible = false
+		_music_btn.visible = false
 		_enemy_bar = HealthBar.new()
 		_root.add_child(_enemy_bar)
+		_enemy_bar.set_mirrored(true)
 		# Setup inicial; o spawn do inimigo reemite o max real (5/8/boss) e reajusta.
 		_setup_enemy_bar(float(EnemyStats.COMMON_HP_EARLY), false)
 
@@ -76,14 +92,25 @@ func _layout() -> void:
 	var side: float = clampf(minf(vp.x, vp.y) * 0.055, 32.0, 72.0)
 	var top: float = clampf(minf(vp.x, vp.y) * 0.05, 24.0, 56.0)
 	var fs: int = _font_size()
+	if show_enemy_hp:
+		_layout_combat_header(vp, side, top, fs)
+	else:
+		_layout_exploration(vp, side, top, fs)
 
-	# Barra do jogador — topo-esquerda.
+## Exploração: barra do jogador à esquerda; Terra Rara + mudo à direita. No telefone
+## retrato, esses dois dobram de tamanho (alvo tátil e leitura de "moeda").
+func _layout_exploration(vp: Vector2, side: float, top: float, fs: int) -> void:
 	var pw: float = clampf(vp.x * 0.24, 220.0, 420.0)
 	_player_bar.configure_size(pw, fs)
 	_player_bar.position = Vector2(side, top)
 
-	# Grupo topo-direita: fragmentos + botão de áudio.
-	_frag_counter.configure_size(fs)
+	# Em retrato a arte contém-na-largura (canvas ~750px reduzido para a largura física do
+	# telefone), então esses ícones ficam sempre proporcionalmente pequenos — dobra-os para
+	# leitura e alvo tátil. `is_portrait` é ratio-invariante (correto sob canvas_items/expand);
+	# o lado curto em px de canvas NÃO serve de gatilho aqui (é sempre ~750 em retrato).
+	var scale: float = HUD_TOUCH_SCALE if Constants.is_portrait(vp) else 1.0
+	_frag_counter.configure_size(fs, scale)
+	_music_btn.configure_size(SpeakerButton.SIZE * scale)
 	_music_btn.size = _music_btn.get_combined_minimum_size()
 	var music_w: float = _music_btn.size.x
 	var music_h: float = _music_btn.size.y
@@ -96,14 +123,20 @@ func _layout() -> void:
 		top + (group_h - frag_h) * 0.5
 	)
 
-	# Barra do inimigo — centralizada, numa fileira abaixo dos cantos do topo
-	# (garante que nunca colida com jogador/fragmentos por mais largo que seja o boss).
+## Combate: header estilo fighting game — jogador (esq.) e adversário (dir.) na mesma fileira
+## do topo, larguras simétricas, fills espelhados encontrando-se no centro.
+func _layout_combat_header(vp: Vector2, side: float, top: float, fs: int) -> void:
+	var hw: float = (clampf(vp.x * 0.40, 300.0, 620.0) if _enemy_is_boss
+		else clampf(vp.x * 0.34, 240.0, 460.0))
+	# Nunca colidir no centro: cada barra ≤ metade do espaço útil menos o respiro central.
+	var max_hw: float = (vp.x - side * 2.0 - HEADER_CENTER_GAP) * 0.5
+	hw = minf(hw, maxf(max_hw, 1.0))
+
+	_player_bar.configure_size(hw, fs)
+	_player_bar.position = Vector2(side, top)
 	if _enemy_bar != null:
-		var ew: float = (clampf(vp.x * 0.46, 360.0, 760.0) if _enemy_is_boss
-			else clampf(vp.x * 0.30, 260.0, 520.0))
-		_enemy_bar.configure_size(ew, fs)
-		var row_y: float = top + maxf(_player_bar.total_height(), group_h) + float(Constants.SPACE_MD)
-		_enemy_bar.position = Vector2((vp.x - ew) * 0.5, row_y)
+		_enemy_bar.configure_size(hw, fs)
+		_enemy_bar.position = Vector2(vp.x - side - hw, top)
 
 func _setup_enemy_bar(max_health: float, is_boss: bool) -> void:
 	_enemy_max = max_health
