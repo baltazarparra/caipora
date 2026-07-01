@@ -468,6 +468,7 @@ func _on_double_first_hit() -> void:
 	_feedback.trigger_hit_stop(3)
 	_animator.strike(_caipora)
 	_caipora_step_forward()
+	_enemy_recoil(16.0)
 
 func _caipora_step_forward() -> void:
 	var home_x := _caipora.position.x
@@ -484,6 +485,15 @@ func _enemy_recoil(px: float) -> void:
 	if away == 0.0:
 		away = 1.0
 	_animator.recoil(_enemy, Vector2(away, 0.0), px)
+
+## Recuo da Caipora ao apanhar: empurrada pra LONGE do inimigo (reacao ao dano).
+func _caipora_recoil(px: float) -> void:
+	if _enemy == null or _caipora == null:
+		return
+	var away := signf(_caipora.position.x - _enemy.position.x)
+	if away == 0.0:
+		away = -1.0
+	_animator.recoil(_caipora, Vector2(away, 0.0), px)
 
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 	if _combat_over:
@@ -586,6 +596,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 			_feedback.trigger_hit_stop(2)
 			_animator.strike(_caipora)
 			_feedback.spawn_move_name(Lang.t(&"combat.timing.good"), _timing_bubble.position + Vector2(0, -55))
+			_enemy_recoil(14.0)
 	else:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
@@ -841,6 +852,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		# bonus de fase + piso F5).
 		_timing_bubble.burst_good()
 		_caipora.take_damage(_enemy_counter_damage() * Constants.GOOD_BLOCK_MULT)
+		_caipora_recoil(9.0)
 		_sfx.play_outcome(SfxSystem.Outcome.BLOCK)
 		_feedback.trigger_screenshake(10.0, 0.25)
 		_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_GOOD)
@@ -857,6 +869,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 		if GameState.active_phase == 5:
 			damage = maxf(damage, EnemyStats.DAMAGE_FLOOR)
 		_caipora.take_damage(damage)
+		_caipora_recoil(16.0)
 		# A guardiã sangrando tem voz própria — hit_sound é o impacto NO inimigo.
 		_sfx.play_outcome(SfxSystem.Outcome.HURT)
 		_feedback.trigger_screenshake(14.0, 0.35)
