@@ -14,6 +14,12 @@ extends MarginContainer
 	set(value):
 		scrim_alpha = value
 		queue_redraw()
+## Respiro adicional (H, V) somado aos paddings de token — para painéis que
+## precisam de mais ar (ex.: modais de leitura como as Opções).
+@export var pad_extra: Vector2i = Vector2i.ZERO:
+	set(value):
+		pad_extra = value
+		_update_margins()
 
 func _ready() -> void:
 	_update_margins()
@@ -21,10 +27,10 @@ func _ready() -> void:
 func _update_margins() -> void:
 	# Com moldura, o topo/base precisam limpar a crista de juba (crest_clearance).
 	var extra: int = int(BrandFrame.crest_clearance()) if framed else 0
-	add_theme_constant_override("margin_left", Constants.UI_PADDING_H)
-	add_theme_constant_override("margin_right", Constants.UI_PADDING_H)
-	add_theme_constant_override("margin_top", Constants.UI_PADDING_V + extra)
-	add_theme_constant_override("margin_bottom", Constants.UI_PADDING_V + extra)
+	add_theme_constant_override("margin_left", Constants.UI_PADDING_H + pad_extra.x)
+	add_theme_constant_override("margin_right", Constants.UI_PADDING_H + pad_extra.x)
+	add_theme_constant_override("margin_top", Constants.UI_PADDING_V + extra + pad_extra.y)
+	add_theme_constant_override("margin_bottom", Constants.UI_PADDING_V + extra + pad_extra.y)
 
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)

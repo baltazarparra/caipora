@@ -41,10 +41,12 @@ func _build() -> void:
 	var panel := BrandPanel.new()
 	panel.framed = true
 	panel.scrim_alpha = 0.96  # modal quase opaco (leitura sobre o gameplay)
+	panel.pad_extra = Vector2i(Constants.SPACE_XS, Constants.SPACE_SM)  # respiro do modal
 	center.add_child(panel)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", Constants.SPACE_MD)
+	# Escala única de espaçamento: SPACE_LG entre grupos, SPACE_XS dentro do grupo.
+	vbox.add_theme_constant_override("separation", Constants.SPACE_LG)
 	panel.add_child(vbox)
 
 	_title_label = Label.new()
@@ -72,16 +74,17 @@ func _build() -> void:
 	_restart_fade.visible = false
 	add_child(_restart_fade)
 
+## Grupo de volume empilhado (rótulo SOBRE o slider): cabe no retrato de telefone
+## (a linha lado-a-lado estourava 393px) e respira igual em toda orientação.
 func _add_volume_row(parent: VBoxContainer) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", Constants.SPACE_SM)
+	var group := VBoxContainer.new()
+	group.add_theme_constant_override("separation", Constants.SPACE_XS)
 
 	_volume_label = Label.new()
 	_volume_label.text = Lang.t(&"options.volume")
 	_volume_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
 	_volume_label.add_theme_font_size_override("font_size", Constants.FONT_MD)
-	_volume_label.custom_minimum_size = Vector2(140, 0)
-	row.add_child(_volume_label)
+	group.add_child(_volume_label)
 
 	_volume_slider = HSlider.new()
 	_volume_slider.min_value = 0.0
@@ -89,10 +92,10 @@ func _add_volume_row(parent: VBoxContainer) -> void:
 	_volume_slider.step = 0.01
 	_volume_slider.value = AudioDirector.get_bus_volume(BUS_VOLUME)
 	_volume_slider.custom_minimum_size = Vector2(240, 0)
-	_volume_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_volume_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_volume_slider.value_changed.connect(_on_volume_changed)
-	row.add_child(_volume_slider)
-	parent.add_child(row)
+	group.add_child(_volume_slider)
+	parent.add_child(group)
 
 func _add_reset_row(parent: VBoxContainer) -> void:
 	_reset_button = Button.new()
