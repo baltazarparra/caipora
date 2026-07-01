@@ -42,14 +42,25 @@ func test_safe_insets_clamped() -> void:
 	assert_eq(big.x, 80.0, "lateral clampa no máximo")
 	assert_eq(big.y, 64.0, "topo clampa no máximo")
 
-func test_exploration_builds_two_plates() -> void:
-	# Redesign "placas flutuantes": HP numa placa, Terra Rara+mudo noutra.
+func test_exploration_builds_three_plates() -> void:
+	# Placas flutuantes: moeda, mudo e HP — cada grupo na sua casca.
 	_h.set_mode(HudHeader.Mode.EXPLORATION)
-	assert_eq(_h._plates.size(), 2, "exploração: placa do HP + placa de moeda/mudo")
+	assert_eq(_h._plates.size(), 3, "exploração: placas de moeda, mudo e HP")
 
-func test_camp_builds_one_plate() -> void:
+func test_camp_builds_two_plates() -> void:
 	_h.set_mode(HudHeader.Mode.CAMP)
-	assert_eq(_h._plates.size(), 1, "acampamento: só a placa de moeda/mudo")
+	assert_eq(_h._plates.size(), 2, "acampamento: placas de moeda e mudo")
+
+func test_top_row_currency_left_mute_right() -> void:
+	# Padrão do acampamento em toda tela: Terra Rara à esquerda, mudo à direita.
+	_h.set_mode(HudHeader.Mode.CAMP)
+	assert_lt(_h._frag.position.x, _h._mute.position.x, "moeda à esquerda do mudo")
+
+func test_exploration_hp_bar_below_top_row() -> void:
+	_h.set_mode(HudHeader.Mode.EXPLORATION)
+	var row_bottom := maxf(_h._frag.position.y + _h._frag.size.y,
+		_h._mute.position.y + _h._mute.size.y)
+	assert_gt(_h._player_bar.position.y, row_bottom, "HP vive na linha 2, abaixo da linha 1")
 
 func test_phase_badge_only_in_combat() -> void:
 	_h.set_mode(HudHeader.Mode.COMBAT)

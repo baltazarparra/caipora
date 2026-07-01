@@ -6,8 +6,8 @@ extends Control
 # É uma VIEW: recebe valores por API; o UiRoot faz a fiação com o SignalBus.
 # Safe-area e escala tátil vêm de fonte única (Constants.safe_insets / hud_touch_scale).
 #
-#   CAMP        →  Terra Rara + mudo (dir.)                  [sem HP: o acampamento cura]
-#   EXPLORATION →  HP jogador (esq.)  |  Terra Rara + mudo (dir.)
+#   CAMP        →  linha 1: Terra Rara (esq.) | mudo (dir.)  [sem HP: o acampamento cura]
+#   EXPLORATION →  linha 1 idêntica ao CAMP; linha 2: HP do jogador (esq.)
 #   COMBAT      →  HP jogador (esq.)  |  HP inimigo espelhado + NOME REAL (dir.)
 #   MENU        →  vazio (o menu tem rodapé próprio)
 
@@ -102,6 +102,8 @@ func set_enemy_health(current: float, max_health: float) -> void:
 
 func set_currency(amount: int) -> void:
 	_frag.set_count(amount)
+	# A largura do contador muda com a contagem — as placas precisam re-abraçar.
+	relayout()
 
 func set_phase(phase: int) -> void:
 	_phase_badge.text = Lang.tf(&"hud.phase", [phase])
@@ -149,10 +151,12 @@ func relayout() -> void:
 		Mode.COMBAT:
 			_layout_combat(vp, side, top, fs)
 		Mode.EXPLORATION:
-			_layout_player(vp, side, top, fs)
-			_layout_right_group(vp, side, top, fs)
+			_layout_top_row(vp, side, top, fs)
+			# HP na linha 2, abaixo das placas da linha 1 (mesmo header do acampamento).
+			var bar_y := top + top_row_height(vp) + _plate_pady() * 2.0 + float(Constants.SPACE_XS)
+			_layout_player(vp, side, bar_y, fs)
 		Mode.CAMP:
-			_layout_right_group(vp, side, top, fs)
+			_layout_top_row(vp, side, top, fs)
 		_:
 			pass  # MENU: header vazio
 	_rebuild_plates()
@@ -163,18 +167,23 @@ func _layout_player(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_player_bar.configure_size(pw, fs)
 	_player_bar.position = Vector2(side, top)
 
-## Terra Rara + mudo à direita; 2x em telefone-retrato (política tátil única).
-func _layout_right_group(vp: Vector2, side: float, top: float, fs: int) -> void:
+## Altura canônica da linha 1 (moeda|mudo) — o mudo é o item mais alto da linha.
+## Consumida também por quem se ancora abaixo do header (ex.: bandeja do acampamento).
+static func top_row_height(vp: Vector2) -> float:
+	return (SpeakerButton.SIZE + SpeakerButton.HITBOX_PAD * 2.0) * Constants.hud_touch_scale(vp)
+
+## Linha 1 do HUD: Terra Rara à ESQUERDA, mudo à DIREITA (padrão do acampamento em
+## toda tela); 2x em telefone-retrato (política tátil única). Cada um na sua placa —
+## cantos opostos, nunca disputam espaço (nem com o pop do contador).
+func _layout_top_row(vp: Vector2, side: float, top: float, fs: int) -> void:
 	var scale := Constants.hud_touch_scale(vp)
+	var row_h := top_row_height(vp)
 	_frag.configure_size(fs, scale)
+	_frag.size = _frag.get_combined_minimum_size()
 	_mute.configure_size(SpeakerButton.SIZE * scale)
 	_mute.size = _mute.get_combined_minimum_size()
-	var mute_h := _mute.size.y
-	var frag_h := _frag.size.y
-	var group_h := maxf(mute_h, frag_h)
-	var mx := vp.x - side - _mute.size.x
-	_mute.position = Vector2(mx, top + (group_h - mute_h) * 0.5)
-	_frag.position = Vector2(mx - float(Constants.SPACE_MD) - _frag.size.x, top + (group_h - frag_h) * 0.5)
+	_frag.position = Vector2(side, top + (row_h - _frag.size.y) * 0.5)
+	_mute.position = Vector2(vp.x - side - _mute.size.x, top + (row_h - _mute.size.y) * 0.5)
 
 ## Header de luta: jogador (esq.) × inimigo (dir. espelhado), larguras simétricas.
 func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
@@ -191,20 +200,25 @@ func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_phase_badge.position = Vector2(0.0, top + _player_bar.total_height() * 0.5 - float(fs) * 0.5)
 
 # ─── Placas serrilhadas por grupo (chrome "casca flutuante") ───
+func _plate_pady() -> float:
+	return float(Constants.SPACE_XS) + BrandFrame.crest_clearance(HUD_CREST_SCALE)
+
 func _rebuild_plates() -> void:
 	_plates.clear()
 	var padx := float(Constants.SPACE_SM)
-	var pady := float(Constants.SPACE_XS) + BrandFrame.crest_clearance(HUD_CREST_SCALE)
+	var pady := _plate_pady()
 	match _mode:
 		Mode.COMBAT:
 			_append_plate([_player_bar], padx, pady)
 			if _enemy_max > 0.0:
 				_append_plate([_enemy_bar], padx, pady)
 		Mode.EXPLORATION:
+			_append_plate([_frag], padx, pady)
+			_append_plate([_mute], padx, pady)
 			_append_plate([_player_bar], padx, pady)
-			_append_plate([_frag, _mute], padx, pady)
 		Mode.CAMP:
-			_append_plate([_frag, _mute], padx, pady)
+			_append_plate([_frag], padx, pady)
+			_append_plate([_mute], padx, pady)
 		_:
 			pass
 

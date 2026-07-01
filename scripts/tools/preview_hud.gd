@@ -20,6 +20,7 @@ const MODE_COMBAT := 3
 var _out: String = "/tmp/hud.png"
 var _mode: String = "explore"
 var _frames: int = 0
+var _target_frames: int = 14
 
 func _initialize() -> void:
 	for arg in OS.get_cmdline_user_args():
@@ -27,6 +28,8 @@ func _initialize() -> void:
 			_out = arg.substr("--out=".length())
 		elif arg.begins_with("--mode="):
 			_mode = arg.substr("--mode=".length())
+		elif arg.begins_with("--frames="):
+			_target_frames = maxi(int(arg.substr("--frames=".length())), 2)
 
 func _process(_delta: float) -> bool:
 	_frames += 1
@@ -51,7 +54,7 @@ func _process(_delta: float) -> bool:
 				header.set_mode(MODE_EXPLORATION)
 				header.set_currency(12)
 		header.set_player_health(7.0, 10.0)
-	if _frames >= 14:
+	if _frames >= _target_frames:
 		var img: Image = root.get_texture().get_image()
 		img.save_png(_out)
 		print("saved ", _out)
