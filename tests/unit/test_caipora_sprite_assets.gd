@@ -6,6 +6,8 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_idle_02.png",
 	"res://assets/sprites/player_idle_03.png",
 	"res://assets/sprites/player_idle_04.png",
+	"res://assets/sprites/player_idle_dim_1.png",
+	"res://assets/sprites/player_idle_dim_2.png",
 	"res://assets/sprites/player_walk_1.png",
 	"res://assets/sprites/player_walk_2.png",
 	"res://assets/sprites/player_walk_3.png",
@@ -13,6 +15,8 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_walk_5.png",
 	"res://assets/sprites/player_walk_6.png",
 	"res://assets/sprites/player_windup.png",
+	"res://assets/sprites/player_windup_1.png",
+	"res://assets/sprites/player_windup_2.png",
 	"res://assets/sprites/player_strike.png",
 	"res://assets/sprites/player_recover.png",
 	"res://assets/sprites/player_back.png",
@@ -22,6 +26,8 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_idle_02_chama.png",
 	"res://assets/sprites/player_idle_03_chama.png",
 	"res://assets/sprites/player_idle_04_chama.png",
+	"res://assets/sprites/player_idle_dim_1_chama.png",
+	"res://assets/sprites/player_idle_dim_2_chama.png",
 	"res://assets/sprites/player_walk_1_chama.png",
 	"res://assets/sprites/player_walk_2_chama.png",
 	"res://assets/sprites/player_walk_3_chama.png",
@@ -29,6 +35,8 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_walk_5_chama.png",
 	"res://assets/sprites/player_walk_6_chama.png",
 	"res://assets/sprites/player_windup_chama.png",
+	"res://assets/sprites/player_windup_1_chama.png",
+	"res://assets/sprites/player_windup_2_chama.png",
 	"res://assets/sprites/player_strike_chama.png",
 	"res://assets/sprites/player_recover_chama.png",
 	"res://assets/sprites/player_back_chama.png",
@@ -165,6 +173,14 @@ func test_caipora_dead_pose_has_no_eyes() -> void:
 		return
 	assert_false(_has_color(image, COLOR_EYES), "morta, os olhos brancos apagaram")
 	assert_true(_has_color(image, COLOR_MANE), "a mortalha ainda é a juba laranja")
+
+func test_caipora_idle_dim_has_no_eyes() -> void:
+	# Blink "olhos que apagam": o vazio engole os olhos (sem branco), NUNCA palpebra.
+	var image := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/player_idle_dim_1.png"))
+	if image.is_empty():
+		return
+	assert_false(_has_color(image, COLOR_EYES), "idle_dim apaga os olhos brancos")
+	assert_true(_has_color(image, COLOR_MANE), "idle_dim mantem a juba laranja")
 
 func _count_opaque_pixels(image: Image) -> int:
 	var count := 0

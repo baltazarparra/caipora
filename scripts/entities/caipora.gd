@@ -11,6 +11,11 @@ signal move_finished(new_grid_pos: Vector2i)
 # ─── State ─────────────────────────────────────────
 var _is_moving: bool = false
 
+# Blink "olhos que apagam" (estilo Hollow Knight): intervalo IRREGULAR, so no idle.
+const BLINK_MIN_S: float = 3.0
+const BLINK_MAX_S: float = 6.5
+var _blink_timer: Timer
+
 # ─── Onready ───────────────────────────────────────
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _camera: Camera2D = $Camera2D
@@ -35,6 +40,7 @@ func _ready() -> void:
 	_update_camera_zoom()
 	get_viewport().size_changed.connect(_update_camera_zoom)
 	CaiporaSkin.apply(_animated_sprite)
+	_setup_blink()
 	ActorContrast.apply_outline(_animated_sprite)
 	_apply_furia_visual()
 	_spawn_shadow()
@@ -109,3 +115,29 @@ func _on_move_finished() -> void:
 	_animated_sprite.play("idle")
 	if tilemap != null:
 		move_finished.emit(tilemap.local_to_map(position))
+
+# ─── Blink (olhos que apagam) ──────────────────────
+func _setup_blink() -> void:
+	_animated_sprite.animation_finished.connect(_on_anim_finished)
+	_blink_timer = Timer.new()
+	_blink_timer.one_shot = true
+	add_child(_blink_timer)
+	_blink_timer.timeout.connect(_on_blink_timeout)
+	_schedule_blink()
+
+func _schedule_blink() -> void:
+	_blink_timer.start(randf_range(BLINK_MIN_S, BLINK_MAX_S))
+
+func _on_blink_timeout() -> void:
+	# So apaga os olhos parada e em idle; mover interrompe naturalmente.
+	if not _is_moving and _animated_sprite.animation == &"idle":
+		_animated_sprite.play("idle_dim")
+	_schedule_blink()
+
+func _on_anim_finished() -> void:
+	# idle_dim nao da loop: ao terminar, os olhos reacendem (volta ao idle).
+	# Se ja voltou a andar, deixa o walk seguir (evita corrida com _try_move).
+	if _is_moving:
+		return
+	if _animated_sprite.animation == &"idle_dim":
+		_animated_sprite.play("idle")

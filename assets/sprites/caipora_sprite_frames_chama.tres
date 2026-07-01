@@ -5,15 +5,19 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player_idle_02_chama.png" id="3_idle_02"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_idle_03_chama.png" id="4_idle_03"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_idle_04_chama.png" id="5_idle_04"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1_chama.png" id="6_walk_1"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2_chama.png" id="7_walk_2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_3_chama.png" id="8_walk_3"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_4_chama.png" id="9_walk_4"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_5_chama.png" id="10_walk_5"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_6_chama.png" id="11_walk_6"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_chama.png" id="12_windup"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_strike_chama.png" id="13_strike"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="14_recover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_dim_1_chama.png" id="6_idle_dim_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_dim_2_chama.png" id="7_idle_dim_2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1_chama.png" id="8_walk_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2_chama.png" id="9_walk_2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_3_chama.png" id="10_walk_3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_4_chama.png" id="11_walk_4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_5_chama.png" id="12_walk_5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_6_chama.png" id="13_walk_6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_chama.png" id="14_windup"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_1_chama.png" id="15_windup_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_2_chama.png" id="16_windup_2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_strike_chama.png" id="17_strike"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="18_recover"]
 
 [resource]
 animations = [{
@@ -44,22 +48,33 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("6_walk_1")
+"texture": ExtResource("6_idle_dim_1")
 }, {
 "duration": 1.0,
-"texture": ExtResource("7_walk_2")
+"texture": ExtResource("7_idle_dim_2")
+}],
+"loop": false,
+"name": &"idle_dim",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_walk_1")
 }, {
 "duration": 1.0,
-"texture": ExtResource("8_walk_3")
+"texture": ExtResource("9_walk_2")
 }, {
 "duration": 1.0,
-"texture": ExtResource("9_walk_4")
+"texture": ExtResource("10_walk_3")
 }, {
 "duration": 1.0,
-"texture": ExtResource("10_walk_5")
+"texture": ExtResource("11_walk_4")
 }, {
 "duration": 1.0,
-"texture": ExtResource("11_walk_6")
+"texture": ExtResource("12_walk_5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_walk_6")
 }],
 "loop": true,
 "name": &"walk",
@@ -67,15 +82,21 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("12_windup")
+"texture": ExtResource("14_windup")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_windup_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_windup_2")
 }],
 "loop": false,
 "name": &"windup",
-"speed": 5.0
+"speed": 9.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("13_strike")
+"texture": ExtResource("17_strike")
 }],
 "loop": false,
 "name": &"strike",
@@ -83,7 +104,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("14_recover")
+"texture": ExtResource("18_recover")
 }],
 "loop": false,
 "name": &"recover",

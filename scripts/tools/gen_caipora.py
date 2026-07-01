@@ -22,6 +22,8 @@ SS = 8
 IDLE_FRAMES = 5        # idle vira loop de respiracao da capa (frame 0 = player_idle.png)
 IDLE_BREATH_AMP = 1.6  # amplitude (px) do sobe/desce da bainha; corpo/olhos travados
 WALK_FRAMES = 6        # walk vira ciclo de 6 frames (bounce do torso + overlap da capa)
+IDLE_DIM_FRAMES = 2    # blink "olhos apagam": 2 frames sem olhos (loop=false)
+WINDUP_FRAMES = 3      # windup coila em 3 frames (anticipacao mais funda)
 
 TRANSPARENT = (0, 0, 0, 0)
 ORANGE_DK = (139, 42, 0)
@@ -454,7 +456,7 @@ def _draw_dead(p: Painter, chama: bool) -> None:
     p.ellipse(79.0, 86.0, 1.1, 1.1, CRYSTAL)
 
 
-def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0, bob: float = 0.0) -> Image.Image:
+def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0, bob: float = 0.0, eyes: bool = True) -> Image.Image:
     rig = _rig(pose, leg_phase, chama, breath, bob)
     p = Painter()
     if pose == "dead":
@@ -473,7 +475,7 @@ def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath:
         _draw_serrated_cloak(p, rig)
         _draw_black_body(p, rig)
         _draw_staff(p, rig)
-        _draw_face_and_horns(p, rig)
+        _draw_face_and_horns(p, rig, eyes)
     img = p.render(chama)
     _outline(img)
     return img
@@ -514,8 +516,9 @@ def _make_contact_sheet() -> None:
 _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("default", [], True, 5.0),
     ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
+    ("idle_dim", [f"idle_dim_{i}" for i in range(1, IDLE_DIM_FRAMES + 1)], False, 12.0),
     ("walk", [f"walk_{i + 1}" for i in range(WALK_FRAMES)], True, 8.0),
-    ("windup", ["windup"], False, 5.0),
+    ("windup", ["windup"] + [f"windup_{i}" for i in range(1, WINDUP_FRAMES)], False, 9.0),
     ("strike", ["strike"], False, 5.0),
     ("recover", ["recover"], False, 5.0),
 ]
@@ -564,6 +567,8 @@ _WALK_CYCLE = [
     (-0.6, 0.6, -1.2),
 ]
 
+_WINDUP_COIL = [-1.2, -2.2]  # bob dos 2 frames extras do windup (coil progressivo)
+
 
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
@@ -585,6 +590,21 @@ def generate_all() -> None:
         )
         caipora("walk", swing, chama=True, breath=cbreath, bob=bob).save(
             os.path.join(OUT, f"player_walk_{i + 1}_chama.png")
+        )
+    # Blink: olhos apagam (o vazio os engole; eyes=False no idle). NAO e palpebra.
+    for i in range(1, IDLE_DIM_FRAMES + 1):
+        breath = 0.0 if i == 1 else 1.0
+        caipora("idle", 0, eyes=False, breath=breath).save(
+            os.path.join(OUT, f"player_idle_dim_{i}.png")
+        )
+        caipora("idle", 0, chama=True, eyes=False, breath=breath).save(
+            os.path.join(OUT, f"player_idle_dim_{i}_chama.png")
+        )
+    # Windup: a anticipacao coila mais fundo (bob negativo) frame a frame.
+    for i, wbob in enumerate(_WINDUP_COIL, start=1):
+        caipora("windup", 0, bob=wbob).save(os.path.join(OUT, f"player_windup_{i}.png"))
+        caipora("windup", 0, chama=True, bob=wbob).save(
+            os.path.join(OUT, f"player_windup_{i}_chama.png")
         )
     _write_sprite_frames(False)
     _write_sprite_frames(True)
