@@ -55,17 +55,17 @@ func _apply_screen(screen: SignalBus.Screen) -> void:
 		return
 	_combat = _is_arena(screen)
 	_header.set_player_health(GameState.caipora_current_hp, GameState.caipora_max_hp)
+	# Linha 1 (moeda|mudo) idêntica em TODA tela de jogo — inclusive combate.
+	_header.set_currency(int(MetaProgression.fragments))
+	_header.set_muted(not AudioDirector.is_music_enabled())
 	if _combat:
 		# Força re-setup da barra do inimigo no próximo enemy_health_changed (spawn).
 		_enemy_max = -1.0
 		_enemy_is_boss = false
 		_header.set_mode(HudHeader.Mode.COMBAT)
 	else:
-		# Linha 1 (moeda|mudo) idêntica no acampamento e na exploração.
 		var camp := screen == SignalBus.Screen.HUB
 		_header.set_mode(HudHeader.Mode.CAMP if camp else HudHeader.Mode.EXPLORATION)
-		_header.set_currency(int(MetaProgression.fragments))
-		_header.set_muted(not AudioDirector.is_music_enabled())
 
 func _on_caipora_health(new_health: float, max_health: float) -> void:
 	if _active:
@@ -82,11 +82,11 @@ func _on_enemy_health(new_health: float, max_health: float) -> void:
 	_header.set_enemy_health(new_health, max_health)
 
 func _on_fragment_gained(total: float, amount: float) -> void:
-	if not _active or _combat:
+	if not _active:
 		return
 	_header.set_currency(int(total))
-	if amount <= 0.0:
-		return  # compra no acampamento: o card já mostra o "−custo" flutuante
+	if _combat or amount <= 0.0:
+		return  # combate: sem popup (foco no timing); compra: o card já mostra o "−custo"
 	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
 	var key := &"hud.fragment.pl" if amount != 1.0 else &"hud.fragment.s"
 	_spawn_popup(Lang.tf(key, [n]), Constants.COLOR_AMBER)

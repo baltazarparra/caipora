@@ -9,12 +9,14 @@ func before_each() -> void:
 	_h = HudHeader.new()
 	add_child_autofree(_h)
 
-func test_combat_shows_enemy_hides_currency() -> void:
+func test_combat_shows_enemy_and_standard_header() -> void:
+	# Um só header no jogo inteiro: combate mantém a linha 1 (moeda|mudo) e
+	# só ADICIONA o HP do inimigo à direita (decisão do dono, 2026-07-01).
 	_h.set_mode(HudHeader.Mode.COMBAT)
 	assert_true(_h.player_visible(), "combate mostra HP do jogador")
 	assert_true(_h.enemy_visible(), "combate mostra HP do inimigo")
-	assert_false(_h.currency_visible(), "combate esconde Terra Rara")
-	assert_false(_h.mute_visible(), "combate esconde o mudo")
+	assert_true(_h.currency_visible(), "combate mantém Terra Rara (header padrão)")
+	assert_true(_h.mute_visible(), "combate mantém o mudo (header padrão)")
 
 func test_exploration_shows_currency_hides_enemy() -> void:
 	_h.set_mode(HudHeader.Mode.EXPLORATION)
@@ -61,4 +63,18 @@ func test_exploration_hp_bar_below_top_row() -> void:
 	var row_bottom := maxf(_h._frag.position.y + _h._frag.size.y,
 		_h._mute.position.y + _h._mute.size.y)
 	assert_gt(_h._player_bar.position.y, row_bottom, "HP vive na linha 2, abaixo da linha 1")
+
+func test_combat_bars_on_second_row_enemy_right() -> void:
+	_h.set_mode(HudHeader.Mode.COMBAT)
+	_h.setup_enemy(8.0, false, "Caçador")
+	var row_bottom := maxf(_h._frag.position.y + _h._frag.size.y,
+		_h._mute.position.y + _h._mute.size.y)
+	assert_gt(_h._player_bar.position.y, row_bottom, "barras na linha 2, abaixo da linha 1")
+	assert_eq(_h._player_bar.position.y, _h._enemy_bar.position.y, "barras na mesma linha")
+	assert_lt(_h._player_bar.position.x, _h._enemy_bar.position.x, "inimigo à direita")
+
+func test_combat_builds_four_plates_with_enemy() -> void:
+	_h.set_mode(HudHeader.Mode.COMBAT)
+	_h.setup_enemy(8.0, false, "Caçador")
+	assert_eq(_h._plates.size(), 4, "combate: placas de moeda, mudo, HP jogador e HP inimigo")
 

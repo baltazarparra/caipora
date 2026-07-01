@@ -8,7 +8,8 @@ extends Control
 #
 #   CAMP        →  linha 1: Terra Rara (esq.) | mudo (dir.)  [sem HP: o acampamento cura]
 #   EXPLORATION →  linha 1 idêntica ao CAMP; linha 2: HP do jogador (esq.)
-#   COMBAT      →  HP jogador (esq.)  |  HP inimigo espelhado + NOME REAL (dir.)
+#   COMBAT      →  MESMO header da exploração + HP do inimigo espelhado (dir. da linha 2,
+#                  com NOME REAL) — um só header no jogo inteiro (decisão do dono)
 #   MENU        →  vazio (o menu tem rodapé próprio)
 
 enum Mode { MENU, CAMP, EXPLORATION, COMBAT }
@@ -113,11 +114,11 @@ func _apply_mode() -> void:
 		return
 	var combat := _mode == Mode.COMBAT
 	var exploration := _mode == Mode.EXPLORATION
-	var camp := _mode == Mode.CAMP
 	_player_bar.visible = combat or exploration
 	_enemy_bar.visible = combat
-	_frag.visible = exploration or camp
-	_mute.visible = exploration or camp
+	# Linha 1 (moeda|mudo) vive em TODA tela de jogo — inclusive combate.
+	_frag.visible = _mode != Mode.MENU
+	_mute.visible = _mode != Mode.MENU
 
 func _font_size(vp: Vector2) -> int:
 	return int(clampf(minf(vp.x, vp.y) * 0.026, 14.0, 24.0))
@@ -135,13 +136,14 @@ func relayout() -> void:
 	var side := insets.x
 	var top := insets.y
 	var fs := _font_size(vp)
+	# Linha 2 (barras de HP) senta abaixo das placas da linha 1 — mesma âncora em toda tela.
+	var bar_y := top + top_row_height(vp) + plate_pady() * 2.0 + float(Constants.SPACE_XS)
 	match _mode:
 		Mode.COMBAT:
-			_layout_combat(vp, side, top, fs)
+			_layout_top_row(vp, side, top, fs)
+			_layout_combat(vp, side, bar_y, fs)
 		Mode.EXPLORATION:
 			_layout_top_row(vp, side, top, fs)
-			# HP na linha 2, abaixo das placas da linha 1 (mesmo header do acampamento).
-			var bar_y := top + top_row_height(vp) + plate_pady() * 2.0 + float(Constants.SPACE_XS)
 			_layout_player(vp, side, bar_y, fs)
 		Mode.CAMP:
 			_layout_top_row(vp, side, top, fs)
@@ -173,7 +175,7 @@ func _layout_top_row(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_frag.position = Vector2(side, top + (row_h - _frag.size.y) * 0.5)
 	_mute.position = Vector2(vp.x - side - _mute.size.x, top + (row_h - _mute.size.y) * 0.5)
 
-## Header de luta: jogador (esq.) × inimigo (dir. espelhado), larguras simétricas.
+## Barras de luta (linha 2): jogador (esq.) × inimigo (dir. espelhado), larguras simétricas.
 func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
 	var hw := (clampf(vp.x * 0.40, 300.0, 620.0) if _enemy_is_boss
 		else clampf(vp.x * 0.34, 240.0, 460.0))
@@ -196,6 +198,8 @@ func _rebuild_plates() -> void:
 	var pady := plate_pady()
 	match _mode:
 		Mode.COMBAT:
+			_append_plate([_frag], padx, pady)
+			_append_plate([_mute], padx, pady)
 			_append_plate([_player_bar], padx, pady)
 			if _enemy_max > 0.0:
 				_append_plate([_enemy_bar], padx, pady)
