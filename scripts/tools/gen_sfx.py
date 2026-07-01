@@ -1111,6 +1111,26 @@ def finisher_cortejo_wav():
     return _normalize(mixed, 0.6)
 
 
+def cortejo_charge_wav():
+    # Chamado (SEGURAR): assobio espectral que SOBE de pitch conforme a carga enche
+    # (~CHAMADO_CHARGE_SEC = 1.1s) — a mata respondendo à mão erguida — sobre uma cama
+    # contínua de ar grave (corpo RMS, à la mata_event). Toca 1x ao abrir o medidor;
+    # o release corta o clima com o timing_alert (banda) e a barragem.
+    dur = 1.1
+    n = int(SAMPLE_RATE * dur)
+    # Assobio espectral subindo (170 -> 560 Hz): a resposta da floresta ao chamado.
+    rise = assovio(dur, 170.0, freq_end=560.0, breath=0.4)
+    # Cama grave contínua: drone detunado + ar filtrado com AM lenta (garante o corpo).
+    bed = []
+    for i in range(n):
+        t = i / SAMPLE_RATE
+        drone = math.sin(2 * math.pi * 66.0 * t) + 0.6 * math.sin(2 * math.pi * 99.0 * t)
+        am = 0.6 + 0.4 * math.sin(2 * math.pi * 3.2 * t + 0.5)
+        bed.append((0.5 * drone + _noise() * 0.4 * am) * _env(i, n, 0.1, 0.45) * 0.7)
+    bed = biquad(bed, "lp", 720.0)
+    return _mix(rise, bed)
+
+
 GENERATORS = {
     "attack": attack_wav,
     "hit": hit_wav,
@@ -1135,6 +1155,7 @@ GENERATORS = {
     "erva_vida": erva_vida_wav,
     "combat_block": combat_block_wav,
     "finisher_cortejo": finisher_cortejo_wav,
+    "cortejo_charge": cortejo_charge_wav,
 }
 
 

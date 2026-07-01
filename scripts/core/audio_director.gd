@@ -528,6 +528,16 @@ func play_cortejo_miss() -> void:
 	var miss := SFX_DIR + "cortejo_miss.wav"
 	_play_oneshot_sfx(miss if ResourceLoader.exists(miss) else SFX_DIR + "combat_miss.wav", -2.0)
 
+## Charge do Chamado (SEGURAR): assobio espectral que sobe de pitch (~CHAMADO_CHARGE_SEC).
+## One-shot ao ABRIR o medidor — a mata respondendo à mão erguida. Sem fallback: o
+## lead-in já toca o summon e o release corta o clima com o timing_alert da banda.
+func play_cortejo_charge() -> void:
+	if not _audio_unlocked:
+		return
+	var path := SFX_DIR + "cortejo_charge.wav"
+	if ResourceLoader.exists(path):
+		_play_oneshot_sfx(path, -5.0)
+
 ## Slam de um espírito na barragem: stinger do espírito (assinatura sônica do chefe).
 ## Fallback = morte canônica do chefe (mais baixa) — mesma identidade. `landed` herdado
 ## da API antiga; hoje a barragem só chama com landed=true.

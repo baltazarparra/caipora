@@ -658,6 +658,7 @@ func _start_cortejo_turn() -> void:
 	#    cortejo_charge_opened (ControlsHud, dormente até aqui).
 	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
 	SignalBus.cortejo_charge_opened.emit("ui_up", Constants.CHAMADO_CHARGE_SEC)
+	AudioDirector.play_cortejo_charge()   # assobio subindo de pitch enquanto segura
 	_timing_bubble.show_bubble(pos, Constants.CHAMADO_CHARGE_SEC, Constants.CHAMADO_RELEASE_START, Constants.CHAMADO_RELEASE_END, false, Constants.COLOR_CHAMA_HOT, "up", true, Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_END, spirits.size())
 	_timing_system.open_window(Constants.CHAMADO_CHARGE_SEC, Constants.CHAMADO_RELEASE_START, Constants.CHAMADO_RELEASE_END, false, 0.0, 0.0, "ui_up", "ui_right", true, Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_END)
 	var result: int = await _timing_system.timing_result
