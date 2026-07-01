@@ -52,9 +52,9 @@ func test_not_themed_on_non_exploration() -> void:
 func test_hub_has_camp_flavor() -> void:
 	_st._last_exploration = -1
 	assert_true(_st._is_themed(SignalBus.Screen.HUB), "acampamento dispara flavor")
-	assert_eq(_st._flavor_for(SignalBus.Screen.HUB), _st.CAMP_TEXT,
+	assert_eq(_st._flavor_for(SignalBus.Screen.HUB), Lang.t(&"transition.camp"),
 		"HUB usa o texto calmo do acampamento")
-	assert_eq(_st._flavor_for(SignalBus.Screen.EXPLORATION_PHASE2), _st.THEMED_TEXT,
+	assert_eq(_st._flavor_for(SignalBus.Screen.EXPLORATION_PHASE2), Lang.t(&"transition.themed"),
 		"avanço de fase mantém o texto da mata")
 
 # ── transition_to atualiza a última exploração visitada ──

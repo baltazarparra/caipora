@@ -12,20 +12,23 @@ const STRINGS: Dictionary = {
 	&"options.reset.done":      "Gone.",
 
 	# Hub Shop
-	&"hub.fragments":           "Rare Earth: %d",
-	&"hub.track.furia":         "FURY · damage",
-	&"hub.track.cura":          "HEAL · life",
-	&"hub.track.complete":      "track complete",
-	&"hub.next.phase":          "next: %s — Phase %d",
-	&"hub.next.fire":           "next: %s — at the next camp",
+	&"hub.track.furia":         "DAMAGE",
+	&"hub.track.cura":          "LIFE",
 
 	# Hub Card
-	&"card.cost":               "%d Rare Earth",
-	&"card.cost.short":         "%d RE",
 	&"card.effect.dmg":         "Dmg +%d/hit (total %d)",
 	&"card.effect.hp":          "+%d HP (total %d)",
 	&"card.effect.dmg.short":   "+%d dmg",
 	&"card.effect.hp.short":    "+%d HP",
+
+	# Transitions / combat callouts
+	&"transition.themed":       "the woods rearrange...",
+	&"transition.camp":         "the camp breathes...",
+	&"move.caipora.normal":     "Garra Rubra",
+	&"move.caipora.double":     "Açoite do Cipó",
+	&"move.caipora.cortejo":    "Batuque do Cortejo",
+	&"hub.exit.trail":          "trail",
+	&"combat.timing.good":      "GOOD",
 
 	# HUD
 	&"hud.player":              "CAIPORA",
@@ -86,9 +89,9 @@ const STRINGS: Dictionary = {
 	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
 	&"cortejo.unlock.subtitle.first":  "OBTAINED!",
 	&"cortejo.unlock.subtitle.hit":    "STRIKE UNLOCKED!",
-	&"cortejo.unlock.desc.first":      "Sometimes on your turn: HOLD ↑ to charge and RELEASE when the fire fills. Hit = every freed spirit crashes down at once. Miss = counter-attack.",
+	&"cortejo.unlock.desc.first":      "Sometimes on your turn: tap ↑ inside the perfect window. Hit = every freed spirit crashes down at once. Miss = counter-attack.",
 	&"cortejo.unlock.desc.hit":        "The Cortejo now crashes %d spirits down at once.",
-	&"cortejo.unlock.demo":            "Hold ↑ and release at the perfect moment",
+	&"cortejo.unlock.demo":            "Tap ↑ at the perfect moment",
 	&"cortejo.unlock.hint":            "press to continue",
 
 	# Hub Manager — arrival rites

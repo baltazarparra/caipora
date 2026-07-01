@@ -16,10 +16,9 @@ const DOT_SIZE: int = 10
 const DOT_GAP: int = 8
 const MAX_LINKS: int = 4
 
-# Demo do Golpe Carregado: a seta de fogo NOVA carrega por segundos e solta, em loop —
-# ensina o gesto segurar→soltar com o MESMO widget que aparece no combate (TimingBubble).
-const DEMO_CHARGE_DURATION: float = 2.2   # "segurada por segundos"
-const DEMO_RELEASE_AT: float = 0.7        # solta a 70% (dentro da zona confortável)
+# Demo do Golpe Perfeito: a seta abre uma janela única e estoura no centro, em loop.
+const DEMO_WINDOW_DURATION: float = 1.15
+const DEMO_TAP_AT: float = 0.52
 const DEMO_REST: float = 0.7              # pausa antes de repetir o ciclo
 
 const BOSS_SPRITE_PATH: Dictionary = {
@@ -58,7 +57,7 @@ func start(link_count: int) -> void:
 	_run_animation()
 	get_tree().create_timer(MIN_SKIP_DELAY).timeout.connect(func() -> void: _ready_to_dismiss = true)
 	if _demo_bubble != null:  # começa o loop da demo após a varredura dos painéis
-		get_tree().create_timer(SWEEP_DURATION).timeout.connect(_run_charge_demo)
+		get_tree().create_timer(SWEEP_DURATION).timeout.connect(_run_perfect_demo)
 
 # ─── Input ─────────────────────────────────────────
 func _input(event: InputEvent) -> void:
@@ -216,12 +215,12 @@ func _build() -> void:
 	desc_lbl.name = &"DescLabel"
 	add_child(desc_lbl)
 
-	# Demo do Golpe Carregado (só na 1ª liberação): a seta de fogo NOVA carregando e
-	# soltando em loop, no painel direito (laranja Caipora). Mesmo widget do combate.
+	# Demo do Golpe Perfeito (só na 1ª liberação): uma janela única de toque, no painel
+	# direito (laranja Caipora). Mesmo widget do combate.
 	if is_first:
 		var demo := TimingBubble.new()
 		demo.position = Vector2(cx * 1.5, cy * 0.6)
-		demo.name = &"ChargeDemo"
+		demo.name = &"PerfectDemo"
 		add_child(demo)
 		_demo_bubble = demo
 
@@ -315,22 +314,22 @@ func _start_hint_pulse(hint: Label) -> void:
 	pulse.tween_property(hint, "modulate:a", 0.8, 0.65) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
-# ─── Demo do Golpe Carregado (loop segurar→soltar) ──
+# ─── Demo do Golpe Perfeito (loop janela→toque) ─────
 ## Re-arma a si mesmo a cada ciclo; para sozinho quando a tela sai da árvore (free).
-func _run_charge_demo() -> void:
+func _run_perfect_demo() -> void:
 	if not is_inside_tree() or _demo_bubble == null or not is_instance_valid(_demo_bubble):
 		return
 	_demo_bubble.show_bubble(
-		_demo_bubble.position, DEMO_CHARGE_DURATION,
-		Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE,
-		false, Constants.COLOR_CHAMA_HOT, "up", true
+		_demo_bubble.position, DEMO_WINDOW_DURATION,
+		Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END,
+		false, Constants.COLOR_CHAMA_HOT, "up", false
 	)
-	get_tree().create_timer(DEMO_CHARGE_DURATION * DEMO_RELEASE_AT).timeout.connect(_demo_release)
-	get_tree().create_timer(DEMO_CHARGE_DURATION * DEMO_RELEASE_AT + DEMO_REST).timeout.connect(_run_charge_demo)
+	get_tree().create_timer(DEMO_WINDOW_DURATION * DEMO_TAP_AT).timeout.connect(_demo_tap)
+	get_tree().create_timer(DEMO_WINDOW_DURATION + DEMO_REST).timeout.connect(_run_perfect_demo)
 
-func _demo_release() -> void:
+func _demo_tap() -> void:
 	if is_instance_valid(_demo_bubble):
-		_demo_bubble.burst_success()   # "solta" no momento perfeito → estouro de luz
+		_demo_bubble.burst_success()
 
 # ─── Helpers ───────────────────────────────────────
 func _viewport_size() -> Vector2:

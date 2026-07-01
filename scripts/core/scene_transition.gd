@@ -13,8 +13,6 @@ const FADE_OUT := 0.22
 const FADE_IN := 0.28
 const TEXT_FADE := 0.18
 const TEXT_HOLD := 0.5
-const THEMED_TEXT := "a mata se reorganiza..."
-const CAMP_TEXT := "o acampamento respira..."
 # Assinatura dos olhos: iguais, duros, sem halo (docs/CONCEITO-protagonista.md).
 const EYE_SIZE := Vector2(12, 14)
 const EYE_GAP := 18.0
@@ -86,9 +84,9 @@ func _is_exploration(s: int) -> bool:
 
 func _flavor_for(new_screen: int) -> String:
 	if _is_exploration(new_screen) and new_screen != _last_exploration:
-		return THEMED_TEXT
+		return Lang.t(&"transition.themed")
 	if new_screen == SignalBus.Screen.HUB:
-		return CAMP_TEXT
+		return Lang.t(&"transition.camp")
 	return ""
 
 

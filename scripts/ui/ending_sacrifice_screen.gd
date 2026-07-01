@@ -12,8 +12,6 @@ extends CanvasLayer
 ## empoçado sob ela. Não suavizar.
 
 const FADE_IN_DURATION: float = 1.8
-const MESSAGE_1 := "a caipora não respira mais"
-const MESSAGE_2 := "a floresta virou cristã"
 const MESSAGE_1_DELAY: float = 2.2
 const MESSAGE_FADE: float = 2.4
 const MESSAGE_2_GAP: float = 1.4

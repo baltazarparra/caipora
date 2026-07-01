@@ -13,6 +13,7 @@ const GAP: float = 8.0        # respiro entre ícone e número
 # ─── State ─────────────────────────────────────────
 var _count: int = 0
 var _glyph_size: float = 1.0
+var _font_size: int = Constants.FONT_MD
 var _label: Label
 var _pop_tween: Tween
 
@@ -24,6 +25,7 @@ func _ready() -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
+	_label.add_theme_font_size_override("font_size", _font_size)
 	add_child(_label)
 	_relayout()
 
@@ -39,6 +41,7 @@ func set_count(value: int) -> void:
 		_pop()
 
 func configure_size(font_size: int) -> void:
+	_font_size = font_size
 	_glyph_size = clampf(float(font_size) / float(Constants.FONT_MD), 0.7, 1.6)
 	if _label != null:
 		_label.add_theme_font_size_override("font_size", font_size)

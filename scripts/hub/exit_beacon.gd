@@ -11,11 +11,13 @@ const EDGE_MARGIN := 72.0      # afastamento da seta em relação à borda da te
 const ARROW_LEN := 24.0        # meio-comprimento do triângulo (ponta ↔ base)
 const ARROW_HALF_W := 18.0     # meia-largura da base do triângulo
 const ON_SCREEN_INSET := 28.0  # folga: trata como "na tela" um pouco antes da borda real
-const LABEL := "rastro"
 const LABEL_FONT_SIZE := 16
 
 var _target_world: Vector2
 var _pulse: float = 0.0
+
+func _ready() -> void:
+	Lang.language_changed.connect(func(_lang: StringName) -> void: queue_redraw())
 
 func setup(target_world: Vector2) -> void:
 	_target_world = target_world
@@ -64,9 +66,10 @@ func _draw_arrow(pos: Vector2, dir: Vector2, alpha: float) -> void:
 	var font := ThemeDB.fallback_font
 	if font == null:
 		return
-	var size := font.get_string_size(LABEL, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_SIZE)
+	var label := Lang.t(&"hub.exit.trail")
+	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_SIZE)
 	var anchor := pos - dir * (ARROW_LEN + 8.0)
 	draw_string(
-		font, anchor - Vector2(size.x * 0.5, -size.y * 0.5), LABEL,
+		font, anchor - Vector2(size.x * 0.5, -size.y * 0.5), label,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_SIZE, color
 	)

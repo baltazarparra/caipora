@@ -368,7 +368,7 @@ func _start_caipora_turn() -> void:
 	var move: Dictionary = Constants.CAIPORA_MOVE_DOUBLE if _is_double_attack else Constants.CAIPORA_MOVE_NORMAL
 	if not _sfx.play_named(move["audio"]):
 		_sfx.play(_sfx.attack_sound)
-	_feedback.spawn_move_name(move["name"], _caipora.position + Vector2(0, -64.0))
+	_feedback.spawn_move_name(Lang.t(move["name_key"]), _caipora.position + Vector2(0, -64.0))
 	_feedback.spawn_attack_vfx(move["vfx"], _caipora.position + Vector2(0, -20.0))
 	# Cipó armado enquanto a janela está aberta — antecipação do bote.
 	_animator.play_pose(_caipora, &"windup")
@@ -571,7 +571,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 			_feedback.spawn_bubble_burst(_timing_bubble.position, Constants.COLOR_GOOD)
 			_feedback.trigger_hit_stop(2)
 			_animator.strike(_caipora)
-			_feedback.spawn_move_name("BOM", _timing_bubble.position + Vector2(0, -55))
+			_feedback.spawn_move_name(Lang.t(&"combat.timing.good"), _timing_bubble.position + Vector2(0, -55))
 	else:
 		_timing_bubble.burst_fail()
 		_feedback.spawn_fail_particles(_timing_bubble.position)
@@ -605,16 +605,13 @@ func _start_cortejo_turn() -> void:
 	if _combat_over or not _both_alive():
 		_end_cortejo()
 		return
-	# 2. Janela ÚNICA de CARGA: SEGURA ui_up para carregar, SOLTA na zona confortável.
-	#    Janela com piso por fase (golpe-recompensa não vira frame-perfect). A bolha vira
-	#    medidor de fogo; a carga espelha no D-pad (ControlsHud) via SignalBus.
+	# 2. Janela ÚNICA de toque: ui_up no mesmo contrato do ataque normal.
+	#    Binária de propósito: perfeito invoca a barragem, erro abre contra-ataque.
 	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
 	var window: float = Constants.cortejo_window_for_phase(GameState.active_phase)
-	_timing_bubble.show_bubble(pos, window, Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE, false, Constants.COLOR_CHAMA_HOT, "up", true)
-	_timing_system.open_window(window, Constants.CORTEJO_CHARGE_FULL, Constants.CORTEJO_OVERCHARGE, false, 0.0, 0.0, "ui_up", "ui_right", true)
-	SignalBus.cortejo_charge_opened.emit("ui_up", window)
+	_timing_bubble.show_bubble(pos, window, Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END, false, Constants.COLOR_CHAMA_HOT, "up", false)
+	_timing_system.open_window(window, Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END, false, 0.0, 0.0, "ui_up")
 	var result: int = await _timing_system.timing_result
-	SignalBus.cortejo_charge_closed.emit()  # soltou/estourou/expirou → apaga o fogo do D-pad
 	if _combat_over or not _both_alive():
 		_timing_bubble.hide_bubble()
 		_end_cortejo()
@@ -635,7 +632,6 @@ func _start_cortejo_turn() -> void:
 func _end_cortejo() -> void:
 	_apparition.finish()
 	AudioDirector.set_cortejo_active(false)
-	SignalBus.cortejo_charge_closed.emit()  # defensivo: garante o D-pad limpo em qualquer saída
 	Engine.time_scale = 1.0
 
 ## Lead-in: slow-mo curto + cue de convocação. Os timers IGNORAM o time_scale (senão a
@@ -643,7 +639,7 @@ func _end_cortejo() -> void:
 func _cortejo_lead_in() -> void:
 	_sfx.play(_sfx.attack_sound)
 	# Identidade do Cortejo: tag + VFX de espíritos (o som é o Batuque/summon próprio).
-	_feedback.spawn_move_name(Constants.CAIPORA_MOVE_CORTEJO["name"], _caipora.position + Vector2(0, -64.0))
+	_feedback.spawn_move_name(Lang.t(Constants.CAIPORA_MOVE_CORTEJO["name_key"]), _caipora.position + Vector2(0, -64.0))
 	_feedback.spawn_attack_vfx(Constants.CAIPORA_MOVE_CORTEJO["vfx"], _caipora.position + Vector2(0, -20.0))
 	_animator.play_pose(_caipora, &"windup")
 	_apparition.begin()

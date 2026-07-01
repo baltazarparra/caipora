@@ -111,7 +111,7 @@ func test_sacrifice_ending_body_is_base_dead_pose() -> void:
 		"a pose já nasce deitada — nada de sprite de pé rotacionada")
 
 func test_sacrifice_messages_are_the_inverse_of_the_living_forest() -> void:
-	assert_eq(EndingSacrificeScreen.MESSAGE_2, "a floresta virou cristã",
+	assert_eq(Lang.t(&"sacrifice.msg2"), "a floresta virou cristã",
 		"a mensagem do céu convertido")
-	assert_eq(EndingScreen.SKY_MESSAGE, "a floresta segue respirando",
+	assert_eq(Lang.t(&"ending.sky"), "a floresta segue respirando",
 		"a mensagem do céu vivo (final canônico)")

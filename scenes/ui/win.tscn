@@ -31,5 +31,5 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.788, 0.82, 0.851, 1)
 theme_override_font_sizes/font_size = 12
-text = "Espaço para voltar ao acampamento"
+text = ""
 horizontal_alignment = 1

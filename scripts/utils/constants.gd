@@ -133,14 +133,10 @@ const CORTEJO_LINK_HITS: int = 2            # hits de dano por espírito na barr
 # força do Golpe Perfeito vem do NÚMERO de hits (espíritos × LINK_HITS), não da
 # magnitude por golpe. Antes cada hit usava execute_attack() e estourava o dano.
 const CORTEJO_HIT_DAMAGE: float = 1.0
-# GOLPE CARREGADO (hold-to-charge): o jogador SEGURA ui_up para carregar e SOLTA na
-# zona confortável. A carga acompanha o progresso da janela; o que conta é o instante
-# do SOLTAR. A zona de soltar é larga DE PROPÓSITO (golpe-recompensa, nada frame-perfect).
-#   < CHARGE_FULL  → carga fraca, solta cedo → whiff
-#   [FULL, OVER]   → SOLTE AQUI → barragem (PERFEITO)
-#   > OVERCHARGE   → estourou (segurou demais) → whiff
-const CORTEJO_CHARGE_FULL: float = 0.50     # carga cheia: a partir daqui soltar é perfeito
-const CORTEJO_OVERCHARGE: float = 0.92      # passou daqui segurando → estoura
+# Janela binária do toque perfeito: o jogador toca ui_up dentro desta faixa normalizada.
+# Sem GOOD aqui por decisão de design: acerto = barragem; erro = contra-ataque.
+const CORTEJO_PERFECT_START: float = 0.42
+const CORTEJO_PERFECT_END: float = 0.62
 # Janela confortável: base + bônus de touch, com PISO por fase (golpe-recompensa não
 # aperta nas fases altas). Use cortejo_window_for_phase(), não timing_window_for_phase().
 const CORTEJO_WINDOW_BASE: float = 0.95
@@ -154,7 +150,7 @@ const CORTEJO_SPIRIT_TELEGRAPH: float = 0.12   # antecipação antes do espírit
 const CORTEJO_HIT_GAP: float = 0.14            # intervalo entre hits do mesmo espírito
 const CORTEJO_SPIRIT_GAP: float = 0.22         # intervalo entre espíritos da corrente
 
-## Janela de ação do Golpe Carregado na fase: parte da fórmula padrão mas respeita um
+## Janela de ação do Golpe Perfeito na fase: parte da fórmula padrão mas respeita um
 ## PISO confortável (CORTEJO_WINDOW_FLOOR) — o golpe-recompensa nunca vira frame-perfect.
 static func cortejo_window_for_phase(phase: int) -> float:
 	return maxf(timing_window_for_phase(CORTEJO_WINDOW_BASE, phase), CORTEJO_WINDOW_FLOOR)
@@ -163,9 +159,9 @@ static func cortejo_window_for_phase(phase: int) -> float:
 # Poucos e fixos (a Caipora não tem catálogo de .tres): nome + som (sfx/<audio>.wav,
 # via SfxSystem.play_named) + vfx (FeedbackSystem._VFX_BY_ID). audio "" = sem som
 # próprio (Cortejo já soa pelo Batuque/play_cortejo_*). Espelha os mv_* do gen_sfx.
-const CAIPORA_MOVE_NORMAL := {"name": "Garra Rubra", "audio": "mv_garra_rubra", "vfx": "garra_rubra"}
-const CAIPORA_MOVE_DOUBLE := {"name": "Açoite do Cipó", "audio": "mv_acoite_cipo", "vfx": "acoite_cipo"}
-const CAIPORA_MOVE_CORTEJO := {"name": "Batuque do Cortejo", "audio": "", "vfx": "batuque_cortejo"}
+const CAIPORA_MOVE_NORMAL := {"name_key": &"move.caipora.normal", "audio": "mv_garra_rubra", "vfx": "garra_rubra"}
+const CAIPORA_MOVE_DOUBLE := {"name_key": &"move.caipora.double", "audio": "mv_acoite_cipo", "vfx": "acoite_cipo"}
+const CAIPORA_MOVE_CORTEJO := {"name_key": &"move.caipora.cortejo", "audio": "", "vfx": "batuque_cortejo"}
 
 ## Espíritos da barragem a partir das fases libertadas: ordenadas e cortadas no teto.
 ## Seam puro/testável: a arena lê isto para a barragem e para o cálculo de dano.

@@ -11,20 +11,23 @@ const STRINGS: Dictionary = {
 	&"options.reset.done":      "Progresso apagado",
 
 	# Hub Shop
-	&"hub.fragments":           "Terra Rara: %d",
-	&"hub.track.furia":         "FÚRIA · dano",
-	&"hub.track.cura":          "CURA · vida",
-	&"hub.track.complete":      "trilha completa",
-	&"hub.next.phase":          "próxima: %s — Fase %d",
-	&"hub.next.fire":           "próxima: %s — na próxima fogueira",
+	&"hub.track.furia":         "DANO",
+	&"hub.track.cura":          "VIDA",
 
 	# Hub Card
-	&"card.cost":               "%d de Terra Rara",
-	&"card.cost.short":         "%d TR",
 	&"card.effect.dmg":         "Dano +%d/hit (total %d)",
 	&"card.effect.hp":          "+%d HP (total %d)",
 	&"card.effect.dmg.short":   "+%d dano",
 	&"card.effect.hp.short":    "+%d HP",
+
+	# Transitions / combat callouts
+	&"transition.themed":       "a mata se reorganiza...",
+	&"transition.camp":         "o acampamento respira...",
+	&"move.caipora.normal":     "Garra Rubra",
+	&"move.caipora.double":     "Açoite do Cipó",
+	&"move.caipora.cortejo":    "Batuque do Cortejo",
+	&"hub.exit.trail":          "rastro",
+	&"combat.timing.good":      "BOM",
 
 	# HUD
 	&"hud.player":              "CAIPORA",
@@ -85,9 +88,9 @@ const STRINGS: Dictionary = {
 	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
 	&"cortejo.unlock.subtitle.first":  "OBTIDO!",
 	&"cortejo.unlock.subtitle.hit":    "GOLPE LIBERADO!",
-	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: SEGURE ↑ para carregar e SOLTE quando o fogo encher. Acertar = todos os espíritos libertados desabam de uma vez. Errar = contra-ataque.",
+	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: toque ↑ na janela perfeita. Acertar = todos os espíritos libertados desabam de uma vez. Errar = contra-ataque.",
 	&"cortejo.unlock.desc.hit":        "O Cortejo agora desaba %d espíritos de uma vez.",
-	&"cortejo.unlock.demo":            "Segure ↑ e solte no momento perfeito",
+	&"cortejo.unlock.demo":            "Toque ↑ no momento perfeito",
 	&"cortejo.unlock.hint":            "pressione para continuar",
 
 	# Hub Manager — ritos de chegada

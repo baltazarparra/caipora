@@ -1,21 +1,20 @@
 class_name HubShop
 extends CanvasLayer
 
-# Interface de aprimoramentos do Hub: cabeçalho com FRAGMENTOS + resumo de bônus + Opções, e
+# Interface de aprimoramentos do Hub: cabeçalho com Terra Rara compacta + som, e
 # os cards clicáveis das ervas disponíveis numa faixa compacta no topo, agrupados por trilha
-# (FÚRIA · dano e CURA · vida). Substitui as ervas pequenas no chão da Fase 9 por algo claro
+# (DANO e VIDA). Substitui as ervas pequenas no chão da Fase 9 por algo claro
 # de ler/clicar/entender. purchase_upgrade continua a fonte única de custo/requires/persistência.
 #
 # Regra de pacing preservada da Etapa 2: o conjunto de cards é montado UMA vez na ENTRADA
 # (available_keys). Comprar uma erva NÃO faz a próxima da cadeia aparecer nesta fogueira — ela
-# "nasce na próxima fogueira" (a coluna mostra esse status). Os fundos ignoram o mouse para
-# não engolir o D-pad de toque nem a caminhada até o rastro de saída.
+# nasce só na próxima visita. Os fundos ignoram o mouse para não engolir o D-pad de toque nem
+# a caminhada até o rastro de saída.
 
 # Sucesso/recusa de compra — o HubManager escuta para tocar o SFX (dono do SfxSystem).
 signal purchased(key: String)
 signal denied(key: String)
 
-const HINT_COLOR := Color(0.55, 0.55, 0.58, 1.0)
 const COLUMN_SEP := 48         # separação entre as trilhas lado a lado (paisagem)
 const PORTRAIT_TRACK_SEP := 16 # separação entre as trilhas empilhadas (retrato)
 const CARD_WIDTH_MAX := 330    # teto da largura de coluna em paisagem
@@ -27,7 +26,7 @@ const HEADER_BAND_OFFSET := 44.0  # altura da linha de fragmentos do cabeçalho
 
 # ─── State ─────────────────────────────────────────
 var _root: Control
-var _frag_label: Label
+var _frag_counter: FragmentCounter
 var _sound_button: SpeakerButton
 var _margin: MarginContainer
 # Bandeja dos cards: ancorada no topo, abaixo do cabeçalho (ambas as orientações).
@@ -71,7 +70,7 @@ func _build() -> void:
 	Lang.language_changed.connect(_refresh_text)
 	refresh()
 
-# Cabeçalho: [ fragmentos + bônus à esquerda ] ··· [ mute à direita ].
+# Cabeçalho: [ Terra Rara compacta ] ··· [ mute à direita ].
 func _build_header() -> void:
 	_margin = MarginContainer.new()
 	_margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
@@ -88,10 +87,9 @@ func _build_header() -> void:
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(vbox)
 
-	_frag_label = Label.new()
-	_frag_label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	_frag_label.add_theme_font_size_override("font_size", Constants.FONT_LG)
-	vbox.add_child(_frag_label)
+	_frag_counter = FragmentCounter.new()
+	_frag_counter.configure_size(Constants.FONT_LG)
+	vbox.add_child(_frag_counter)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -139,7 +137,7 @@ func _build_cards() -> void:
 	_furia_heading = _columns["furia"]["heading"]
 	_cura_heading  = _columns["cura"]["heading"]
 
-# Uma trilha: título + os cards disponíveis (ou um status do que vem a seguir).
+# Uma trilha: título + os cards disponíveis. Trilha sem card fica limpa.
 func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictionary:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
@@ -157,9 +155,7 @@ func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictiona
 
 	var column := { "vbox": vbox, "heading": heading, "cards": [] as Array }
 	var avail := MetaProgression.available_keys(keys)
-	if avail.is_empty():
-		_add_status(column, keys)
-	else:
+	if not avail.is_empty():
 		for key: String in avail:
 			var card := HubCard.new()
 			vbox.add_child(card)
@@ -169,31 +165,6 @@ func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictiona
 			card.focus_entered.connect(AudioDirector.play_ui_hover)
 			column["cards"].append(card)
 	return column
-
-# Status da trilha sem card disponível: o que vem a seguir (ou trilha completa).
-func _add_status(column: Dictionary, keys: Array) -> void:
-	var status := Label.new()
-	status.text = _trilha_status_text(keys)
-	status.add_theme_color_override("font_color", HINT_COLOR)
-	status.add_theme_font_size_override("font_size", Constants.FONT_SM)
-	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status.custom_minimum_size = Vector2(_card_w, 0)
-	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column["vbox"].add_child(status)
-	column["status"] = status
-
-## Explica o próximo passo de uma trilha sem erva disponível: erva pendente travada por fase,
-## travada pela regra desta-fogueira (requisito já cumprido) ou trilha completa.
-func _trilha_status_text(keys: Array) -> String:
-	var pending := MetaProgression.next_pending_key(keys)
-	if pending == "":
-		return Lang.t(&"hub.track.complete")
-	var def: Dictionary = MetaProgression.UPGRADE_DEFS[pending]
-	var nm: String = String(def.get("name", pending))
-	if MetaProgression.phase_reached < int(def.get("phase", 1)):
-		return Lang.tf(&"hub.next.phase", [nm, int(def.get("phase", 1))])
-	return Lang.tf(&"hub.next.fire", [nm])
 
 # ─── Compra ────────────────────────────────────────
 func _on_card_pressed(card: HubCard) -> void:
@@ -224,21 +195,19 @@ func _card_for(key: String) -> HubCard:
 				return card
 	return null
 
-# Tira o card da coluna; se a coluna esvaziou, mostra o status do que vem a seguir.
+# Tira o card da coluna; se a coluna esvaziou, ela fica limpa até a próxima visita.
 func _remove_card(card: HubCard) -> void:
 	var line: String = String(MetaProgression.UPGRADE_DEFS[card.key].get("line", ""))
 	if not _columns.has(line):
 		return
 	var column: Dictionary = _columns[line]
 	column["cards"].erase(card)
-	if column["cards"].is_empty():
-		var keys: Array = MetaProgression.FURIA_KEYS if line == "furia" else MetaProgression.CURA_KEYS
-		_add_status(column, keys)
 
 ## Reescreve fragmentos/bônus e re-avalia o brilho de cada card (comprar pode ter esvaziado o
 ## bolso). Fonte de verdade: MetaProgression.
 func refresh() -> void:
-	_frag_label.text = Lang.tf(&"hub.fragments", [int(MetaProgression.fragments)])
+	if is_instance_valid(_frag_counter):
+		_frag_counter.set_count(int(MetaProgression.fragments))
 	for line: String in _columns:
 		for card: HubCard in _columns[line]["cards"]:
 			card.set_affordable(MetaProgression.fragments >= card.cost)
@@ -248,6 +217,9 @@ func _refresh_text(_lang: StringName = Lang.current()) -> void:
 		_furia_heading.text = Lang.t(&"hub.track.furia")
 	if is_instance_valid(_cura_heading):
 		_cura_heading.text = Lang.t(&"hub.track.cura")
+	for line: String in _columns:
+		for card: HubCard in _columns[line]["cards"]:
+			card.refresh_text()
 	refresh()
 
 # Número flutuante "−custo" subindo do card (screen-space, sobre o _root).
@@ -320,8 +292,6 @@ func _relayout() -> void:
 	for line: String in _columns:
 		var col: Dictionary = _columns[line]
 		col["vbox"].custom_minimum_size = Vector2(_card_w, 0)
-		if col.has("status") and is_instance_valid(col["status"]):
-			col["status"].custom_minimum_size = Vector2(_card_w, 0)
 		for card: HubCard in col["cards"]:
 			card.relayout(_card_w)
 	_position_band(vp)

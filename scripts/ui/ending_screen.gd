@@ -6,7 +6,6 @@ extends CanvasLayer
 ## A mensagem no céu fecha a escolha: a guardiã matou — e a floresta segue viva.
 
 const FADE_IN_DURATION: float = 1.2
-const SKY_MESSAGE := "a floresta segue respirando"
 const SKY_MESSAGE_DELAY: float = 1.6
 const SKY_MESSAGE_FADE: float = 2.6
 
