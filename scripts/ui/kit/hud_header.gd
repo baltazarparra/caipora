@@ -25,6 +25,7 @@ var _mute: SpeakerButton
 var _enemy_max: float = -1.0
 var _enemy_is_boss: bool = false
 var _enemy_name: String = ""
+var _plates: Array[Rect2] = []
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -140,6 +141,8 @@ func relayout() -> void:
 			_layout_right_group(vp, side, top, fs)
 		_:
 			pass  # MENU: header vazio
+	_rebuild_plates()
+	queue_redraw()
 
 func _layout_player(vp: Vector2, side: float, top: float, fs: int) -> void:
 	var pw := clampf(vp.x * 0.24, 220.0, 420.0)
@@ -169,3 +172,41 @@ func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_player_bar.position = Vector2(side, top)
 	_enemy_bar.configure_size(hw, fs)
 	_enemy_bar.position = Vector2(vp.x - side - hw, top)
+
+# ─── Placas serrilhadas por grupo (chrome "casca flutuante") ───
+func _rebuild_plates() -> void:
+	_plates.clear()
+	var padx := float(Constants.SPACE_SM)
+	var pady := float(Constants.SPACE_XS) + Constants.CHROME_SAW_DEPTH
+	match _mode:
+		Mode.COMBAT:
+			_append_plate([_player_bar], padx, pady)
+			if _enemy_max > 0.0:
+				_append_plate([_enemy_bar], padx, pady)
+		Mode.EXPLORATION:
+			_append_plate([_player_bar], padx, pady)
+			_append_plate([_frag, _mute], padx, pady)
+		Mode.CAMP:
+			_append_plate([_frag, _mute], padx, pady)
+		_:
+			pass
+
+func _append_plate(nodes: Array, padx: float, pady: float) -> void:
+	var min_p := Vector2(INF, INF)
+	var max_p := Vector2(-INF, -INF)
+	for node: Control in nodes:
+		if node == null or not node.visible:
+			continue
+		min_p = min_p.min(node.position)
+		max_p = max_p.max(node.position + node.size)
+	if min_p.x == INF:
+		return
+	_plates.append(Rect2(min_p - Vector2(padx, pady), (max_p - min_p) + Vector2(padx * 2.0, pady * 2.0)))
+
+func _draw() -> void:
+	var bg := Constants.COLOR_NIGHT
+	bg.a = 0.8
+	for plate: Rect2 in _plates:
+		if plate.size.x <= 1.0 or plate.size.y <= 1.0:
+			continue
+		BrandFrame.draw_plate(self, plate, bg, Constants.COLOR_JUBA_DARK)

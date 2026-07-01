@@ -34,6 +34,10 @@ var _enemy_max: float = -1.0
 var _enemy_is_boss: bool = false
 
 func _ready() -> void:
+	# Estrangulamento: se o UiRoot é dono do header desta tela (ex.: exploração migrada),
+	# o Hud embutido se recolhe — o header vem do UiRoot. Ver scripts/ui/ui_root.gd.
+	if UiRoot.owns(GameState.current_screen):
+		return
 	_root = Control.new()
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE

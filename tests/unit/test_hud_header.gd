@@ -41,3 +41,12 @@ func test_safe_insets_clamped() -> void:
 	var big := Constants.safe_insets(Vector2(4000, 4000))
 	assert_eq(big.x, 80.0, "lateral clampa no máximo")
 	assert_eq(big.y, 64.0, "topo clampa no máximo")
+
+func test_exploration_builds_two_plates() -> void:
+	# Redesign "placas flutuantes": HP numa placa, Terra Rara+mudo noutra.
+	_h.set_mode(HudHeader.Mode.EXPLORATION)
+	assert_eq(_h._plates.size(), 2, "exploração: placa do HP + placa de moeda/mudo")
+
+func test_camp_builds_one_plate() -> void:
+	_h.set_mode(HudHeader.Mode.CAMP)
+	assert_eq(_h._plates.size(), 1, "acampamento: só a placa de moeda/mudo")

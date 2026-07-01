@@ -1,13 +1,10 @@
 extends SceneTree
 
-## Captura dev-only do HUD (precisa de DISPLAY; Xvfb serve). Renderiza o HUD em modo
-## exploração (2x tátil no retrato: mudo + Terra Rara) ou em modo combate (header
-## espelhado jogador × adversário). Salva o frame inteiro em --out.
+## Captura dev-only do HUD unificado (HudHeader). Precisa de DISPLAY (Xvfb serve).
+## Renderiza o header em um dos modos, com as placas serrilhadas flutuantes.
 ## Uso: xvfb-run -a godot --path . --resolution 393x852 \
-##     -s scripts/tools/preview_hud.gd -- --mode=combat --out=/tmp/hud.png
-##   --mode: explore | combat | combat_boss
-
-const HUD_SCENE := "res://scenes/ui/hud.tscn"
+##     -s scripts/tools/preview_hud.gd -- --mode=explore --out=/tmp/hud.png
+##   --mode: explore | combat | combat_boss | camp
 
 var _out: String = "/tmp/hud.png"
 var _mode: String = "explore"
@@ -21,23 +18,28 @@ func _initialize() -> void:
 			_mode = arg.substr("--mode=".length())
 
 func _process(_delta: float) -> bool:
+	# Frame 1: autoloads já rodaram _ready (gotcha #14) — seguro configurar o estado aqui.
 	_frames += 1
 	if _frames == 1:
 		var gs: Node = root.get_node("GameState")
 		gs.caipora_max_hp = 10.0
 		gs.caipora_current_hp = 7.0
-		var combat: bool = _mode == "combat" or _mode == "combat_boss"
-		gs.active_combat_is_boss = _mode == "combat_boss"
-		var hud: Node = (load(HUD_SCENE) as PackedScene).instantiate()
-		hud.show_enemy_hp = combat
-		root.add_child(hud)
-		var bus: Node = root.get_node("SignalBus")
-		bus.caipora_health_changed.emit(7.0, 10.0)
-		if combat:
-			var emax: float = 36.0 if _mode == "combat_boss" else 8.0
-			bus.enemy_health_changed.emit(emax * 0.55, emax)
-		else:
-			bus.fragment_gained.emit(12.0, 12.0)
+		var header := HudHeader.new()
+		root.add_child(header)
+		match _mode:
+			"combat", "combat_boss":
+				header.set_mode(HudHeader.Mode.COMBAT)
+				var boss: bool = _mode == "combat_boss"
+				var emax: float = 36.0 if boss else 8.0
+				header.setup_enemy(emax, boss, "Curupira" if boss else "Caçador")
+				header.set_enemy_health(emax * 0.55, emax)
+			"camp":
+				header.set_mode(HudHeader.Mode.CAMP)
+				header.set_currency(12)
+			_:
+				header.set_mode(HudHeader.Mode.EXPLORATION)
+				header.set_currency(12)
+		header.set_player_health(7.0, 10.0)
 	if _frames >= 14:
 		var img: Image = root.get_texture().get_image()
 		img.save_png(_out)

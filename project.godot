@@ -33,6 +33,7 @@ RemoteConfig="*res://scripts/core/remote_config.gd"
 RemotePatterns="*res://scripts/core/remote_patterns.gd"
 RemoteUpgrades="*res://scripts/core/remote_upgrades.gd"
 AudioDirector="*res://scripts/core/audio_director.gd"
+UiRoot="*res://scripts/ui/ui_root.gd"
 TouchControls="*res://scripts/ui/controls_hud.gd"
 PerfHud="*res://scripts/ui/perf_hud.gd"
 
