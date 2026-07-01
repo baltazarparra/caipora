@@ -1,10 +1,21 @@
 extends SceneTree
 
-## Captura dev-only do HUD unificado (HudHeader). Precisa de DISPLAY (Xvfb serve).
-## Renderiza o header em um dos modos, com as placas serrilhadas flutuantes.
-## Uso: xvfb-run -a godot --path . --resolution 393x852 \
+## Preview dev-only do HudHeader unificado (placas serrilhadas flutuantes). Precisa de um
+## display + GL por software. Comando que funciona no WSL (evita wayland/d3d12):
+##   env -u WAYLAND_DISPLAY LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+##     xvfb-run -a -s "-screen 0 1280x1400x24" ~/.local/bin/godot --path . \
+##     --display-driver x11 --rendering-driver opengl3 --resolution 393x852 \
 ##     -s scripts/tools/preview_hud.gd -- --mode=explore --out=/tmp/hud.png
 ##   --mode: explore | combat | combat_boss | camp
+##
+## Gotcha #14: este é o script de ENTRADA (-s) — NÃO referenciar autoloads nem class_name
+## em compile-time (só existem no frame 1). HudHeader é carregado via load(); modo é int.
+
+const HEADER_SCRIPT := "res://scripts/ui/kit/hud_header.gd"
+# Espelha HudHeader.Mode (sem referência de enum no compile do script de entrada).
+const MODE_CAMP := 1
+const MODE_EXPLORATION := 2
+const MODE_COMBAT := 3
 
 var _out: String = "/tmp/hud.png"
 var _mode: String = "explore"
@@ -18,26 +29,25 @@ func _initialize() -> void:
 			_mode = arg.substr("--mode=".length())
 
 func _process(_delta: float) -> bool:
-	# Frame 1: autoloads já rodaram _ready (gotcha #14) — seguro configurar o estado aqui.
 	_frames += 1
 	if _frames == 1:
-		var gs: Node = root.get_node("GameState")
+		var gs = root.get_node("GameState")
 		gs.caipora_max_hp = 10.0
 		gs.caipora_current_hp = 7.0
-		var header := HudHeader.new()
+		var header = (load(HEADER_SCRIPT) as GDScript).new()
 		root.add_child(header)
 		match _mode:
 			"combat", "combat_boss":
-				header.set_mode(HudHeader.Mode.COMBAT)
 				var boss: bool = _mode == "combat_boss"
 				var emax: float = 36.0 if boss else 8.0
+				header.set_mode(MODE_COMBAT)
 				header.setup_enemy(emax, boss, "Curupira" if boss else "Caçador")
 				header.set_enemy_health(emax * 0.55, emax)
 			"camp":
-				header.set_mode(HudHeader.Mode.CAMP)
+				header.set_mode(MODE_CAMP)
 				header.set_currency(12)
 			_:
-				header.set_mode(HudHeader.Mode.EXPLORATION)
+				header.set_mode(MODE_EXPLORATION)
 				header.set_currency(12)
 		header.set_player_health(7.0, 10.0)
 	if _frames >= 14:
