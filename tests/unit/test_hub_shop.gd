@@ -121,3 +121,15 @@ func test_header_sound_button_toggles_master_mute() -> void:
 	_shop()._on_sound_pressed()
 	assert_true(AudioDirector.is_master_muted(), "toque muta todo o audio")
 	assert_true(_shop()._sound_button.muted, "icone reflete Master mutado")
+
+# ── DANO/VIDA: trilha sem card a oferecer some inteira (predicado A) ──
+func test_maxed_track_hides_its_column() -> void:
+	MetaProgression.phase_reached = 5
+	# Fúria inteira maxada → trilha sem card; Cura segue com o que oferecer.
+	for k: String in MetaProgression.FURIA_KEYS:
+		MetaProgression.upgrades[k] = 99
+	await _instantiate()
+	var shop := _shop()
+	assert_false(shop._columns["furia"]["vbox"].visible, "trilha DANO maxada some (título + coluna)")
+	assert_true(shop._columns["cura"]["vbox"].visible, "trilha VIDA ainda oferece algo")
+

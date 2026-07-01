@@ -164,6 +164,9 @@ func _build_column(parent: BoxContainer, title: String, keys: Array) -> Dictiona
 			card.mouse_entered.connect(AudioDirector.play_ui_hover)
 			card.focus_entered.connect(AudioDirector.play_ui_hover)
 			column["cards"].append(card)
+	# Predicado A: trilha sem card a oferecer (fase travada / maxada / pré-req) some INTEIRA,
+	# recentralizando a trilha viva (o BoxContainer pai pula filhos ocultos).
+	vbox.visible = not (column["cards"] as Array).is_empty()
 	return column
 
 # ─── Compra ────────────────────────────────────────
@@ -209,7 +212,9 @@ func refresh() -> void:
 	if is_instance_valid(_frag_counter):
 		_frag_counter.set_count(int(MetaProgression.fragments))
 	for line: String in _columns:
-		for card: HubCard in _columns[line]["cards"]:
+		var col: Dictionary = _columns[line]
+		col["vbox"].visible = not (col["cards"] as Array).is_empty()
+		for card: HubCard in col["cards"]:
 			card.set_affordable(MetaProgression.fragments >= card.cost)
 
 func _refresh_text(_lang: StringName = Lang.current()) -> void:
