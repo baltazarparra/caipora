@@ -75,6 +75,12 @@ func cancel_window() -> void:
 func is_open() -> bool:
 	return _is_window_open
 
+## Progresso da janela no instante do último resultado (0..1+). Read-only. Serve pro
+## Cortejo "O Chamado" desambiguar um MISS de hold: soltar cedo (< banda) é FRACO;
+## soltar tarde / timeout (>= 1.0) é QUEIMA. Retém o valor até o próximo open_window.
+func window_progress() -> float:
+	return _window_progress
+
 # ─── Lifecycle ─────────────────────────────────────
 func _process(delta: float) -> void:
 	if not _is_window_open:

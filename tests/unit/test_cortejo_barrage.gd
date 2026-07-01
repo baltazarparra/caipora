@@ -1,8 +1,9 @@
 extends GutTest
 
-# Cobre o seam puro do Golpe Perfeito: quais espíritos entram na barragem a partir das
-# fases libertadas (ordem, corte no teto, crescimento) e o nº de instâncias de dano
-# (espíritos × CORTEJO_LINK_HITS). Determinístico, sem arena.
+# Cobre o seam puro do Cortejo "O Chamado": quais espíritos entram na barragem a partir
+# das fases libertadas (ordem, corte no teto, crescimento), o nº de instâncias de dano
+# (espíritos × CORTEJO_LINK_HITS) e o mapa de tiers do SEGURAR→SOLTAR (bandas, FRACO
+# parcial × QUEIMA). Determinístico, sem arena.
 
 func test_spirits_in_phase_order() -> void:
 	assert_eq(Constants.cortejo_spirits_for([1, 2, 3, 4]), [1, 2, 3, 4] as Array[int])
@@ -33,17 +34,31 @@ func test_each_hit_deals_one_damage() -> void:
 	assert_eq(Constants.CORTEJO_HIT_DAMAGE, 1.0,
 		"cada hit do Golpe Perfeito sangra exatamente 1, sem escalar com dano/crit")
 
-func test_perfect_tap_band_is_tight_and_ordered() -> void:
-	assert_lt(Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END,
-		"a faixa perfeita tem começo antes do fim")
-	assert_lte(Constants.CORTEJO_PERFECT_END - Constants.CORTEJO_PERFECT_START, 0.25,
-		"Golpe Perfeito usa faixa apertada, não zona de carga confortável")
+func test_chamado_bands_ordered() -> void:
+	# Ombro GOOD antes da banda dourada; banda com começo antes do fim.
+	assert_lt(Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_START,
+		"o ombro GOOD vem antes da banda PERFEITO")
+	assert_lt(Constants.CHAMADO_RELEASE_START, Constants.CHAMADO_RELEASE_END,
+		"a banda dourada tem começo antes do fim")
+	assert_gte(Constants.CHAMADO_RELEASE_END - Constants.CHAMADO_RELEASE_START, 0.10,
+		"a banda de soltar é larga (perdão), não frame-perfect")
 
-func test_perfect_window_respects_floor_every_phase() -> void:
-	# O piso de conforto vale em TODA fase (nunca vira frame-perfect nas fases altas).
-	for phase: int in [1, 2, 3, 4, 5]:
-		assert_gte(Constants.cortejo_window_for_phase(phase), Constants.CORTEJO_WINDOW_FLOOR,
-			"fase %d respeita o piso confortável" % phase)
+func test_weak_is_early_release_only() -> void:
+	# Soltar antes do ombro = FRACO (parcial); do ombro em diante (tardio/timeout) = QUEIMA.
+	assert_true(Constants.chamado_miss_is_weak(0.30), "soltar cedo = FRACO")
+	assert_true(Constants.chamado_miss_is_weak(Constants.CHAMADO_GOOD_START - 0.01))
+	assert_false(Constants.chamado_miss_is_weak(Constants.CHAMADO_GOOD_START),
+		"a partir do ombro não é FRACO")
+	assert_false(Constants.chamado_miss_is_weak(1.0), "timeout/overcharge = QUEIMA, não FRACO")
+
+func test_partial_count_scales_with_charge() -> void:
+	# k ∝ fração carregada, mínimo 1, teto n. Soltar quase no ombro traz quase todos.
+	assert_eq(Constants.chamado_partial_count(4, 0.05), 1, "soltar no início = 1 espírito")
+	assert_eq(Constants.chamado_partial_count(4, 0.40), 2, "meio caminho = parcial")
+	assert_eq(Constants.chamado_partial_count(4, Constants.CHAMADO_GOOD_START), 4,
+		"soltar junto ao ombro já traz todos (mas sem crit)")
+	assert_eq(Constants.chamado_partial_count(1, 0.30), 1, "1 liberto = sempre 1")
+	assert_eq(Constants.chamado_partial_count(0, 0.5), 0, "sem espíritos = 0")
 
 func test_chance_matches_double_attack() -> void:
 	assert_eq(Constants.CORTEJO_CHANCE, Constants.TIMING_DOUBLE_CHANCE,

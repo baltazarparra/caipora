@@ -170,3 +170,36 @@ func test_hold_release_without_press_is_noop():
     _timing._input(_action_event("ui_up", false))
     assert_eq(count[0], 0, "soltar sem carga não avalia")
     assert_true(_timing.is_open(), "janela continua aberta")
+
+# ─── Hold com faixa GOOD (Cortejo "O Chamado") ─────
+# Ombro GOOD 0.66..0.80 antes da banda dourada 0.80..0.94.
+func _open_hold_good() -> void:
+    _timing.open_window(1.0, 0.80, 0.94, false, 0.0, 0.0, "ui_up", "ui_right", true, 0.66, 0.94)
+
+# Soltar no OMBRO (dentro do good, antes da banda) → GOOD.
+func test_hold_release_in_good_shoulder_is_good():
+    var result: Array = [TimingSystem.TimingResult.MISS]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _open_hold_good()
+    _timing._input(_action_event("ui_up", true))
+    _timing._window_progress = 0.70
+    _timing._input(_action_event("ui_up", false))
+    assert_eq(result[0], TimingSystem.TimingResult.GOOD)
+
+# Soltar na BANDA dourada → PERFEITO.
+func test_hold_release_in_band_is_perfect():
+    var result: Array = [TimingSystem.TimingResult.MISS]
+    _timing.timing_result.connect(func(r): result[0] = r)
+    _open_hold_good()
+    _timing._input(_action_event("ui_up", true))
+    _timing._window_progress = 0.85
+    _timing._input(_action_event("ui_up", false))
+    assert_eq(result[0], TimingSystem.TimingResult.PERFECT)
+
+# window_progress() retém o progresso no instante do release (o arena separa FRACO/QUEIMA).
+func test_window_progress_reflects_release():
+    _open_hold_good()
+    _timing._input(_action_event("ui_up", true))
+    _timing._window_progress = 0.42
+    _timing._input(_action_event("ui_up", false))
+    assert_almost_eq(_timing.window_progress(), 0.42, 0.001)

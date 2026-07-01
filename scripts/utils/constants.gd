@@ -152,6 +152,20 @@ const CHAMADO_GOOD_START: float = 0.66      # início do ombro GOOD (fração)
 const CHAMADO_RELEASE_START: float = 0.80   # início da banda dourada PERFEITO (fração)
 const CHAMADO_RELEASE_END: float = 0.94     # fim da banda (largura ~0.14 = perdão)
 
+## Um MISS de hold do Chamado é FRACO (soltou CEDO, antes do ombro → barragem parcial,
+## sem punição) quando o progresso < GOOD_START; senão é QUEIMA (segurou além da banda
+## ou timeout → contra-ataque). Seam puro/testável lido pelo arena após o MISS.
+static func chamado_miss_is_weak(progress: float) -> bool:
+	return progress < CHAMADO_GOOD_START
+
+## Nº de espíritos numa barragem PARCIAL (FRACO): proporcional à fração carregada no
+## release, mínimo 1, teto n. Soltar quase no ombro já traz quase todos (recompensa o
+## "quase certo cedo"); soltar no início traz 1.
+static func chamado_partial_count(n: int, progress: float) -> int:
+	if n <= 0:
+		return 0
+	return clampi(int(ceil(float(n) * progress / CHAMADO_RELEASE_START)), 1, n)
+
 # DEPRECATED (removidas na Etapa 3 do PRD, quando o call site migrar para o hold):
 # janela-única do TAP perfeito. NÃO usar em código novo — use as CHAMADO_* acima.
 const CORTEJO_PERFECT_START: float = 0.42

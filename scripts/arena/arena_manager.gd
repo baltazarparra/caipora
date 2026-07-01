@@ -629,12 +629,15 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		await get_tree().create_timer(_caipora.attack_cooldown).timeout
 		_start_enemy_turn()
 
-# ─── Cortejo dos Encantados (Golpe Perfeito) ───────
-## Turno especial da Caipora, à la Expedition 33/Sekiro: UMA janela única e apertada
-## (um toque ui_up — o MESMO do ataque normal, pensado pro dedão). Acerto perfeito →
-## BARRAGEM: todos os chefes libertados desabam de uma vez (dano escala com nº deles),
-## com clímax cinematográfico. Erro → whiff + CONTRA-ATAQUE (custo souls). Mata no meio
-## reusa o killing-blow zoom. Lead-in com slow-mo telegrafa que vem o golpe grande.
+# ─── Cortejo dos Encantados ("O Chamado" — SEGURAR → SOLTAR) ───────
+## Turno especial da Caipora. SEGURA ui_up: o medidor de carga enche e os espíritos
+## libertados coalescem; SOLTAR define o tier reusando o hold 3-tier do TimingSystem:
+##   PERFEITO (banda dourada) → BARRAGEM completa + FEVER (último espírito crita);
+##   GOOD (ombro)             → BARRAGEM completa, sem florição;
+##   FRACO (soltou cedo)      → BARRAGEM parcial (k espíritos ∝ fração), sem punição;
+##   QUEIMA (segurou demais / timeout) → CONTRA-ATAQUE (custo souls, _cortejo_whiff).
+## Lead-in com slow-mo telegrafa. Mata no meio reusa o killing-blow zoom. Fonte:
+## docs/PRD-cortejo-o-chamado.md.
 func _start_cortejo_turn() -> void:
 	if _combat_over or not _both_alive():
 		return
@@ -649,22 +652,36 @@ func _start_cortejo_turn() -> void:
 	if _combat_over or not _both_alive():
 		_end_cortejo()
 		return
-	# 2. Janela ÚNICA de toque: ui_up no mesmo contrato do ataque normal.
-	#    Binária de propósito: perfeito invoca a barragem, erro abre contra-ataque.
+	# 2. Medidor de CARGA: SEGURAR ui_up enche (fase NÃO encurta — promessa tátil
+	#    estável); SOLTAR avalia o tier. Mesmo primitivo de hold do TimingSystem
+	#    (perfect = banda dourada, good = ombro). O fogo do wedge de CIMA acende via
+	#    cortejo_charge_opened (ControlsHud, dormente até aqui).
 	var pos: Vector2 = _enemy.position + Vector2(0, _enemy_head_top_y() - BUBBLE_HEAD_GAP)
-	var window: float = Constants.cortejo_window_for_phase(GameState.active_phase)
-	_timing_bubble.show_bubble(pos, window, Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END, false, Constants.COLOR_CHAMA_HOT, "up", false)
-	_timing_system.open_window(window, Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END, false, 0.0, 0.0, "ui_up")
+	SignalBus.cortejo_charge_opened.emit("ui_up", Constants.CHAMADO_CHARGE_SEC)
+	_timing_bubble.show_bubble(pos, Constants.CHAMADO_CHARGE_SEC, Constants.CHAMADO_RELEASE_START, Constants.CHAMADO_RELEASE_END, false, Constants.COLOR_CHAMA_HOT, "up", true, Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_END)
+	_timing_system.open_window(Constants.CHAMADO_CHARGE_SEC, Constants.CHAMADO_RELEASE_START, Constants.CHAMADO_RELEASE_END, false, 0.0, 0.0, "ui_up", "ui_right", true, Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_END)
 	var result: int = await _timing_system.timing_result
 	if _combat_over or not _both_alive():
 		_timing_bubble.hide_bubble()
 		_end_cortejo()
 		return
+	var n: int = spirits.size()
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
 		SignalBus.attack_result_perfect.emit()  # haptic de recompensa (ControlsHud)
-		await _cortejo_barrage(spirits, pos)
+		await _cortejo_barrage(spirits, pos, true)
+	elif result == TimingSystem.TimingResult.GOOD:
+		_timing_bubble.burst_good()
+		SignalBus.attack_result_good.emit()
+		await _cortejo_barrage(spirits, pos, false)
+	elif Constants.chamado_miss_is_weak(_timing_system.window_progress()):
+		# FRACO: soltou cedo. BARRAGEM parcial (k ∝ fração da carga), sem contra-ataque.
+		_timing_bubble.burst_fail()
+		SignalBus.attack_result_miss.emit()
+		var k: int = Constants.chamado_partial_count(n, _timing_system.window_progress())
+		await _cortejo_barrage(spirits, pos, false, k)
 	else:
+		# QUEIMA: segurou além da banda (overcharge) ou timeout → inimigo contra-ataca.
 		_timing_bubble.burst_fail()
 		SignalBus.attack_result_miss.emit()
 		await _cortejo_whiff(pos)
@@ -675,6 +692,7 @@ func _start_cortejo_turn() -> void:
 
 func _end_cortejo() -> void:
 	_apparition.finish()
+	SignalBus.cortejo_charge_closed.emit()  # apaga o fogo do wedge de CIMA (ControlsHud)
 	AudioDirector.set_cortejo_active(false)
 	Engine.time_scale = 1.0
 
@@ -692,17 +710,19 @@ func _cortejo_lead_in() -> void:
 	await get_tree().create_timer(0.5, true, false, true).timeout
 	Engine.time_scale = 1.0
 
-## BARRAGEM: todos os espíritos desabam em rajada; cada um = CORTEJO_LINK_HITS golpes.
-## O último floresce em crítico. Killing-blow no meio reusa o zoom; o clímax usa o
-## finisher VFX. Mata no meio encerra (os espíritos restantes não disparam).
-func _cortejo_barrage(spirits: Array[int], pos: Vector2) -> void:
+## BARRAGEM: os espíritos desabam em rajada; cada um = CORTEJO_LINK_HITS golpes. No
+## FEVER (release perfeito) o último floresce em crítico e a corrente ganha o acento
+## de maracatu. `limit` < 0 = todos (PERFEITO/GOOD); k espíritos no FRACO (parcial).
+## Killing-blow no meio reusa o zoom. Mata no meio encerra (restantes não disparam).
+func _cortejo_barrage(spirits: Array[int], pos: Vector2, fever: bool, limit: int = -1) -> void:
 	# O clímax do Cortejo é o esquartejamento espectral no GOLPE MORTAL
 	# (_on_actor_died via _killed_by_cortejo); a barragem não abre mais com o
 	# finisher-coração (era o finisher errado). As aparições dão a leitura visual.
-	for i: int in range(spirits.size()):
+	var count: int = spirits.size() if limit < 0 else clampi(limit, 1, spirits.size())
+	for i: int in range(count):
 		if _combat_over or not _enemy.health.is_alive():
 			return
-		var crit: bool = i == spirits.size() - 1   # florição no último espírito
+		var crit: bool = fever and i == count - 1   # florição no último só no FEVER
 		# Antecipação curta por espírito: invoca e deixa a aparição investir ANTES de
 		# bater (cada elo lê individualmente, em vez de virar um borrão de hits).
 		_apparition.strike(spirits[i], _enemy.position, i % 2 == 0)
@@ -714,7 +734,8 @@ func _cortejo_barrage(spirits: Array[int], pos: Vector2) -> void:
 		if _combat_over or not _enemy.health.is_alive():
 			return
 		await get_tree().create_timer(Constants.CORTEJO_SPIRIT_GAP).timeout
-	AudioDirector.play_cortejo_full_chain()
+	if fever:
+		AudioDirector.play_cortejo_full_chain()  # acento de maracatu = recompensa do FEVER
 
 ## ERRO: a Caipora se expõe e o inimigo CONTRA-ATACA (custo souls), reusando a fórmula
 ## canônica de dano do inimigo.
@@ -1105,6 +1126,7 @@ func _teardown_combat() -> void:
 	_timing_system.cancel_window()
 	if _apparition != null:
 		_apparition.finish()
+	SignalBus.cortejo_charge_closed.emit()  # apaga o fogo do wedge se a morte caiu na carga
 	AudioDirector.set_cortejo_active(false)
 	Engine.time_scale = 1.0
 	if _enemy != null and is_instance_valid(_enemy):
