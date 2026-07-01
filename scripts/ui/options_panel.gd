@@ -5,7 +5,6 @@ extends CanvasLayer
 
 # ─── Constants ─────────────────────────────────────
 const OVERLAY_LAYER: int = 60
-const PANEL_BG := Color(0.051, 0.067, 0.09, 0.96)
 const DIM_BG := Color(0, 0, 0, 0.6)
 const RESET_CONFIRM_WINDOW: float = 3.0
 const RESTART_FADE: float = 0.22
@@ -39,13 +38,9 @@ func _build() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = PANEL_BG
-	style.border_color = Constants.COLOR_JUBA_DARK
-	style.set_border_width_all(Constants.UI_BORDER_WIDTH)
-	style.set_content_margin_all(Constants.SPACE_MD)
-	panel.add_theme_stylebox_override("panel", style)
+	var panel := BrandPanel.new()
+	panel.framed = true
+	panel.scrim_alpha = 0.96  # modal quase opaco (leitura sobre o gameplay)
 	center.add_child(panel)
 
 	var vbox := VBoxContainer.new()
