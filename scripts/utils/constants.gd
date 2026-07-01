@@ -126,10 +126,8 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 # banda dourada → BARRAGEM completa + FEVER (crítico no último). Reusa o modelo 3-tier
 # do combate: banda = PERFEITO, ombro = GOOD (barragem sem crit), cedo = FRACO (barragem
 # parcial), segurar demais = QUEIMA (contra-ataque). Disparado por roll no turno, MESMA
-# chance do ataque duplo.
-# NOTA DE MIGRAÇÃO: a implementação atual (arena_manager._start_cortejo_turn) ainda usa a
-# janela-única de TAP (CORTEJO_PERFECT_*/WINDOW_*, marcadas DEPRECATED abaixo). A troca
-# para o hold acontece nas Etapas 2–3 do PRD; só então essas constantes saem.
+# chance do ataque duplo. Motor: arena_manager._start_cortejo_turn reusa o modo hold do
+# TimingSystem (open_window(..., hold=true, good_start, good_end) + window_progress()).
 const CORTEJO_CHANCE: float = TIMING_DOUBLE_CHANCE  # = 0.30, espelha o duplo (pedido)
 const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
 const CORTEJO_LINK_HITS: int = 2            # hits de dano por espírito na barragem
@@ -166,23 +164,11 @@ static func chamado_partial_count(n: int, progress: float) -> int:
 		return 0
 	return clampi(int(ceil(float(n) * progress / CHAMADO_RELEASE_START)), 1, n)
 
-# DEPRECATED (removidas na Etapa 3 do PRD, quando o call site migrar para o hold):
-# janela-única do TAP perfeito. NÃO usar em código novo — use as CHAMADO_* acima.
-const CORTEJO_PERFECT_START: float = 0.42
-const CORTEJO_PERFECT_END: float = 0.62
-const CORTEJO_WINDOW_BASE: float = 0.95
-const CORTEJO_WINDOW_FLOOR: float = 0.85
-
 # Ritmo da barragem: espaçado DE PROPÓSITO para a leitura (cada espírito e cada hit
 # lê individualmente, não vira borrão). Só timing/hit-stop — nada de partículas extras.
 const CORTEJO_SPIRIT_TELEGRAPH: float = 0.12   # antecipação antes do espírito investir
 const CORTEJO_HIT_GAP: float = 0.14            # intervalo entre hits do mesmo espírito
 const CORTEJO_SPIRIT_GAP: float = 0.22         # intervalo entre espíritos da corrente
-
-## DEPRECATED (removida na Etapa 3 do PRD-cortejo-o-chamado): janela de ação do TAP
-## perfeito por fase. O hold usa frações absolutas de CHAMADO_CHARGE_SEC, não isto.
-static func cortejo_window_for_phase(phase: int) -> float:
-	return maxf(timing_window_for_phase(CORTEJO_WINDOW_BASE, phase), CORTEJO_WINDOW_FLOOR)
 
 # ─── Golpes nomeados da Caipora (PRD docs/PRD-moves-nomeados.md) ────────────
 # Poucos e fixos (a Caipora não tem catálogo de .tres): nome + som (sfx/<audio>.wav,
