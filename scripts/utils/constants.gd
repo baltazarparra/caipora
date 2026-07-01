@@ -119,30 +119,45 @@ static func timing_window_for_phase(base: float, phase: int) -> float:
 	window += TOUCH_TIMING_WINDOW_BONUS
 	return window
 
-# ─── Cortejo dos Encantados (Golpe Perfeito) ───────
-# Terceiro tipo de ataque da Caipora, à la Expedition 33/Sekiro: UMA janela única e
-# apertada (um toque ui_up, igual ao ataque normal — pensado pro dedão em retrato).
-# Acertar o toque perfeito → TODOS os chefes LIBERTADOS (MetaProgression.freed_bosses,
-# teto CORTEJO_MAX_LINKS) desabam de uma vez numa BARRAGEM cinematográfica (dano escala
-# com nº de libertados). Errar → whiff + CONTRA-ATAQUE (custo souls-like). Disparado por
-# roll no turno, MESMA chance do ataque duplo. Ver docs/CONCEITO-corrente-encantados.md.
+# ─── Cortejo dos Encantados (O Chamado — SEGURAR → SOLTAR) ───────
+# Terceiro tipo de ataque da Caipora. FONTE DA MECÂNICA: docs/PRD-cortejo-o-chamado.md
+# (4ª forma). O jogador SEGURA ui_up: um medidor enche e os espíritos LIBERTADOS
+# (MetaProgression.freed_bosses, teto CORTEJO_MAX_LINKS) coalescem um a um; SOLTAR na
+# banda dourada → BARRAGEM completa + FEVER (crítico no último). Reusa o modelo 3-tier
+# do combate: banda = PERFEITO, ombro = GOOD (barragem sem crit), cedo = FRACO (barragem
+# parcial), segurar demais = QUEIMA (contra-ataque). Disparado por roll no turno, MESMA
+# chance do ataque duplo.
+# NOTA DE MIGRAÇÃO: a implementação atual (arena_manager._start_cortejo_turn) ainda usa a
+# janela-única de TAP (CORTEJO_PERFECT_*/WINDOW_*, marcadas DEPRECATED abaixo). A troca
+# para o hold acontece nas Etapas 2–3 do PRD; só então essas constantes saem.
 const CORTEJO_CHANCE: float = TIMING_DOUBLE_CHANCE  # = 0.30, espelha o duplo (pedido)
 const CORTEJO_MAX_LINKS: int = 4            # teto = encantados libertáveis (P1–P4)
 const CORTEJO_LINK_HITS: int = 2            # hits de dano por espírito na barragem
 # Cada hit da barragem é FIXO em 1 (não escala com o dano da Caipora nem com crit): a
-# força do Golpe Perfeito vem do NÚMERO de hits (espíritos × LINK_HITS), não da
-# magnitude por golpe. Antes cada hit usava execute_attack() e estourava o dano.
+# força do Chamado vem do NÚMERO de hits (espíritos × LINK_HITS), não da magnitude por
+# golpe. Mantém a fonte numérica única do PRD-economia-v2.
 const CORTEJO_HIT_DAMAGE: float = 1.0
-# Janela binária do toque perfeito: o jogador toca ui_up dentro desta faixa normalizada.
-# Sem GOOD aqui por decisão de design: acerto = barragem; erro = contra-ataque.
+# Custo do erro: multiplicador do contra-ataque (1.0 = um golpe inteiro do inimigo).
+# Usado na QUEIMA (overcharge) — ver _cortejo_whiff.
+const CORTEJO_MISS_COUNTER_MULT: float = 1.0
+
+# ─── O Chamado: carga (SEGURAR → SOLTAR) — frações de CHAMADO_CHARGE_SEC ───────
+# O medidor enche de 0→1 em CHAMADO_CHARGE_SEC enquanto ui_up está pressionado. A FASE
+# NÃO encurta a carga (é promessa tátil estável; a dificuldade vem de acertar o release).
+# Release: [GOOD_START, RELEASE_START) = GOOD (barragem, sem crit); [RELEASE_START,
+# RELEASE_END] = PERFEITO/FEVER; < GOOD_START = FRACO (parcial); > RELEASE_END ou timeout
+# em 100% = QUEIMA (contra-ataque). Banda larga de propósito (perdão) — ver PRD §3.
+const CHAMADO_CHARGE_SEC: float = 1.10      # 0→100% segurando ui_up
+const CHAMADO_GOOD_START: float = 0.66      # início do ombro GOOD (fração)
+const CHAMADO_RELEASE_START: float = 0.80   # início da banda dourada PERFEITO (fração)
+const CHAMADO_RELEASE_END: float = 0.94     # fim da banda (largura ~0.14 = perdão)
+
+# DEPRECATED (removidas na Etapa 3 do PRD, quando o call site migrar para o hold):
+# janela-única do TAP perfeito. NÃO usar em código novo — use as CHAMADO_* acima.
 const CORTEJO_PERFECT_START: float = 0.42
 const CORTEJO_PERFECT_END: float = 0.62
-# Janela confortável: base + bônus de touch, com PISO por fase (golpe-recompensa não
-# aperta nas fases altas). Use cortejo_window_for_phase(), não timing_window_for_phase().
 const CORTEJO_WINDOW_BASE: float = 0.95
-const CORTEJO_WINDOW_FLOOR: float = 0.85    # piso pós-redução de fase (conforto)
-# Custo do erro: multiplicador do contra-ataque (1.0 = um golpe inteiro do inimigo).
-const CORTEJO_MISS_COUNTER_MULT: float = 1.0
+const CORTEJO_WINDOW_FLOOR: float = 0.85
 
 # Ritmo da barragem: espaçado DE PROPÓSITO para a leitura (cada espírito e cada hit
 # lê individualmente, não vira borrão). Só timing/hit-stop — nada de partículas extras.
@@ -150,8 +165,8 @@ const CORTEJO_SPIRIT_TELEGRAPH: float = 0.12   # antecipação antes do espírit
 const CORTEJO_HIT_GAP: float = 0.14            # intervalo entre hits do mesmo espírito
 const CORTEJO_SPIRIT_GAP: float = 0.22         # intervalo entre espíritos da corrente
 
-## Janela de ação do Golpe Perfeito na fase: parte da fórmula padrão mas respeita um
-## PISO confortável (CORTEJO_WINDOW_FLOOR) — o golpe-recompensa nunca vira frame-perfect.
+## DEPRECATED (removida na Etapa 3 do PRD-cortejo-o-chamado): janela de ação do TAP
+## perfeito por fase. O hold usa frações absolutas de CHAMADO_CHARGE_SEC, não isto.
 static func cortejo_window_for_phase(phase: int) -> float:
 	return maxf(timing_window_for_phase(CORTEJO_WINDOW_BASE, phase), CORTEJO_WINDOW_FLOOR)
 

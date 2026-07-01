@@ -4,20 +4,18 @@
 > tap de crítico e ao ataque duplo já existentes. Desbloqueado ao libertar o
 > primeiro chefe; cresce a cada encantado libertado.
 >
-> **Status:** REDESENHADO 2× e agora na 3ª forma, VIGENTE = **Golpe Perfeito**
-> (2026-06-18). As duas primeiras foram rejeitadas pelo jogador: CARGA (segurar ↑,
-> soltar no cheio — ponto invisível) e BATUQUE direcional (tocar ↑→↓← no tempo —
-> hostil ao dedão, abstrato, vazio com 1 espírito). A forma vigente é à la
-> **Expedition 33/Sekiro**: UMA janela única e apertada (um toque `ui_up`, o mesmo do
-> ataque normal — pensado pro **dedão em retrato**); acerto → **BARRAGEM** (todos os
-> chefes libertados desabam de uma vez, dano escala com nº deles); erro → whiff +
-> **contra-ataque** (custo souls). Lead-in com slow-mo telegrafa o golpe. Disparado
-> por roll no turno, MESMA chance do duplo. Referências: Expedition 33, Sekiro,
-> The Legend of Dragoon. Pendente: os .wav dedicados (hoje em fallback canônico).
-> **NOTA:** as seções 3/6/7 abaixo descrevem as mecânicas ANTIGAS (carga/batuque) e
-> estão historicamente desatualizadas; a fonte da mecânica vigente é este cabeçalho.
-> Escopo deste doc: mecânica, integração com o sistema vigente, narrativa,
-> direção de arte AAA e direção de áudio/música AAA.
+> **Status:** REDESENHADO 3× e agora na **4ª forma — "O Chamado" (SEGURAR → SOLTAR)**
+> (2026-07-01). **FONTE DA MECÂNICA VIGENTE: [`docs/PRD-cortejo-o-chamado.md`](PRD-cortejo-o-chamado.md).**
+> Formas anteriores rejeitadas: (1) CARGA original (segurar ↑, soltar no cheio — *ponto
+> de soltar invisível*); (2) BATUQUE direcional (tocar ↑→↓← no tempo — hostil ao dedão,
+> abstrato); (3) Golpe Perfeito (um toque `ui_up` — legível, mas *sem gramática própria*,
+> idêntico ao ataque normal). A 4ª forma **retoma o hold** — mas resolve o pecado da 1ª
+> com **banda de release desenhada + cue sonoro/háptico** e tiers 3-tier (PERFEITO/GOOD/
+> FRACO/QUEIMA), reusando o vocabulário do combate. O jogador SEGURA para reunir o
+> cortejo (espíritos coalescem um a um) e SOLTA na banda dourada para a BARRAGEM
+> completa + FEVER. Referências: Expedition 33, Sekiro, The Legend of Dragoon.
+> **NOTA:** as seções 3/6/7 abaixo descrevem mecânicas ANTIGAS (carga/batuque) e estão
+> desatualizadas; a fonte da mecânica vigente é o PRD linkado acima, não este doc.
 
 ---
 
