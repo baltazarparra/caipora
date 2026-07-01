@@ -49,12 +49,12 @@ dessaturar o sprite.
    detalhe de roupa competindo com a capa. **PÉS NORMAIS PRA FRENTE** — o
    pé-pra-trás é do Curupira (parente), não dela.
 
-## 3. Paleta (fechada — fonte: `gen_caipora.py`, 2 tons por material)
+## 3. Paleta (fechada — fonte: `gen_caipora.py`, 3–4 tons por material via selout chapado)
 
 | Material | Ramp |
 |----------|------|
-| Juba (base) | `#8b2a00 → #ff4500` (laranja vibrante da prancha) |
-| Juba (CHAMA) | `#ff6808 → #ffb032` + coração `#ffefb2` |
+| Juba (base) | `#5a1a00` (oclusão) → `#8b2a00` (sombra) → `#ff4500` (base) → `#ff7a33` (realce) |
+| Juba (CHAMA) | `#c24a08` (oclusão) → `#ff6808` (base) → `#ffb032` (realce) + coração `#ffefb2` |
 | Corpo / chifres / cajado | `#000000` |
 | Vazio do rosto | `#000000` |
 | Olhos | `#ffffff` puro (sem halo) |
@@ -63,9 +63,12 @@ dessaturar o sprite.
 | Contorno | `#1a120a` (1px, toda a silhueta) |
 
 **Acabamento chapado (lei):** flat fill + contorno escuro de 1px na silhueta;
-máximo 2 tons por material. Sem rim light, sem dither, sem selout graduado.
-O clima sombrio vem da atmosfera/grading da cena, não do sprite. O verde do
-cristal segue sendo o único acento frio.
+**3–4 tons por material via selout chapado** (oclusão→sombra→base→realce),
+colocados como polígonos-filhos inset da forma-mãe — sem gradiente, sem dither,
+sem rim light suave, sem blur, sem selout graduado. O realce **nunca** é
+`#ffffff` (branco puro pertence só aos olhos). Norte de acabamento: Cult of the
+Lamb (poucos tons duros, bem colocados). O clima sombrio vem da atmosfera/grading
+da cena, não do sprite. O verde do cristal segue sendo o único acento frio.
 
 ## 4. Linguagem corporal por frame
 
@@ -82,7 +85,9 @@ cristal segue sendo o único acento frio.
 `gen_caipora.py`, determinístico, stdlib + Pillow:
 
 1. **Desenho vetorial supersampled 8×** (768×768): formas chapadas de silhueta,
-   capa serrilhada, corpo preto e cajado preto.
+   capa serrilhada, corpo preto e cajado preto — **incluindo os polígonos de
+   selout (oclusão + realce) inset ≥1px da borda**, desenhados na mesma ordem em
+   todo frame (fill → sombra → oclusão → realce).
 2. **Downsample por área → 96×96** + threshold de alpha (sem halos).
 3. **Snap de paleta**: cada pixel cai na cor mais próxima (paleta fechada).
 4. **Outline 1px**: todo pixel opaco que toca transparência vira `OUTLINE` —

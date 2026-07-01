@@ -31,6 +31,15 @@ const COLOR_EYES := Color8(255, 255, 255)
 const COLOR_CRYSTAL := Color8(0, 250, 154)
 const COLOR_CHAMA := Color8(255, 176, 50)
 
+# Famílias de tom (F0: sanciona 3–4 tons/material via selout chapado). Medir a
+# família laranja × a família escura mantém a trava de dominância honesta quando
+# o selout adiciona oclusão/realce — senão o teste compararia só #ff4500 vs #000000
+# e o selout derrubaria a contagem artificialmente.
+const COLOR_MANE_DK := Color8(139, 42, 0)    # #8b2a00 sombra
+const COLOR_MANE_OCC := Color8(90, 26, 0)    # #5a1a00 oclusão
+const COLOR_MANE_HI := Color8(255, 122, 51)  # #ff7a33 realce
+const COLOR_VOID_COOL := Color8(20, 15, 20)  # #140f14 separação interna do corpo
+
 func test_caipora_sprite_contract_assets_are_96x96() -> void:
 	for path: String in SPRITE_PATHS:
 		var texture := load(path) as Texture2D
@@ -62,8 +71,8 @@ func test_caipora_idle_is_orange_black_silhouette_first() -> void:
 	assert_false(image.is_empty(), "idle carrega como Image")
 	if image.is_empty():
 		return
-	var orange_pixels := _count_color(image, COLOR_MANE) + _count_color(image, Color8(139, 42, 0))
-	var black_pixels := _count_color(image, COLOR_VOID)
+	var orange_pixels := _count_orange_family(image)
+	var black_pixels := _count_dark_family(image)
 	var green_pixels := _count_color(image, COLOR_CRYSTAL)
 	assert_gt(orange_pixels, black_pixels, "juba-capa laranja domina a leitura da silhueta")
 	assert_lte(green_pixels, 12, "cristal verde fica mínimo; cajado lê preto como na referência")
@@ -85,8 +94,8 @@ func test_caipora_back_view_has_no_eyes_and_keeps_orange_first() -> void:
 	if image.is_empty():
 		return
 	assert_false(_has_color(image, COLOR_EYES), "de costas não há olhos brancos")
-	var orange_pixels := _count_color(image, COLOR_MANE) + _count_color(image, Color8(139, 42, 0))
-	var black_pixels := _count_color(image, COLOR_VOID)
+	var orange_pixels := _count_orange_family(image)
+	var black_pixels := _count_dark_family(image)
 	assert_gt(orange_pixels, black_pixels, "a capa serrilhada domina a vista de costas")
 
 func test_caipora_dead_pose_has_no_eyes() -> void:
@@ -120,3 +129,13 @@ func _count_color(image: Image, expected: Color) -> int:
 			if image.get_pixel(x, y).is_equal_approx(expected):
 				count += 1
 	return count
+
+func _count_orange_family(image: Image) -> int:
+	var n := _count_color(image, COLOR_MANE)
+	n += _count_color(image, COLOR_MANE_DK)
+	n += _count_color(image, COLOR_MANE_OCC)
+	n += _count_color(image, COLOR_MANE_HI)
+	return n
+
+func _count_dark_family(image: Image) -> int:
+	return _count_color(image, COLOR_VOID) + _count_color(image, COLOR_VOID_COOL)

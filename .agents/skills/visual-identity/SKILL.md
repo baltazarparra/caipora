@@ -81,7 +81,9 @@ Pipeline recomendado:
 
 1. Validar a silhueta em preto/laranja antes de detalhes.
 2. Reduzir o sprite para leitura em 32px mentalmente ou por preview.
-3. Usar no maximo 2 tons por material.
+3. Usar 3-4 tons chapados por material (selout: oclusao/sombra/base/realce), sem
+   gradiente/dither/blur - padrao da PROTAGONISTA; inimigos/chefes seguem seu
+   proprio CONCEITO/gerador. O realce nunca e branco puro (branco e so dos olhos).
 4. Preservar outline escuro continuo em sprites pequenos.
 5. Fazer o clima sombrio na cena, luz, vinheta, sangue, particulas e contraste,
    nao dessaturando a Caipora.
@@ -91,8 +93,8 @@ Paleta-guia da protagonista:
 
 | Papel | Cores |
 |-------|-------|
-| Juba/capa | `#8b2a00`, `#ff4500` |
-| CHAMA | `#ff6808`, `#ffb032`, `#ffefb2` |
+| Juba/capa | `#5a1a00`, `#8b2a00`, `#ff4500`, `#ff7a33` |
+| CHAMA | `#c24a08`, `#ff6808`, `#ffb032`, `#ffefb2` |
 | Corpo/rosto/chifres/cajado | `#000000` |
 | Olhos | `#ffffff` |
 | Cristal/Furia | `#00fa9a`, poucos pixels |
