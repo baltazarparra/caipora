@@ -112,15 +112,33 @@ func test_next_pending_key() -> void:
 	assert_eq(MetaProgression.next_pending_key(MetaProgression.FURIA_KEYS), "",
 		"trilha completa: sem pendente")
 
-func test_header_sound_button_toggles_master_mute() -> void:
+# C5: o cabeçalho (Terra Rara + mudo) é do UiRoot/HudHeader — o HubShop não constrói o seu.
+func test_hub_shop_builds_no_header() -> void:
 	MetaProgression.phase_reached = 1
-	AudioDirector.set_master_muted(false)
 	await _instantiate()
-	assert_true(_shop()._sound_button is SpeakerButton, "Hub usa icone de som, nao painel de opcoes")
-	assert_false(_shop()._sound_button.muted, "icone reflete Master audivel")
-	_shop()._on_sound_pressed()
-	assert_true(AudioDirector.is_master_muted(), "toque muta todo o audio")
-	assert_true(_shop()._sound_button.muted, "icone reflete Master mutado")
+	assert_eq(_count_children_of_type(_shop(), SpeakerButton), 0,
+		"mudo vive no HudHeader do UiRoot, não no HubShop")
+	assert_eq(_count_children_of_type(_shop(), FragmentCounter), 0,
+		"Terra Rara vive no HudHeader do UiRoot, não no HubShop")
+
+func test_purchase_emits_fragment_debit() -> void:
+	MetaProgression.phase_reached = 1
+	MetaProgression.fragments = 99.0
+	await _instantiate()
+	watch_signals(SignalBus)
+	assert_true(_shop().attempt_buy("forca"), "compra válida")
+	assert_signal_emitted(SignalBus, "fragment_gained",
+		"compra emite fragment_gained (débito) para o HUD atualizar")
+	var params: Array = get_signal_parameters(SignalBus, "fragment_gained")
+	assert_lt(float(params[1]), 0.0, "amount negativo = débito, sem popup de ganho")
+
+func _count_children_of_type(root: Node, type_ref: Variant) -> int:
+	var count := 0
+	for child in root.get_children():
+		if is_instance_of(child, type_ref):
+			count += 1
+		count += _count_children_of_type(child, type_ref)
+	return count
 
 # ── DANO/VIDA: trilha sem card a oferecer some inteira (predicado A) ──
 func test_maxed_track_hides_its_column() -> void:

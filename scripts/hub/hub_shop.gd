@@ -1,10 +1,10 @@
 class_name HubShop
 extends CanvasLayer
 
-# Interface de aprimoramentos do Hub: cabeçalho com Terra Rara compacta + som, e
-# os cards clicáveis das ervas disponíveis numa faixa compacta no topo, agrupados por trilha
-# (DANO e VIDA). Substitui as ervas pequenas no chão da Fase 9 por algo claro
-# de ler/clicar/entender. purchase_upgrade continua a fonte única de custo/requires/persistência.
+# Interface de aprimoramentos do Hub: os cards clicáveis das ervas disponíveis numa faixa
+# compacta no topo, agrupados por trilha (DANO e VIDA). O cabeçalho (Terra Rara + mudo) é do
+# UiRoot/HudHeader (Mode.CAMP) — este script cuida SÓ da bandeja. purchase_upgrade continua
+# a fonte única de custo/requires/persistência.
 #
 # Regra de pacing preservada da Etapa 2: o conjunto de cards é montado UMA vez na ENTRADA
 # (available_keys). Comprar uma erva NÃO faz a próxima da cadeia aparecer nesta fogueira — ela
@@ -22,13 +22,9 @@ const CARD_WIDTH_MIN := 240    # piso tocável/legível da coluna (ambas orienta
 # Em paisagem cada coluna fica em ≤30% da largura: os cards saem do centro do mapa e moram
 # numa faixa compacta no topo, junto do cabeçalho (o acampamento volta a ser o protagonista).
 const LANDSCAPE_COLUMN_FRACTION := 0.30
-const HEADER_BAND_OFFSET := 44.0  # altura da linha de fragmentos do cabeçalho
 
 # ─── State ─────────────────────────────────────────
 var _root: Control
-var _frag_counter: FragmentCounter
-var _sound_button: SpeakerButton
-var _margin: MarginContainer
 # Bandeja dos cards: ancorada no topo, abaixo do cabeçalho (ambas as orientações).
 # VBoxContainer (não CenterContainer) para que a pilha cresça pra BAIXO — nunca pra cima
 # invadindo o cabeçalho — quando uma trilha trouxer mais de um card.
@@ -56,52 +52,12 @@ func _build() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 
-	_build_header()
 	_build_cards()
 
-	_sound_button.pressed.connect(_on_sound_pressed)
-	_sound_button.mouse_entered.connect(AudioDirector.play_ui_hover)
-	_sound_button.focus_entered.connect(AudioDirector.play_ui_hover)
-
-	_apply_safe_margins()
 	_relayout()
-	get_viewport().size_changed.connect(_apply_safe_margins)
 	get_viewport().size_changed.connect(_relayout)
 	Lang.language_changed.connect(_refresh_text)
 	refresh()
-
-# Cabeçalho: [ Terra Rara compacta ] ··· [ mute à direita ].
-func _build_header() -> void:
-	_margin = MarginContainer.new()
-	_margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(_margin)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_margin.add_child(row)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(vbox)
-
-	_frag_counter = FragmentCounter.new()
-	_frag_counter.configure_size(Constants.FONT_LG)
-	vbox.add_child(_frag_counter)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(spacer)
-
-	_sound_button = SpeakerButton.new()
-	_sound_button.icon_color = Constants.COLOR_AMBER
-	_sound_button.muted_color = Constants.COLOR_BLOOD
-	_sound_button.set_muted(AudioDirector.is_master_muted())
-	_sound_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	row.add_child(_sound_button)
 
 # Corpo: as duas trilhas sobre uma bandeja escura (legibilidade contra a mata viva), na faixa
 # superior da tela. Lado a lado em paisagem, empilhadas em retrato — a orientação é definida em
@@ -208,8 +164,6 @@ func _remove_card(card: HubCard) -> void:
 ## Reescreve fragmentos/bônus e re-avalia o brilho de cada card (comprar pode ter esvaziado o
 ## bolso). Fonte de verdade: MetaProgression.
 func refresh() -> void:
-	if is_instance_valid(_frag_counter):
-		_frag_counter.set_count(int(MetaProgression.fragments))
 	for line: String in _columns:
 		var col: Dictionary = _columns[line]
 		col["vbox"].visible = not (col["cards"] as Array).is_empty()
@@ -226,21 +180,10 @@ func _refresh_text(_lang: StringName = Lang.current()) -> void:
 			card.refresh_text()
 	refresh()
 
-# Número flutuante "−custo" subindo do card (screen-space, sobre o _root).
+# Número flutuante "−custo" subindo do card (serviço único do kit).
 func _spawn_floating_cost(card: HubCard) -> void:
-	var label := Label.new()
-	label.text = "-%d" % card.cost
-	label.add_theme_font_size_override("font_size", Constants.FONT_LG)
-	label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	label.position = card.global_position + Vector2(card.size.x * 0.5, 0.0)
-	label.z_index = 5
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(label)
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(label, "position:y", label.position.y - 48.0, 0.9)
-	tween.tween_property(label, "modulate:a", 0.0, 0.9)
-	tween.chain().tween_callback(label.queue_free)
+	FloatingPopup.spawn(_root, "-%d" % card.cost, Constants.COLOR_AMBER,
+		Constants.FONT_LG, card.global_position + Vector2(card.size.x * 0.5, 0.0))
 
 # ─── Para os testes / inspeção ─────────────────────
 ## Keys das ervas com card vivo agora (não compradas nesta fogueira).
@@ -250,27 +193,6 @@ func available_card_keys() -> Array[String]:
 		for card: HubCard in _columns[line]["cards"]:
 			out.append(card.key)
 	return out
-
-# ─── Margens seguras (notch/safe-area; espelha o HUD antigo) ───
-func _apply_safe_margins() -> void:
-	var vp := get_viewport().get_visible_rect().size
-	var top: int = int(clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0))
-	var side: int = int(clampf(minf(vp.x, vp.y) * 0.055, 40.0, 80.0))
-	_margin.add_theme_constant_override("margin_top", top)
-	_margin.add_theme_constant_override("margin_left", side)
-	_margin.add_theme_constant_override("margin_right", side)
-
-func _on_sound_pressed() -> void:
-	AudioDirector.play_ui_hover()
-	_pulse_sound_haptic()
-	AudioDirector.toggle_master_mute()
-	_sound_button.set_muted(AudioDirector.is_master_muted())
-
-func _pulse_sound_haptic() -> void:
-	if OS.has_feature("web"):
-		JavaScriptBridge.eval("if (navigator.vibrate) navigator.vibrate(12);", true)
-	else:
-		Input.vibrate_handheld(12)
 
 # ─── Layout responsivo (orientação + largura dos cards) ───
 ## Alterna as trilhas entre lado a lado (paisagem) e empilhadas (retrato), e dimensiona cards/
@@ -286,7 +208,7 @@ func _relayout() -> void:
 	_tracks.add_theme_constant_override(
 		"separation", PORTRAIT_TRACK_SEP if portrait else COLUMN_SEP
 	)
-	var side: float = clampf(minf(vp.x, vp.y) * 0.055, 40.0, 80.0)
+	var side: float = Constants.safe_insets(vp).x
 	# Retrato: card ocupa quase a largura útil (capado pra não estourar em tablet retrato).
 	# Paisagem: coluna em ≤30% da largura, duas trilhas lado a lado.
 	_card_w = clampf(vp.x - side * 2.0, CARD_WIDTH_MIN, 520.0) if portrait \
@@ -302,10 +224,9 @@ func _relayout() -> void:
 			card.relayout(_card_w)
 	_position_band(vp)
 
-## Posiciona a bandeja dos cards: ancorada ABAIXO do cabeçalho (margem superior segura + a
-## linha de fragmentos), pilha alinhada ao TOPO — nas DUAS orientações. Os cards
-## moram na faixa de cima e o resto da tela fica livre pro acampamento, o rastro de saída e o
-## D-pad (em paisagem, centralizar na vertical cobria o mapa).
+## Posiciona a bandeja dos cards: ancorada ABAIXO do header do UiRoot (safe-area + linha 1
+## + placas), pilha alinhada ao TOPO — nas DUAS orientações. Os cards moram na faixa de cima
+## e o resto da tela fica livre pro acampamento, o rastro de saída e o D-pad.
 func _position_band(vp: Vector2) -> void:
 	if _band == null:
 		return
@@ -313,5 +234,6 @@ func _position_band(vp: Vector2) -> void:
 	_band.offset_left = 0.0
 	_band.offset_right = 0.0
 	_band.offset_bottom = 0.0
-	_band.offset_top = clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0) + HEADER_BAND_OFFSET
+	_band.offset_top = Constants.safe_insets(vp).y + HudHeader.top_row_height(vp) \
+		+ HudHeader.plate_pady() * 2.0 + float(Constants.SPACE_SM)
 	_band.alignment = BoxContainer.ALIGNMENT_BEGIN

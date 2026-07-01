@@ -8,10 +8,11 @@ func test_owns_gameplay_screens() -> void:
 	assert_true(UiRoot.owns(SignalBus.Screen.EXPLORATION_PHASE3))
 	assert_true(UiRoot.owns(SignalBus.Screen.ARENA), "combate migrado ao UiRoot")
 	assert_true(UiRoot.owns(SignalBus.Screen.ARENA_PHASE2))
+	assert_true(UiRoot.owns(SignalBus.Screen.HUB), "acampamento migrado ao UiRoot (C5)")
 
-func test_does_not_own_menu_hub() -> void:
+func test_does_not_own_menu() -> void:
 	assert_false(UiRoot.owns(SignalBus.Screen.MAIN_MENU))
-	assert_false(UiRoot.owns(SignalBus.Screen.HUB))
+	assert_false(UiRoot.owns(SignalBus.Screen.GAME_OVER))
 
 func test_header_layer_above_atmosphere() -> void:
 	assert_eq(UiRoot._header_layer.layer, Constants.LAYER_HUD)

@@ -319,6 +319,8 @@ func purchase_upgrade(key: String) -> bool:
 	fragments -= cost
 	upgrades[key] = level + 1
 	save_progress()
+	# Amount negativo = débito: o HUD atualiza o contador sem popup de ganho.
+	SignalBus.fragment_gained.emit(fragments, -float(cost))
 	return true
 
 # ─── Public API ────────────────────────────────────

@@ -7,8 +7,8 @@ extends Node
 # cenas — telas migradas usam o header do UiRoot e o hud.gd embutido se recolhe (owns()).
 # Precedente: ControlsHud (autoload que escuta screen_changed e reconstrói por modo).
 
-# Telas já migradas ao UiRoot (cresce a cada fase do PRD). F3: exploração.
-const MIGRATED_PREFIXES: PackedStringArray = ["EXPLORATION", "ARENA"]
+# Telas já migradas ao UiRoot (cresce a cada fase do PRD). F3: exploração; C5: acampamento.
+const MIGRATED_PREFIXES: PackedStringArray = ["EXPLORATION", "ARENA", "HUB"]
 const POPUP_FONT_BONUS := 4
 
 var _header_layer: CanvasLayer
@@ -62,7 +62,9 @@ func _apply_screen(screen: SignalBus.Screen) -> void:
 		_header.set_mode(HudHeader.Mode.COMBAT)
 		_header.set_phase(GameState.active_phase)
 	else:
-		_header.set_mode(HudHeader.Mode.EXPLORATION)
+		# Linha 1 (moeda|mudo) idêntica no acampamento e na exploração.
+		var camp := screen == SignalBus.Screen.HUB
+		_header.set_mode(HudHeader.Mode.CAMP if camp else HudHeader.Mode.EXPLORATION)
 		_header.set_currency(int(MetaProgression.fragments))
 		_header.set_muted(not AudioDirector.is_music_enabled())
 
@@ -84,6 +86,8 @@ func _on_fragment_gained(total: float, amount: float) -> void:
 	if not _active or _combat:
 		return
 	_header.set_currency(int(total))
+	if amount <= 0.0:
+		return  # compra no acampamento: o card já mostra o "−custo" flutuante
 	var n: String = "%d" % int(amount) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
 	var key := &"hud.fragment.pl" if amount != 1.0 else &"hud.fragment.s"
 	_spawn_popup(Lang.tf(key, [n]), Constants.COLOR_AMBER)

@@ -153,7 +153,7 @@ func relayout() -> void:
 		Mode.EXPLORATION:
 			_layout_top_row(vp, side, top, fs)
 			# HP na linha 2, abaixo das placas da linha 1 (mesmo header do acampamento).
-			var bar_y := top + top_row_height(vp) + _plate_pady() * 2.0 + float(Constants.SPACE_XS)
+			var bar_y := top + top_row_height(vp) + plate_pady() * 2.0 + float(Constants.SPACE_XS)
 			_layout_player(vp, side, bar_y, fs)
 		Mode.CAMP:
 			_layout_top_row(vp, side, top, fs)
@@ -200,13 +200,15 @@ func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_phase_badge.position = Vector2(0.0, top + _player_bar.total_height() * 0.5 - float(fs) * 0.5)
 
 # ─── Placas serrilhadas por grupo (chrome "casca flutuante") ───
-func _plate_pady() -> float:
+## Folga vertical das placas (respiro + crista). Estático: quem se ancora abaixo do
+## header (ex.: bandeja do acampamento) soma isto ao top_row_height.
+static func plate_pady() -> float:
 	return float(Constants.SPACE_XS) + BrandFrame.crest_clearance(HUD_CREST_SCALE)
 
 func _rebuild_plates() -> void:
 	_plates.clear()
 	var padx := float(Constants.SPACE_SM)
-	var pady := _plate_pady()
+	var pady := plate_pady()
 	match _mode:
 		Mode.COMBAT:
 			_append_plate([_player_bar], padx, pady)
