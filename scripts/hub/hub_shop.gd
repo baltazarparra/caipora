@@ -36,7 +36,7 @@ var _band: VBoxContainer
 # Container das trilhas: alterna entre lado a lado (paisagem) e empilhado (retrato) em _relayout.
 var _tracks: BoxContainer
 # Estilo da bandeja: o padding encolhe em paisagem (_relayout) pra faixa ficar baixa.
-var _tray_box: StyleBoxFlat
+var _tray: BrandPanel
 # Largura corrente dos cards/colunas (recalculada por orientação em _relayout).
 var _card_w: float = float(CARD_WIDTH_MAX)
 
@@ -114,17 +114,16 @@ func _build_cards() -> void:
 
 	# Bandeja: painel escuro de borda dura que segura os cards acima do acampamento animado.
 	# Encolhe pra largura do conteúdo e centraliza na horizontal (o _band só comanda a vertical).
-	var tray := PanelContainer.new()
-	tray.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tray_box = _tray_style()
-	tray.add_theme_stylebox_override("panel", _tray_box)
-	_band.add_child(tray)
+	_tray = BrandPanel.new()
+	_tray.framed = true
+	_tray.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_band.add_child(_tray)
 
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 16)
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tray.add_child(stack)
+	_tray.add_child(stack)
 
 	_tracks = BoxContainer.new()
 	_tracks.add_theme_constant_override("separation", COLUMN_SEP)
@@ -292,8 +291,10 @@ func _relayout() -> void:
 	# Paisagem: coluna em ≤30% da largura, duas trilhas lado a lado.
 	_card_w = clampf(vp.x - side * 2.0, CARD_WIDTH_MIN, 520.0) if portrait \
 		else clampf(vp.x * LANDSCAPE_COLUMN_FRACTION, CARD_WIDTH_MIN, CARD_WIDTH_MAX)
-	if _tray_box != null:
-		_tray_box.set_content_margin_all(Constants.SPACE_MD if portrait else Constants.SPACE_SM)
+	if _tray != null:
+		var pad: int = Constants.SPACE_MD if portrait else Constants.SPACE_SM
+		_tray.add_theme_constant_override("margin_left", pad)
+		_tray.add_theme_constant_override("margin_right", pad)
 	for line: String in _columns:
 		var col: Dictionary = _columns[line]
 		col["vbox"].custom_minimum_size = Vector2(_card_w, 0)
@@ -314,13 +315,3 @@ func _position_band(vp: Vector2) -> void:
 	_band.offset_bottom = 0.0
 	_band.offset_top = clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0) + HEADER_BAND_OFFSET
 	_band.alignment = BoxContainer.ALIGNMENT_BEGIN
-
-## Bandeja escura de borda dura atrás dos cards (sem cantos arredondados — guia de UI). Translúcida
-## para deixar a fogueira e a vida ambiente respirarem por trás, mas firme o bastante pra leitura.
-func _tray_style() -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.03, 0.02, 0.02, 0.82)
-	s.border_color = Color(Constants.COLOR_AMBER.r, Constants.COLOR_AMBER.g, Constants.COLOR_AMBER.b, 0.22)
-	s.set_border_width_all(Constants.UI_BORDER_WIDTH)
-	s.set_content_margin_all(Constants.SPACE_MD)
-	return s
