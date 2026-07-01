@@ -85,12 +85,14 @@ const STRINGS: Dictionary = {
 	&"dlg.jesuita.intro.2":     "teus santos viram húmus na minha mata.",
 
 	# Cortejo dos Encantados — tela de unlock pós-boss
-	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
-	&"cortejo.unlock.subtitle.first":  "OBTIDO!",
-	&"cortejo.unlock.subtitle.hit":    "GOLPE LIBERADO!",
-	&"cortejo.unlock.desc.first":      "Às vezes, no seu turno: toque ↑ na janela perfeita. Acertar = todos os espíritos libertados desabam de uma vez. Errar = contra-ataque.",
-	&"cortejo.unlock.desc.hit":        "O Cortejo agora desaba %d espíritos de uma vez.",
-	&"cortejo.unlock.demo":            "Toque ↑ no momento perfeito",
+	&"cortejo.unlock.title":           "O CORTEJO DOS ENCANTADOS",
+	&"cortejo.unlock.narrative":       "A mata te deve. Ergue a mão — ela responde.",
+	&"cortejo.unlock.teach.verb":      "SEGURA ↑ para chamar o cortejo",
+	&"cortejo.unlock.teach.release":   "SOLTA na zona dourada",
+	&"cortejo.unlock.teach.try":       "Tua vez — SEGURA e SOLTA no ouro",
+	&"cortejo.unlock.teach.done":      "É isso. No combate, solta no dourado.",
+	&"cortejo.unlock.grow.title":      "+1 ESPÍRITO NO CORTEJO",
+	&"cortejo.unlock.grow.desc":       "O Chamado agora desaba %d de uma vez.",
 	&"cortejo.unlock.hint":            "pressione para continuar",
 
 	# Hub Manager — ritos de chegada

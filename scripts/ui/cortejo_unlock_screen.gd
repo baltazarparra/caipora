@@ -1,25 +1,31 @@
 class_name CortejoUnlockScreen
 extends CanvasLayer
 
-## Tela pós-boss estilo "Mega Man Weapon Get": apresenta a skill Cortejo dos Encantados
-## na primeira vitória de boss (P1) e cada golpe novo liberado (P2–P4).
-## Disparada pelo ArenaManager após o victory outro, antes da transição de tela.
+## Tela pós-boss do Cortejo "O Chamado". Fonte: docs/PRD-cortejo-o-chamado.md.
+##
+## 1ª liberação (P1) → TEACH INTERATIVO: reveal do encantado + narrativa; uma
+## mão-fantasma demonstra SEGURAR↑→SOLTAR na banda dourada em loop; o jogador faz a
+## própria rep (o medido real, mesmo primitivo do combate) e a corrente é ensinada.
+## Rede de segurança: conclui sozinho após TEACH_TIMEOUT ou MAX_ATTEMPTS (nunca trava).
+##
+## Liberações seguintes (P2–P4) → CELEBRAÇÃO incremental: "+1 espírito no cortejo",
+## a corrente cresce, e segue.
 
 signal dismissed
 
 # ─── Constants ─────────────────────────────────────
-const LAYER: int = 80                     # acima de COMBAT_LOADER (30), abaixo de SceneTransition (100)
+const LAYER: int = 80                     # acima do COMBAT_LOADER (30), abaixo do SceneTransition (100)
 const MIN_SKIP_DELAY: float = 0.6
-const SWEEP_DURATION: float = 0.55
-const SPRITE_TARGET_HEIGHT: float = 96.0
-const DOT_SIZE: int = 10
-const DOT_GAP: int = 8
+const SPRITE_TARGET_HEIGHT: float = 88.0
 const MAX_LINKS: int = 4
+const DOT_SIZE: int = 12
+const DOT_GAP: int = 10
 
-# Demo do Golpe Perfeito: a seta abre uma janela única e estoura no centro, em loop.
-const DEMO_WINDOW_DURATION: float = 1.15
-const DEMO_TAP_AT: float = 0.52
-const DEMO_REST: float = 0.7              # pausa antes de repetir o ciclo
+const REVEAL_HOLD: float = 1.0            # reveal antes de começar a ensinar/celebrar
+const TEACH_TIMEOUT: float = 5.0          # rede de segurança: auto-conclui o teach
+const MAX_ATTEMPTS: int = 2               # após N tentativas, conclui o teach
+const GHOST_PERIOD: float = 1.55          # ciclo da mão-fantasma (demo)
+const METER_SCALE: float = 2.4
 
 const BOSS_SPRITE_PATH: Dictionary = {
 	1: "res://assets/sprites/mula_sprite_frames.tres",
@@ -27,43 +33,54 @@ const BOSS_SPRITE_PATH: Dictionary = {
 	3: "res://assets/sprites/curupira_sprite_frames.tres",
 	4: "res://assets/sprites/saci_sprite_frames.tres",
 }
-
 const BOSS_ACCENT: Dictionary = {
-	1: Color("#6b1a1a"),
-	2: Color("#1a3a6b"),
-	3: Color("#1a5c2a"),
-	4: Color("#4a1a6b"),
+	1: Color("#6b1a1a"), 2: Color("#1a3a6b"), 3: Color("#1a5c2a"), 4: Color("#4a1a6b"),
 }
-
-const COLOR_CAIPORA_PANEL: Color = Color(0.8, 0.27, 0.0, 0.65)
 const COLOR_DARK: Color = Color(0.05, 0.02, 0.02, 1.0)
 
 # ─── State ─────────────────────────────────────────
 var _link_count: int = 0
 var _phase: int = 0
-var _ready_to_dismiss: bool = false
+var _can_dismiss: bool = false
 var _last_input_frame: int = -1
-var _demo_bubble: TimingBubble = null
+
+var _center: Vector2 = Vector2.ZERO
+var _meter: TimingBubble = null
+var _timing: TimingSystem = null
+var _teaching: bool = false               # fase "sua vez": input do jogador vira carga
+var _charging: bool = false               # segurando agora (rep real em curso)
+var _attempts: int = 0
+var _teach_done: bool = false
+var _caption: Label = null
+var _hint: Label = null
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	layer = LAYER
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+func _process(delta: float) -> void:
+	# Dirige o TimingSystem à mão (ele fica com _process/_input desligados) só enquanto
+	# o jogador segura: assim o timeout de overcharge conta, sem input real duplicado.
+	if _charging and _timing != null:
+		_timing._process(delta)
 
 # ─── Public API ────────────────────────────────────
 func start(link_count: int) -> void:
-	_link_count = link_count
+	_link_count = clampi(link_count, 1, MAX_LINKS)
 	_phase = GameState.active_phase
 	_build()
-	_run_animation()
-	get_tree().create_timer(MIN_SKIP_DELAY).timeout.connect(func() -> void: _ready_to_dismiss = true)
-	if _demo_bubble != null:  # começa o loop da demo após a varredura dos painéis
-		get_tree().create_timer(SWEEP_DURATION).timeout.connect(_run_perfect_demo)
+	if link_count <= 1:
+		_run_teach_flow()
+	else:
+		_run_celebration_flow()
 
 # ─── Input ─────────────────────────────────────────
 func _input(event: InputEvent) -> void:
-	if not _ready_to_dismiss:
+	if _teaching:
+		_handle_teach_input(event)
 		return
-	if not _is_advance_event(event):
+	if not _can_dismiss or not _is_advance_event(event):
 		return
 	var frame: int = Engine.get_process_frames()
 	if frame == _last_input_frame:
@@ -71,6 +88,12 @@ func _input(event: InputEvent) -> void:
 	_last_input_frame = frame
 	get_viewport().set_input_as_handled()
 	dismissed.emit()
+
+func _handle_teach_input(event: InputEvent) -> void:
+	if _is_press_event(event):
+		_begin_charge()
+	elif _is_release_event(event):
+		_end_charge()
 
 func _is_advance_event(event: InputEvent) -> bool:
 	if event is InputEventKey:
@@ -81,261 +104,224 @@ func _is_advance_event(event: InputEvent) -> bool:
 		return event.pressed
 	return false
 
+func _is_press_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		return event.pressed and not event.echo
+	if event is InputEventScreenTouch:
+		return event.pressed
+	if event is InputEventMouseButton:
+		return event.pressed
+	return false
+
+func _is_release_event(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		return not event.pressed
+	if event is InputEventScreenTouch:
+		return not event.pressed
+	if event is InputEventMouseButton:
+		return not event.pressed
+	return false
+
+# ─── Fluxo: teach interativo (P1) ──────────────────
+func _run_teach_flow() -> void:
+	await get_tree().create_timer(REVEAL_HOLD).timeout
+	if not is_inside_tree():
+		return
+	_caption.text = "%s\n%s" % [Lang.t(&"cortejo.unlock.teach.verb"), Lang.t(&"cortejo.unlock.teach.release")]
+	_teaching = true
+	get_tree().create_timer(TEACH_TIMEOUT).timeout.connect(func() -> void:
+		if not _teach_done:
+			_end_teach())
+	_ghost_tick()   # demo em loop até o jogador segurar pela 1ª vez
+
+## Mão-fantasma: o medidor enche e "solta" no ouro sozinho, em loop, como hint. Para de
+## re-armar quando o jogador começa a própria rep (ou o teach termina).
+func _ghost_tick() -> void:
+	if _teach_done or _charging or not is_inside_tree() or _meter == null:
+		return
+	_show_meter()
+	var hold: float = Constants.CHAMADO_CHARGE_SEC * (Constants.CHAMADO_RELEASE_START + Constants.CHAMADO_RELEASE_END) * 0.5
+	get_tree().create_timer(hold).timeout.connect(func() -> void:
+		if not _teach_done and not _charging and is_instance_valid(_meter):
+			_meter.burst_success())
+	get_tree().create_timer(GHOST_PERIOD).timeout.connect(_ghost_tick)
+
+func _begin_charge() -> void:
+	if _charging or _teach_done:
+		return
+	_charging = true
+	_caption.text = Lang.t(&"cortejo.unlock.teach.try")
+	_show_meter()
+	_timing.open_window(Constants.CHAMADO_CHARGE_SEC, Constants.CHAMADO_RELEASE_START,
+		Constants.CHAMADO_RELEASE_END, false, 0.0, 0.0, "ui_up", "ui_right", true,
+		Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_END)
+	_timing._input(_action_event("ui_up", true))   # arma a carga
+
+func _end_charge() -> void:
+	if not _charging:
+		return
+	_timing._input(_action_event("ui_up", false))  # solta → _on_teach_result
+
+func _on_teach_result(result: int) -> void:
+	_charging = false
+	if result == TimingSystem.TimingResult.PERFECT:
+		_meter.burst_success()
+		_end_teach()
+	elif result == TimingSystem.TimingResult.GOOD:
+		_meter.burst_good()
+		_end_teach()
+	else:
+		_meter.burst_fail()
+		_attempts += 1
+		if _attempts >= MAX_ATTEMPTS:
+			_end_teach()
+		else:
+			_caption.text = Lang.t(&"cortejo.unlock.teach.try")
+
+func _end_teach() -> void:
+	if _teach_done:
+		return
+	_teach_done = true
+	_teaching = false
+	_charging = false
+	if _meter != null:
+		_meter.hide_bubble()
+	_caption.text = Lang.t(&"cortejo.unlock.teach.done")
+	_reveal_dismiss()
+
+# ─── Fluxo: celebração incremental (P2–P4) ─────────
+func _run_celebration_flow() -> void:
+	await get_tree().create_timer(REVEAL_HOLD).timeout
+	if not is_inside_tree():
+		return
+	_caption.text = Lang.tf(&"cortejo.unlock.grow.desc", [_link_count])
+	_reveal_dismiss()
+
+# ─── Dismiss ───────────────────────────────────────
+func _reveal_dismiss() -> void:
+	if _hint != null:
+		_hint.visible = true
+		var pulse := create_tween().set_loops()
+		pulse.tween_property(_hint, "modulate:a", 0.25, 0.65).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		pulse.tween_property(_hint, "modulate:a", 0.85, 0.65).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	get_tree().create_timer(MIN_SKIP_DELAY).timeout.connect(func() -> void: _can_dismiss = true)
+
 # ─── Build ─────────────────────────────────────────
 func _build() -> void:
 	var vp: Vector2 = _viewport_size()
 	var cx: float = vp.x * 0.5
-	var cy: float = vp.y * 0.5
 
-	# Fundo escuro
 	var bg := ColorRect.new()
 	bg.color = COLOR_DARK
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
 
-	# Flash branco inicial
-	var flash := ColorRect.new()
-	flash.color = Color.WHITE
-	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.modulate.a = 0.0
-	flash.name = &"Flash"
-	add_child(flash)
-
-	# Painel esquerdo — cor do boss, varre do centro para a esquerda
+	# Faixa de destaque na cor do encantado (topo).
 	var accent: Color = BOSS_ACCENT.get(_phase, Constants.COLOR_BLOOD)
-	var accent_panel: Color = accent
-	accent_panel.a = 0.6
-	var panel_left := ColorRect.new()
-	panel_left.color = accent_panel
-	panel_left.size = Vector2(cx, vp.y)
-	panel_left.position = Vector2(0.0, 0.0)
-	panel_left.pivot_offset = Vector2(cx, 0.0)  # ancora no centro — expande para esquerda
-	panel_left.scale.x = 0.0
-	panel_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel_left.name = &"PanelLeft"
-	add_child(panel_left)
+	accent.a = 0.5
+	var band := ColorRect.new()
+	band.color = accent
+	band.size = Vector2(vp.x, vp.y * 0.42)
+	add_child(band)
 
-	# Painel direito — laranja Caipora, varre do centro para a direita
-	var panel_right := ColorRect.new()
-	panel_right.color = COLOR_CAIPORA_PANEL
-	panel_right.size = Vector2(cx, vp.y)
-	panel_right.position = Vector2(cx, 0.0)
-	panel_right.pivot_offset = Vector2(0.0, 0.0)  # ancora no centro — expande para direita
-	panel_right.scale.x = 0.0
-	panel_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel_right.name = &"PanelRight"
-	add_child(panel_right)
-
-	# Sprite do boss (painel esquerdo, área superior)
+	# Sprite do encantado libertado (aparição translúcida).
 	var sprite_path: String = BOSS_SPRITE_PATH.get(_phase, "")
 	if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
 		var frames: SpriteFrames = load(sprite_path)
 		if frames != null and frames.has_animation(&"idle"):
-			var boss_sprite := AnimatedSprite2D.new()
-			boss_sprite.sprite_frames = frames
-			boss_sprite.animation = &"idle"
-			boss_sprite.centered = true
+			var boss := AnimatedSprite2D.new()
+			boss.sprite_frames = frames
+			boss.animation = &"idle"
+			boss.centered = true
 			var tex := frames.get_frame_texture(&"idle", 0)
 			if tex != null and tex.get_height() > 0:
 				var s: float = SPRITE_TARGET_HEIGHT / float(tex.get_height())
-				boss_sprite.scale = Vector2(s, s)
-			boss_sprite.position = Vector2(cx * 0.5, cy * 0.6)
-			boss_sprite.modulate.a = 0.0
-			boss_sprite.name = &"BossSprite"
-			boss_sprite.play(&"idle")
-			add_child(boss_sprite)
+				boss.scale = Vector2(s, s)
+			boss.modulate = Color(1, 1, 1, 0.85)
+			boss.position = Vector2(cx, vp.y * 0.20)
+			boss.play(&"idle")
+			add_child(boss)
 
-	# Linha divisória central (estilo Mega Man)
-	var divider := ColorRect.new()
-	divider.color = Constants.COLOR_AMBER
-	divider.size = Vector2(2.0, vp.y)
-	divider.position = Vector2(cx - 1.0, 0.0)
-	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	divider.modulate.a = 0.0
-	divider.name = &"Divider"
-	add_child(divider)
+	# Título.
+	_add_label(Lang.t(&"cortejo.unlock.title"), Constants.FONT_LG, Constants.COLOR_AMBER,
+		Vector2(0.0, vp.y * 0.36), vp.x, HORIZONTAL_ALIGNMENT_CENTER)
 
-	# Texto — posicionado na metade inferior
-	var text_y: float = cy + 20.0
+	# Sub-linha: narrativa (P1) ou "+1 espírito" (P2–P4).
+	var sub_key: StringName = &"cortejo.unlock.narrative" if _link_count <= 1 else &"cortejo.unlock.grow.title"
+	_add_label(Lang.t(sub_key), Constants.FONT_SM, Constants.COLOR_TEXT,
+		Vector2(vp.x * 0.1, vp.y * 0.36 + 40.0), vp.x * 0.8, HORIZONTAL_ALIGNMENT_CENTER)
 
-	# Título
-	var title_lbl := Label.new()
-	title_lbl.text = Lang.t(&"cortejo.unlock.title")
-	title_lbl.add_theme_font_size_override("font_size", Constants.FONT_LG)
-	title_lbl.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_lbl.size = Vector2(vp.x, 44.0)
-	title_lbl.position = Vector2(0.0, text_y - 50.0)
-	title_lbl.modulate.a = 0.0
-	title_lbl.name = &"TitleLabel"
-	add_child(title_lbl)
-
-	# Sub-título ("OBTIDO!" ou "GOLPE LIBERADO!")
-	var is_first: bool = (_link_count == 1)
-	var sub_key: StringName = &"cortejo.unlock.subtitle.first" if is_first else &"cortejo.unlock.subtitle.hit"
-	var sub_lbl := Label.new()
-	sub_lbl.text = Lang.t(sub_key)
-	sub_lbl.add_theme_font_size_override("font_size", Constants.FONT_TITLE)
-	sub_lbl.add_theme_color_override("font_color", Constants.COLOR_BLOOD)
-	sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub_lbl.size = Vector2(vp.x, 64.0)
-	sub_lbl.position = Vector2(0.0, text_y)
-	sub_lbl.modulate.a = 0.0
-	sub_lbl.name = &"SubLabel"
-	add_child(sub_lbl)
-
-	# Dots: 4 quadrados em linha — âmbar = liberado, cinza = bloqueado
-	var total_w: float = (DOT_SIZE * MAX_LINKS) + (DOT_GAP * (MAX_LINKS - 1))
+	# Corrente de elos (dots), sempre visível — a nova cresce a corrente.
+	var total_w: float = float(DOT_SIZE * MAX_LINKS + DOT_GAP * (MAX_LINKS - 1))
 	var dots_x: float = cx - total_w * 0.5
-	var dots_y: float = text_y + 80.0
+	var dots_y: float = vp.y * 0.46
 	for i: int in range(MAX_LINKS):
 		var dot := ColorRect.new()
 		dot.size = Vector2(DOT_SIZE, DOT_SIZE)
 		dot.position = Vector2(dots_x + i * (DOT_SIZE + DOT_GAP), dots_y)
-		dot.color = Constants.COLOR_AMBER if i < _link_count else Color(0.25, 0.25, 0.25, 1.0)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		dot.modulate.a = 0.0
-		dot.name = StringName("Dot%d" % i)
+		dot.color = Constants.COLOR_CHAMA_HOT if i < _link_count else Color(0.25, 0.25, 0.25, 1.0)
 		add_child(dot)
+		if i == _link_count - 1 and _link_count > 1:   # o novo elo "estala"
+			dot.scale = Vector2(1.8, 1.8)
+			dot.pivot_offset = dot.size * 0.5
+			create_tween().tween_property(dot, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
-	# Descrição
-	var desc_key: StringName = &"cortejo.unlock.desc.first" if is_first else &"cortejo.unlock.desc.hit"
-	var desc_text: String = Lang.t(desc_key) if is_first else Lang.tf(desc_key, [_link_count])
-	var desc_lbl := Label.new()
-	desc_lbl.text = desc_text
-	desc_lbl.add_theme_font_size_override("font_size", Constants.FONT_SM)
-	desc_lbl.add_theme_color_override("font_color", Constants.COLOR_TEXT)
-	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_lbl.size = Vector2(vp.x * 0.8, 96.0)
-	desc_lbl.position = Vector2(vp.x * 0.1, dots_y + 24.0)
-	desc_lbl.modulate.a = 0.0
-	desc_lbl.name = &"DescLabel"
-	add_child(desc_lbl)
+	# Medidor de carga (o coração do teach). Posicionado na metade inferior.
+	_center = Vector2(cx, vp.y * 0.64)
+	_meter = TimingBubble.new()
+	_meter.scale = Vector2(METER_SCALE, METER_SCALE)
+	_meter.position = _center
+	add_child(_meter)
 
-	# Demo do Golpe Perfeito (só na 1ª liberação): uma janela única de toque, no painel
-	# direito (laranja Caipora). Mesmo widget do combate.
-	if is_first:
-		var demo := TimingBubble.new()
-		demo.position = Vector2(cx * 1.5, cy * 0.6)
-		demo.name = &"PerfectDemo"
-		add_child(demo)
-		_demo_bubble = demo
+	# TimingSystem dirigido à mão (sem _process/_input automáticos): reusa a grade 3-tier.
+	_timing = TimingSystem.new()
+	_timing.set_process(false)
+	_timing.set_process_input(false)
+	_timing.timing_result.connect(_on_teach_result)
+	add_child(_timing)
 
-		var demo_cap := Label.new()
-		demo_cap.text = Lang.t(&"cortejo.unlock.demo")
-		demo_cap.add_theme_font_size_override("font_size", Constants.FONT_SM)
-		demo_cap.add_theme_color_override("font_color", Constants.COLOR_CHAMA_HOT)
-		demo_cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		demo_cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		demo_cap.size = Vector2(cx * 0.9, 44.0)
-		demo_cap.position = Vector2(cx * 1.5 - cx * 0.45, cy * 0.6 + 44.0)
-		demo_cap.name = &"DemoCaption"
-		add_child(demo_cap)
+	# Legenda (instruções/estado) sob o medidor.
+	_caption = _add_label("", Constants.FONT_SM, Constants.COLOR_CHAMA_HOT,
+		Vector2(vp.x * 0.1, vp.y * 0.80), vp.x * 0.8, HORIZONTAL_ALIGNMENT_CENTER)
 
-	# Hint (pisca)
-	var hint_lbl := Label.new()
-	hint_lbl.text = Lang.t(&"cortejo.unlock.hint")
-	hint_lbl.add_theme_font_size_override("font_size", Constants.FONT_SM)
-	hint_lbl.add_theme_color_override("font_color", Color(Constants.COLOR_TEXT.r, Constants.COLOR_TEXT.g, Constants.COLOR_TEXT.b, 0.5))
-	hint_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_lbl.size = Vector2(vp.x, 24.0)
-	hint_lbl.position = Vector2(0.0, vp.y - 60.0)
-	hint_lbl.modulate.a = 0.0
-	hint_lbl.name = &"HintLabel"
-	add_child(hint_lbl)
+	# Hint de "pressione para continuar" (some até liberar o avanço).
+	_hint = _add_label(Lang.t(&"cortejo.unlock.hint"), Constants.FONT_SM,
+		Color(Constants.COLOR_TEXT.r, Constants.COLOR_TEXT.g, Constants.COLOR_TEXT.b, 0.6),
+		Vector2(0.0, vp.y - 56.0), vp.x, HORIZONTAL_ALIGNMENT_CENTER)
+	_hint.visible = false
 
-# ─── Animation ─────────────────────────────────────
-func _run_animation() -> void:
-	var t := create_tween()
-
-	# 1. Flash branco rápido
-	var flash: ColorRect = get_node_or_null("Flash")
-	if flash:
-		t.tween_property(flash, "modulate:a", 1.0, 0.04)
-		t.tween_property(flash, "modulate:a", 0.0, 0.09)
-
-	# 2. Painéis varrem do centro para fora
-	var panel_left: ColorRect = get_node_or_null("PanelLeft")
-	var panel_right: ColorRect = get_node_or_null("PanelRight")
-	if panel_left:
-		t.tween_property(panel_left, "scale:x", 1.0, SWEEP_DURATION) \
-			.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	if panel_right:
-		t.parallel().tween_property(panel_right, "scale:x", 1.0, SWEEP_DURATION) \
-			.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-
-	# 3. Divisória e sprite do boss aparecem
-	var divider: ColorRect = get_node_or_null("Divider")
-	if divider:
-		t.tween_property(divider, "modulate:a", 0.6, 0.15)
-	var boss_sprite: AnimatedSprite2D = get_node_or_null("BossSprite")
-	if boss_sprite:
-		t.parallel().tween_property(boss_sprite, "modulate:a", 1.0, 0.3)
-
-	# 4. Título cai de cima
-	var title_lbl: Label = get_node_or_null("TitleLabel")
-	if title_lbl:
-		var orig_y: float = title_lbl.position.y
-		title_lbl.position.y = orig_y - 36.0
-		t.tween_property(title_lbl, "modulate:a", 1.0, 0.22) \
-			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		t.parallel().tween_property(title_lbl, "position:y", orig_y, 0.22) \
-			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-
-	# 5. Sub-título (OBTIDO! / GOLPE LIBERADO!)
-	var sub_lbl: Label = get_node_or_null("SubLabel")
-	if sub_lbl:
-		t.tween_property(sub_lbl, "modulate:a", 1.0, 0.18)
-
-	# 6. Dots aparecem um a um
-	for i: int in range(MAX_LINKS):
-		var dot: ColorRect = get_node_or_null("Dot%d" % i)
-		if dot:
-			t.tween_property(dot, "modulate:a", 1.0, 0.07)
-
-	# 7. Descrição
-	var desc_lbl: Label = get_node_or_null("DescLabel")
-	if desc_lbl:
-		t.tween_property(desc_lbl, "modulate:a", 1.0, 0.2)
-
-	# 8. Hint — aparece e começa a pulsar
-	var hint_lbl: Label = get_node_or_null("HintLabel")
-	if hint_lbl:
-		t.tween_property(hint_lbl, "modulate:a", 0.7, 0.3)
-		t.tween_callback(_start_hint_pulse.bind(hint_lbl))
-
-func _start_hint_pulse(hint: Label) -> void:
-	var pulse := create_tween().set_loops()
-	pulse.tween_property(hint, "modulate:a", 0.2, 0.65) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	pulse.tween_property(hint, "modulate:a", 0.8, 0.65) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-# ─── Demo do Golpe Perfeito (loop janela→toque) ─────
-## Re-arma a si mesmo a cada ciclo; para sozinho quando a tela sai da árvore (free).
-func _run_perfect_demo() -> void:
-	if not is_inside_tree() or _demo_bubble == null or not is_instance_valid(_demo_bubble):
+func _show_meter() -> void:
+	if _meter == null:
 		return
-	_demo_bubble.show_bubble(
-		_demo_bubble.position, DEMO_WINDOW_DURATION,
-		Constants.CORTEJO_PERFECT_START, Constants.CORTEJO_PERFECT_END,
-		false, Constants.COLOR_CHAMA_HOT, "up", false
-	)
-	get_tree().create_timer(DEMO_WINDOW_DURATION * DEMO_TAP_AT).timeout.connect(_demo_tap)
-	get_tree().create_timer(DEMO_WINDOW_DURATION + DEMO_REST).timeout.connect(_run_perfect_demo)
-
-func _demo_tap() -> void:
-	if is_instance_valid(_demo_bubble):
-		_demo_bubble.burst_success()
+	_meter.show_bubble(_center, Constants.CHAMADO_CHARGE_SEC, Constants.CHAMADO_RELEASE_START,
+		Constants.CHAMADO_RELEASE_END, false, Constants.COLOR_CHAMA_HOT, "up", true,
+		Constants.CHAMADO_GOOD_START, Constants.CHAMADO_RELEASE_END, _link_count)
 
 # ─── Helpers ───────────────────────────────────────
+func _add_label(text: String, font_size: int, color: Color, pos: Vector2, width: float, align: int) -> Label:
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", font_size)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.horizontal_alignment = align
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.size = Vector2(width, 60.0)
+	lbl.position = pos
+	add_child(lbl)
+	return lbl
+
+func _action_event(action: String, pressed: bool) -> InputEventAction:
+	var ev := InputEventAction.new()
+	ev.action = action
+	ev.pressed = pressed
+	ev.strength = 1.0 if pressed else 0.0
+	return ev
+
 func _viewport_size() -> Vector2:
 	var vp := get_viewport()
 	if vp != null:
-		var size: Vector2 = vp.get_visible_rect().size
-		if size.x > 0.0 and size.y > 0.0:
-			return size
+		var s: Vector2 = vp.get_visible_rect().size
+		if s.x > 0.0 and s.y > 0.0:
+			return s
 	return Vector2(750.0, 1334.0)

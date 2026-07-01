@@ -86,12 +86,14 @@ const STRINGS: Dictionary = {
 	&"dlg.jesuita.intro.2":     "your saints became mulch in my woods.",
 
 	# Cortejo dos Encantados — post-boss unlock screen
-	&"cortejo.unlock.title":           "CORTEJO DOS ENCANTADOS",
-	&"cortejo.unlock.subtitle.first":  "OBTAINED!",
-	&"cortejo.unlock.subtitle.hit":    "STRIKE UNLOCKED!",
-	&"cortejo.unlock.desc.first":      "Sometimes on your turn: tap ↑ inside the perfect window. Hit = every freed spirit crashes down at once. Miss = counter-attack.",
-	&"cortejo.unlock.desc.hit":        "The Cortejo now crashes %d spirits down at once.",
-	&"cortejo.unlock.demo":            "Tap ↑ at the perfect moment",
+	&"cortejo.unlock.title":           "THE CORTEJO OF THE ENCHANTED",
+	&"cortejo.unlock.narrative":       "The forest owes you. Raise your hand — it answers.",
+	&"cortejo.unlock.teach.verb":      "HOLD ↑ to call the cortejo",
+	&"cortejo.unlock.teach.release":   "RELEASE in the golden band",
+	&"cortejo.unlock.teach.try":       "Your turn — HOLD, then RELEASE in the gold",
+	&"cortejo.unlock.teach.done":      "That's it. In combat, release in the gold.",
+	&"cortejo.unlock.grow.title":      "+1 SPIRIT IN THE CORTEJO",
+	&"cortejo.unlock.grow.desc":       "The Call now crashes %d down at once.",
 	&"cortejo.unlock.hint":            "press to continue",
 
 	# Hub Manager — arrival rites
