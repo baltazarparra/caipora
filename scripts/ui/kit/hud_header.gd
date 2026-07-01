@@ -14,6 +14,8 @@ extends Control
 enum Mode { MENU, CAMP, EXPLORATION, COMBAT }
 
 const HEADER_CENTER_GAP := 48.0
+## Crista reduzida nas placas baixas do HUD (menos ruído que nos painéis-herói).
+const HUD_CREST_SCALE := 0.6
 
 signal mute_toggled
 
@@ -192,7 +194,7 @@ func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
 func _rebuild_plates() -> void:
 	_plates.clear()
 	var padx := float(Constants.SPACE_SM)
-	var pady := float(Constants.SPACE_XS) + Constants.CHROME_SAW_DEPTH
+	var pady := float(Constants.SPACE_XS) + BrandFrame.crest_clearance(HUD_CREST_SCALE)
 	match _mode:
 		Mode.COMBAT:
 			_append_plate([_player_bar], padx, pady)
@@ -224,4 +226,5 @@ func _draw() -> void:
 	for plate: Rect2 in _plates:
 		if plate.size.x <= 1.0 or plate.size.y <= 1.0:
 			continue
-		BrandFrame.draw_plate(self, plate, bg, Constants.COLOR_JUBA_DARK)
+		BrandFrame.draw_plate(self, plate, bg, Constants.COLOR_JUBA_DARK,
+			float(Constants.UI_BORDER_WIDTH), HUD_CREST_SCALE)

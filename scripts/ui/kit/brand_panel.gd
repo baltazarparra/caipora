@@ -19,8 +19,8 @@ func _ready() -> void:
 	_update_margins()
 
 func _update_margins() -> void:
-	# Com serrilhado, o topo/base precisam limpar os dentes (CHROME_SAW_DEPTH).
-	var extra: int = int(Constants.CHROME_SAW_DEPTH) if framed else 0
+	# Com moldura, o topo/base precisam limpar a crista de juba (crest_clearance).
+	var extra: int = int(BrandFrame.crest_clearance()) if framed else 0
 	add_theme_constant_override("margin_left", Constants.UI_PADDING_H)
 	add_theme_constant_override("margin_right", Constants.UI_PADDING_H)
 	add_theme_constant_override("margin_top", Constants.UI_PADDING_V + extra)
@@ -33,7 +33,7 @@ func _draw() -> void:
 	var bg := Constants.COLOR_NIGHT
 	bg.a = scrim_alpha
 	if framed:
-		var depth := Constants.CHROME_SAW_DEPTH
+		var depth := BrandFrame.crest_clearance()
 		var ow := float(Constants.UI_BORDER_WIDTH)
 		var body := Rect2(ow, depth + ow, r.size.x - ow * 2.0, r.size.y - depth * 2.0 - ow * 2.0)
 		BrandFrame.draw_plate(self, body, bg, Constants.COLOR_JUBA_DARK, ow)

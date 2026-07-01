@@ -406,10 +406,10 @@ static func safe_insets(vp: Vector2) -> Vector2:
 	var s := minf(vp.x, vp.y)
 	return Vector2(clampf(s * 0.055, 40.0, 80.0), clampf(s * 0.05, 28.0, 64.0))
 
-# ─── Chrome autoral (placa serrilhada + garra + movimento — vocabulário do BrandFrame) ───
-const CHROME_SAW_STEP := 18.0
-const CHROME_SAW_DEPTH := 8.0
+# ─── Chrome autoral (crista de juba + garra + movimento — vocabulário do BrandFrame) ───
+const CHROME_CREST_H := 12.0      # altura da faixa da crista (dente mais alto, escala 1.0)
 const CHROME_CLAW_INSET := 6.0
+const COLOR_CHROME_OUTLINE := Color("#050608")  # aro quase-preto do selout do chrome
 const CHROME_PRESS_SCALE := 1.04  # "bote" no press (escala, não afundamento)
 const CHROME_PRESS_SECS := 0.08   # volta do bote
 const CHROME_BREATH_SECS := 1.3   # meio-ciclo do respiro da brasa (elementos-herói)

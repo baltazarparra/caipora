@@ -16,9 +16,9 @@ func test_framed_by_default() -> void:
 
 func test_margins_from_tokens_when_framed() -> void:
 	assert_eq(_panel.get_theme_constant("margin_left"), Constants.UI_PADDING_H)
-	# Framed: topo/base limpam os dentes de serra.
+	# Framed: topo/base limpam a crista de juba.
 	assert_eq(_panel.get_theme_constant("margin_top"),
-		Constants.UI_PADDING_V + int(Constants.CHROME_SAW_DEPTH))
+		Constants.UI_PADDING_V + int(BrandFrame.crest_clearance()))
 
 func test_unframed_margins_shrink() -> void:
 	_panel.framed = false

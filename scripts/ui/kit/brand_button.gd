@@ -94,7 +94,7 @@ func _draw() -> void:
 		base.a = 0.92
 	var border := Constants.COLOR_JUBA if lit else Constants.COLOR_JUBA_DARK
 	var claw := Constants.COLOR_AMBER if lit else Color(Constants.COLOR_JUBA_DARK, 0.72)
-	var depth := Constants.CHROME_SAW_DEPTH
+	var depth := BrandFrame.crest_clearance()
 	var ow := float(Constants.UI_BORDER_WIDTH)
 	var body := Rect2(ow, depth + ow, r.size.x - ow * 2.0, r.size.y - depth * 2.0 - ow * 2.0)
 	BrandFrame.draw_plate(self, body, base, border, ow)
@@ -102,6 +102,8 @@ func _draw() -> void:
 	if variant == Variant.HERO:
 		BrandFrame.draw_claws(self, get_theme_default_font(), inner, claw)
 		BrandFrame.draw_embers(self, body, Constants.COLOR_AMBER, _ember_alpha + (0.18 if lit else 0.0))
+		# As pontas da crista acendem junto com a brasa — a placa respira viva.
+		BrandFrame.draw_crest_embers(self, body, Constants.COLOR_AMBER, _ember_alpha + (0.24 if lit else 0.0))
 	_draw_label(inner, text_col)
 
 func _draw_label(inner: Rect2, color: Color) -> void:
