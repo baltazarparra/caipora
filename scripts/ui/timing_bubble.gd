@@ -84,6 +84,9 @@ var _arrow_offset: Vector2 = Vector2.ZERO
 ## Modo GOLPE CARREGADO: a seta vira medidor de fogo (enche com a carga), com bordas
 ## flamejantes. A zona perfeita = janela de SOLTAR. Tudo em immediate-mode (sem nós).
 var _charge_mode: bool = false
+## Nº de espíritos do Cortejo (notches que acendem um a um enquanto a carga sobe até a
+## banda de SOLTAR). 0 = sem notches (medidor genérico).
+var _charge_links: int = 0
 ## Ganho de cor aplicado no desenho para compensar o CanvasModulate escuro de
 ## certas fases (ver Constants.feedback_gain_for_phase). Identidade = sem efeito.
 var _color_gain: Color = Color(1, 1, 1)
@@ -195,11 +198,15 @@ func _process_charge(delta: float) -> void:
 	_flash_timer = maxf(0.0, _flash_timer - delta)
 	_elapsed += delta
 	var progress: float = clampf(_elapsed / _duration, 0.0, 1.0)
+	# Cue de aproximação ao ENTRAR no ombro GOOD (antes da banda): tique sutil "prepare".
+	if not _approach_emitted and _good_start < _perfect_start and progress >= _good_start:
+		_approach_emitted = true
+		approach_entered.emit()
 	var in_release: bool = progress >= _perfect_start and progress <= _perfect_end
 	if in_release and not _vuln_emitted:
 		_vuln_emitted = true
 		_flash_timer = FLASH_S
-		vulnerable_entered.emit()  # cue "SOLTE!" (timing_alert) + flash verde-cristal
+		vulnerable_entered.emit()  # cue "SOLTE!" (timing_alert) + flash dourado
 	queue_redraw()
 
 
@@ -270,12 +277,26 @@ func _draw_charge() -> void:
 	var overcharge: bool = progress > _perfect_end
 	var flick: float = sin(_elapsed * TAU * 7.0) * 0.5 + 0.5   # cintilação de chama (barata)
 
-	# 1. Trilho do medidor (apagado) + banda da zona de SOLTAR (chama).
+	# 1. Trilho do medidor (apagado).
 	draw_arc(Vector2.ZERO, RADIUS_TARGET, 0.0, TAU, 40, _g(Color(0.5, 0.3, 0.15, 0.30)), 2.0)
+	# 1a. Ombro GOOD (âmbar, apagado): a zona do "quase certo", antes da banda dourada.
+	if _good_start < _perfect_start:
+		draw_arc(Vector2.ZERO, RADIUS_TARGET,
+			-PI * 0.5 + _good_start * TAU, -PI * 0.5 + _perfect_start * TAU, 20,
+			_g(Color(Constants.COLOR_AMBER.r, Constants.COLOR_AMBER.g, Constants.COLOR_AMBER.b, 0.32)), 2.5)
+	# 1b. Banda dourada de SOLTAR (chama): o alvo do release.
 	var a0: float = -PI * 0.5 + _perfect_start * TAU
 	var a1: float = -PI * 0.5 + _perfect_end * TAU
 	draw_arc(Vector2.ZERO, RADIUS_TARGET, a0, a1, 24,
 		_g(Color(Constants.COLOR_CHAMA_HOT.r, Constants.COLOR_CHAMA_HOT.g, Constants.COLOR_CHAMA_HOT.b, 0.55)), 3.0)
+	# 1c. Penhasco de QUEIMA: tick vermelho no fim da banda (soltar além = os espíritos fogem).
+	_draw_charge_tick(_perfect_end, Constants.COLOR_BLOOD, 0.9 if overcharge else 0.5, 7.0)
+	# 1d. Notches de espírito: N marcas até a banda, acendendo uma a uma conforme a carga sobe.
+	for i: int in _charge_links:
+		var f: float = _perfect_start * float(i + 1) / float(_charge_links)
+		var lit: bool = progress >= f
+		_draw_charge_tick(f, Constants.COLOR_CHAMA_HOT if lit else Constants.COLOR_JUBA_DARK,
+			0.95 if lit else 0.4, 6.0 if lit else 4.0)
 
 	# 2. Arco de carga: enche no sentido horário a partir do topo.
 	var fill_end: float = -PI * 0.5 + progress * TAU
@@ -283,7 +304,7 @@ func _draw_charge() -> void:
 	if overcharge:
 		gauge = Color(Constants.COLOR_BLOOD.r, 0.1, 0.05, 0.95)
 	elif in_release:
-		gauge = Constants.COLOR_CRYSTAL_GLOW
+		gauge = Constants.COLOR_CHAMA_CORE   # release = chama branca-quente (marca), não verde
 	else:
 		gauge = Constants.COLOR_AMBER.lerp(Constants.COLOR_CHAMA_HOT, flick)
 	draw_arc(Vector2.ZERO, RADIUS_TARGET, -PI * 0.5, fill_end, 36,
@@ -309,7 +330,7 @@ func _draw_charge_glyph(progress: float, in_release: bool, overcharge: bool, fli
 	var fill_col: Color = Constants.COLOR_CHAMA_CORE.lerp(Constants.COLOR_CHAMA_HOT, flick)
 	var edge_col: Color = Constants.COLOR_JUBA.lerp(Constants.COLOR_AMBER, flick)
 	if in_release:
-		fill_col = Constants.COLOR_CRYSTAL_GLOW
+		fill_col = Constants.COLOR_CHAMA_CORE   # release = chama branca-quente (marca)
 	elif overcharge:
 		fill_col = Color(Constants.COLOR_BLOOD.r, 0.12, 0.06)
 		edge_col = Color(0.7, 0.1, 0.05)
@@ -331,6 +352,15 @@ func _draw_charge_glyph(progress: float, in_release: bool, overcharge: bool, fli
 				col = _g(dim)
 			var cell_pos: Vector2 = _glyph_rotated_cell(r, c)   # cortejo é sempre "up"
 			draw_rect(Rect2(origin + cell_pos * ARROW_CELL, cs), col, true)
+
+
+## Marca radial curta no medidor de carga, na fração dada (0..1 do arco; topo = 0).
+## Usada pelos notches de espírito e pelo penhasco de QUEIMA.
+func _draw_charge_tick(fraction: float, color: Color, alpha: float, length: float) -> void:
+	var ang: float = -PI * 0.5 + fraction * TAU
+	var dir: Vector2 = Vector2(cos(ang), sin(ang))
+	draw_line(dir * (RADIUS_TARGET - length * 0.5), dir * (RADIUS_TARGET + length * 0.5),
+		_g(Color(color.r, color.g, color.b, alpha)), 2.0)
 
 
 ## Mapeia (row, col) do glifo UP para a posição rotacionada por _key_hint.
@@ -377,7 +407,7 @@ func _flashed(c: Color) -> Color:
 
 
 # ─── Public API ────────────────────────────────────
-func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up", charge: bool = false, good_start: float = 0.0, good_end: float = 0.0) -> void:
+func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perfect_end: float, defense: bool = false, vuln_color: Color = Color.TRANSPARENT, key_hint: String = "up", charge: bool = false, good_start: float = 0.0, good_end: float = 0.0, charge_links: int = 0) -> void:
 	_duration = duration
 	_perfect_start = perfect_start
 	_perfect_end = perfect_end
@@ -385,6 +415,7 @@ func show_bubble(world_pos: Vector2, duration: float, perfect_start: float, perf
 	_good_start = good_start if good_start > 0.0 else perfect_start
 	_good_end = good_end if good_end > 0.0 else perfect_end
 	_good_alpha = 0.0
+	_charge_links = charge_links
 	_approach_emitted = false
 	_elapsed = 0.0
 	_phase = PHASE_ACTIVE

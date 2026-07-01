@@ -77,3 +77,22 @@ func test_burst_good_is_amber_and_not_fail() -> void:
 	assert_true(_bubble._burst_good, "burst_good liga o estouro âmbar")
 	assert_false(_bubble._burst_fail, "burst_good não é falha")
 	assert_gt(_bubble._burst_timer, 0.0, "burst ativo")
+
+# ─── Modo carga (Cortejo "O Chamado") ──────────────
+func test_charge_stores_links() -> void:
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.80, 0.94, false, Color.TRANSPARENT, "up", true, 0.66, 0.94, 4)
+	assert_eq(_bubble._charge_links, 4, "o medidor guarda o nº de espíritos para os notches")
+
+# Carga: cue de aproximação ao entrar no ombro GOOD, depois SOLTE! ao entrar na banda.
+func test_charge_approach_then_release_cues() -> void:
+	var approach: Array = [false]
+	var release: Array = [false]
+	_bubble.approach_entered.connect(func(): approach[0] = true)
+	_bubble.vulnerable_entered.connect(func(): release[0] = true)
+	_bubble.show_bubble(Vector2.ZERO, 1.0, 0.80, 0.94, false, Color.TRANSPARENT, "up", true, 0.66, 0.94, 4)
+	_bubble._process(0.70)   # progress 0.70 — ombro GOOD, antes da banda
+	assert_true(approach[0], "entrada no ombro dispara o cue de aproximação")
+	assert_false(release[0], "ainda não entrou na banda dourada")
+	_bubble._process(0.12)   # progress 0.82 — banda dourada de SOLTAR
+	assert_true(release[0], "entrada na banda dispara o cue SOLTE! + flash")
+	assert_gt(_bubble._flash_timer, 0.0, "flash na banda de soltar")
