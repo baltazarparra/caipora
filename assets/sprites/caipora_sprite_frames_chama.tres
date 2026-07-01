@@ -17,7 +17,10 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player_windup_1_chama.png" id="15_windup_1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_windup_2_chama.png" id="16_windup_2"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_strike_chama.png" id="17_strike"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="18_recover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_strike_1_chama.png" id="18_strike_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="19_recover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_1_chama.png" id="20_recover_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_2_chama.png" id="21_recover_2"]
 
 [resource]
 animations = [{
@@ -97,16 +100,25 @@ animations = [{
 "frames": [{
 "duration": 1.0,
 "texture": ExtResource("17_strike")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_strike_1")
 }],
 "loop": false,
 "name": &"strike",
-"speed": 5.0
+"speed": 12.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("18_recover")
+"texture": ExtResource("19_recover")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_recover_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_recover_2")
 }],
 "loop": false,
 "name": &"recover",
-"speed": 5.0
+"speed": 14.0
 }]

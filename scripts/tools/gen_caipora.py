@@ -24,6 +24,8 @@ IDLE_BREATH_AMP = 1.6  # amplitude (px) do sobe/desce da bainha; corpo/olhos tra
 WALK_FRAMES = 6        # walk vira ciclo de 6 frames (bounce do torso + overlap da capa)
 IDLE_DIM_FRAMES = 2    # blink "olhos apagam": 2 frames sem olhos (loop=false)
 WINDUP_FRAMES = 3      # windup coila em 3 frames (anticipacao mais funda)
+STRIKE_FRAMES = 2      # strike ganha 1 frame de rastro/smear (loop=false)
+RECOVER_FRAMES = 3     # recover: a capa chicoteia e assenta (loop=false)
 
 TRANSPARENT = (0, 0, 0, 0)
 ORANGE_DK = (139, 42, 0)
@@ -82,6 +84,7 @@ class Rig:
     staff_tip: tuple[float, float]
     breath: float = 0.0
     bob: float = 0.0
+    stretch: float = 0.0
 
 
 class Painter:
@@ -173,7 +176,7 @@ def _outline(img: Image.Image) -> None:
         px[x, y] = BLACK + (255,)
 
 
-def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0, bob: float = 0.0) -> Rig:
+def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0, bob: float = 0.0, stretch: float = 0.0) -> Rig:
     lean_by_pose = {"idle": 0.0, "walk": phase * 0.8, "windup": -1.0, "strike": 7.0, "recover": 1.0, "back": 0.0, "dead": 0.0}
     crouch_by_pose = {"idle": 0.0, "walk": 0.0, "windup": 4.0, "strike": 1.0, "recover": 1.5, "back": 0.0, "dead": 0.0}
     lean = lean_by_pose[pose]
@@ -195,7 +198,7 @@ def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0, bob: float = 0
     else:
         staff_base = (66.5 + lean * 0.2, 88.0)
         staff_tip = (66.5 + lean * 0.2, 23.5)
-    return Rig(pose, phase, chama, head, body, foot_y, lean, staff_base, staff_tip, breath, bob)
+    return Rig(pose, phase, chama, head, body, foot_y, lean, staff_base, staff_tip, breath, bob, stretch)
 
 
 def _cloak_color(rig: Rig) -> tuple[int, int, int]:
@@ -221,26 +224,23 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
     shadow = _cloak_shadow(rig)
 
     if rig.pose == "strike":
+        # `stretch` alonga o rastro no eixo do golpe (smear): escala a distancia
+        # horizontal ao hx. stretch=0 -> identico ao contato canonico.
+        s = 1.0 + rig.stretch
+
+        def sx(dx: float, dy: float) -> tuple[float, float]:
+            return (hx + dx * s, hy + dy)
+
         main = [
-            (hx - 13, hy - 14),
-            (hx + 10, hy - 17),
-            (hx + 24, hy - 4),
-            (hx + 31, hy + 10),
-            (hx + 28, hy + 24),
-            (hx + 38, hy + 27),
-            (hx + 24, hy + 34),
-            (hx + 12, hy + 42),
-            (hx - 2, hy + 39),
-            (hx - 15, hy + 33),
-            (hx - 25, hy + 20),
-            (hx - 33, hy + 8),
-            (hx - 24, hy - 2),
+            sx(-13, -14), sx(10, -17), sx(24, -4), sx(31, 10), sx(28, 24),
+            sx(38, 27), sx(24, 34), sx(12, 42), sx(-2, 39), sx(-15, 33),
+            sx(-25, 20), sx(-33, 8), sx(-24, -2),
         ]
         p.poly(main, orange)
-        p.poly([(hx + 15, hy + 20), (hx + 36, hy + 28), (hx + 8, hy + 39)], shadow)
+        p.poly([sx(15, 20), sx(36, 28), sx(8, 39)], shadow)
         # Selout do strike: oclusao dentro da sombra + realce na crista de ataque.
-        p.poly([(hx + 20, hy + 24), (hx + 33, hy + 29), (hx + 12, hy + 37)], _cloak_occlusion(rig))
-        p.poly([(hx - 11, hy - 12), (hx + 7, hy - 15), (hx + 1, hy - 6), (hx - 13, hy - 5)], _cloak_highlight(rig))
+        p.poly([sx(20, 24), sx(33, 29), sx(12, 37)], _cloak_occlusion(rig))
+        p.poly([sx(-11, -12), sx(7, -15), sx(1, -6), sx(-13, -5)], _cloak_highlight(rig))
         return
 
     left = bx - 31
@@ -456,8 +456,8 @@ def _draw_dead(p: Painter, chama: bool) -> None:
     p.ellipse(79.0, 86.0, 1.1, 1.1, CRYSTAL)
 
 
-def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0, bob: float = 0.0, eyes: bool = True) -> Image.Image:
-    rig = _rig(pose, leg_phase, chama, breath, bob)
+def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0, bob: float = 0.0, stretch: float = 0.0, eyes: bool = True) -> Image.Image:
+    rig = _rig(pose, leg_phase, chama, breath, bob, stretch)
     p = Painter()
     if pose == "dead":
         _draw_dead(p, chama)
@@ -519,8 +519,8 @@ _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("idle_dim", [f"idle_dim_{i}" for i in range(1, IDLE_DIM_FRAMES + 1)], False, 12.0),
     ("walk", [f"walk_{i + 1}" for i in range(WALK_FRAMES)], True, 8.0),
     ("windup", ["windup"] + [f"windup_{i}" for i in range(1, WINDUP_FRAMES)], False, 9.0),
-    ("strike", ["strike"], False, 5.0),
-    ("recover", ["recover"], False, 5.0),
+    ("strike", ["strike"] + [f"strike_{i}" for i in range(1, STRIKE_FRAMES)], False, 12.0),
+    ("recover", ["recover"] + [f"recover_{i}" for i in range(1, RECOVER_FRAMES)], False, 14.0),
 ]
 
 
@@ -568,6 +568,8 @@ _WALK_CYCLE = [
 ]
 
 _WINDUP_COIL = [-1.2, -2.2]  # bob dos 2 frames extras do windup (coil progressivo)
+_RECOVER_WHIP = [2.5, -1.0]  # breath dos frames extras do recover (capa chicoteia e assenta)
+_STRIKE_TRAIL = [0.35]       # stretch do frame extra do strike (rastro/smear)
 
 
 def generate_all() -> None:
@@ -605,6 +607,18 @@ def generate_all() -> None:
         caipora("windup", 0, bob=wbob).save(os.path.join(OUT, f"player_windup_{i}.png"))
         caipora("windup", 0, chama=True, bob=wbob).save(
             os.path.join(OUT, f"player_windup_{i}_chama.png")
+        )
+    # Recover: a capa chicoteia pra frente e assenta (breath overshoot).
+    for i, rbreath in enumerate(_RECOVER_WHIP, start=1):
+        caipora("recover", 0, breath=rbreath).save(os.path.join(OUT, f"player_recover_{i}.png"))
+        caipora("recover", 0, chama=True, breath=rbreath).save(
+            os.path.join(OUT, f"player_recover_{i}_chama.png")
+        )
+    # Strike: frame extra de rastro/smear (a capa alonga no eixo do golpe).
+    for i, strk in enumerate(_STRIKE_TRAIL, start=1):
+        caipora("strike", 0, stretch=strk).save(os.path.join(OUT, f"player_strike_{i}.png"))
+        caipora("strike", 0, chama=True, stretch=strk).save(
+            os.path.join(OUT, f"player_strike_{i}_chama.png")
         )
     _write_sprite_frames(False)
     _write_sprite_frames(True)
