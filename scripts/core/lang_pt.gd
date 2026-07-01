@@ -76,6 +76,10 @@ const STRINGS: Dictionary = {
 	&"enemy.bruxo.name":        "BRUXO",
 	&"enemy.criatura.name":     "CRIATURA",
 	&"enemy.assombracao.name":  "ASSOMBRAÇÃO",
+	&"combat.call.1":           "Pe",
+	&"combat.call.2":           "Pele",
+	&"combat.call.3":           "Pelejar",
+	&"combat.victory":          "assim seguimos...",
 
 	&"dlg.mula.1":              "Vim terminar o que comecei.",
 	&"dlg.mula.2":              "...",

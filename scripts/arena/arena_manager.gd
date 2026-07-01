@@ -169,18 +169,18 @@ func _run_combat_loader() -> void:
 	# da primeira janela de timing (o lag de entrada do Fase 2 no iPad mini).
 	tween.tween_callback(_cull_visual_backdrop)
 	tween.tween_callback(func() -> void:
-		label.text = "Pe"
+		label.text = Lang.t(&"combat.call.1")
 		label.modulate.a = 1.0
 		AudioDirector.play_syllable_beat(0)
 	)
 	tween.tween_interval(COMBAT_LOADER_SYLLABLE_HOLD)
 	tween.tween_callback(func() -> void:
-		label.text = "Pele"
+		label.text = Lang.t(&"combat.call.2")
 		AudioDirector.play_syllable_beat(1)
 	)
 	tween.tween_interval(COMBAT_LOADER_SYLLABLE_HOLD)
 	tween.tween_callback(func() -> void:
-		label.text = "Pelejar"
+		label.text = Lang.t(&"combat.call.3")
 		AudioDirector.play_syllable_beat(2)
 	)
 	# Janela de transição GLOBAL (início → primeiro turno): default = FINAL_HOLD,
@@ -217,7 +217,7 @@ func _run_victory_outro() -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", Constants.FONT_MD)
 	label.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	label.text = "assim seguimos..."
+	label.text = Lang.t(&"combat.victory")
 	label.modulate.a = 0.0
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade.add_child(label)
