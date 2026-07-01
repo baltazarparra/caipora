@@ -16,6 +16,10 @@ const CHASE_RANGE := 5          # comuns: alcance de aggro
 const BOSS_CHASE_RANGE := 7     # boss: defende a porta com alcance maior
 const DRIFT_IDLE_CHANCE := 0.4  # chance de ficar parado ao voltar pra origem
 
+# Cue de pânico: quando o jogador o mata em um golpe, o inimigo foge tremendo.
+const SHUDDER_PX := 1.5         # amplitude do tremor de pânico, em pixels
+const SHUDDER_STEP := 0.05      # duração de cada meia-oscilação do tremor (s)
+
 # Fase 5: tipos de comum que são chefes convertidos (espelha ExplorationManager).
 const MINIBOSS_TYPES: Array[String] = ["mula", "boitata", "curupira", "saci"]
 
@@ -34,6 +38,8 @@ var is_boss: bool = false
 var enemy_type: String = ""             # tipo do comum (cacador/bruxo); vazio p/ boss
 var home_pos: Vector2i = Vector2i.ZERO  # origem; alvo do leash quando o jogador foge
 var _boss_type: String = ""
+var _sprite: Sprite2D = null            # sprite do inimigo; alvo do tremor de pânico
+var _shudder_tween: Tween = null        # tween do tremor; morto/reiniciado a cada passo
 
 # ─── Public API ────────────────────────────────────
 ## `pos` é a posição atual (pode ser a "andada" restaurada do combate); `home`
@@ -52,6 +58,7 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	# roteados como comuns mas exibidos com o sprite/aura de chefe no mapa.
 	var miniboss := p_enemy_type in MINIBOSS_TYPES
 	var sprite := Sprite2D.new()
+	_sprite = sprite  # guardado para o tremor de pânico (_shudder)
 	if boss:
 		match boss_type:
 			"mula":     sprite.texture = MULA_TEXTURE
@@ -99,13 +106,36 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		_spawn_aura(p_enemy_type)
 		_spawn_baptism_drip()
 
+## Chave deste inimigo no catálogo EnemyStats: boss → tipo do chefe; comum → seu
+## tipo, caindo no caçador quando vazio (mesma regra de _regular_scene_for do
+## ExplorationManager). Usada para consultar o HP total ao decidir a fuga.
+func stats_id() -> StringName:
+	if is_boss:
+		return StringName(_boss_type)
+	return StringName(enemy_type if enemy_type != "" else "cacador")
+
 ## Returns true if this enemy reaches the player and should trigger combat.
-func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callable) -> bool:
+## `fearful` = o jogador o mata em um golpe base: em vez de perseguir, foge.
+func take_turn(player_pos: Vector2i, walkable_fn: Callable, occupied_fn: Callable,
+		fearful: bool = false) -> bool:
 	var dist := _manhattan(grid_pos, player_pos)
+	var aggro_range := BOSS_CHASE_RANGE if is_boss else CHASE_RANGE
+
+	# Apavorado: foge do jogador em vez de persegui-lo e NUNCA inicia combate — o
+	# jogador ainda pode encurralar e matar. Longe do jogador, apenas se esconde
+	# parado (sem leash de volta pra casa, que o traria de volta rumo ao perigo).
+	if fearful:
+		if dist <= aggro_range:
+			var away := _flee(player_pos, walkable_fn, occupied_fn)
+			if away != grid_pos:
+				grid_pos = away
+				_update_visual_position()
+			_shudder()  # treme de pânico enquanto o jogador está perto — mesmo encurralado
+		return false
+
 	if dist <= 1:
 		return true
 
-	var aggro_range := BOSS_CHASE_RANGE if is_boss else CHASE_RANGE
 	var new_pos: Vector2i
 	if dist <= aggro_range:
 		# Dentro do alcance: persegue o jogador.
@@ -195,3 +225,33 @@ func _drift_home(walkable_fn: Callable, occupied_fn: Callable) -> Vector2i:
 	if randf() < DRIFT_IDLE_CHANCE:
 		return grid_pos
 	return _chase(home_pos, walkable_fn, occupied_fn)
+
+## Vizinho caminhável que mais AFASTA do alvo (oposto de _chase). Se nenhum
+## afasta (encurralado), devolve a posição atual.
+func _flee(target: Vector2i, walkable_fn: Callable, occupied_fn: Callable) -> Vector2i:
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	dirs.shuffle()
+	var best := grid_pos
+	var best_dist := _manhattan(grid_pos, target)
+	for d: Vector2i in dirs:
+		var np: Vector2i = grid_pos + d
+		if walkable_fn.call(np) and not occupied_fn.call(np):
+			var dist := _manhattan(np, target)
+			if dist > best_dist:
+				best_dist = dist
+				best = np
+	return best
+
+## Tremor sutil de pânico: sacode o sprite em torno do repouso (Vector2.ZERO). Mata
+## o tremor anterior antes de recomeçar, para turnos rápidos não deixarem o sprite
+## escorrer para fora do lugar.
+func _shudder() -> void:
+	if _sprite == null:
+		return
+	if _shudder_tween != null and _shudder_tween.is_valid():
+		_shudder_tween.kill()
+	_sprite.position = Vector2.ZERO
+	_shudder_tween = create_tween()
+	_shudder_tween.tween_property(_sprite, "position", Vector2(SHUDDER_PX, 0.0), SHUDDER_STEP)
+	_shudder_tween.tween_property(_sprite, "position", Vector2(-SHUDDER_PX, 0.0), SHUDDER_STEP)
+	_shudder_tween.tween_property(_sprite, "position", Vector2.ZERO, SHUDDER_STEP)

@@ -427,8 +427,15 @@ func _apply_hazard_damage() -> void:
 		GameState.change_screen(SignalBus.Screen.GAME_OVER)
 
 func _run_enemy_turns() -> void:
+	# Inimigo que o jogador mata em um golpe base foge com medo em vez de perseguir.
+	# Bosses nunca fogem (guardam a saída). max_hp_for respeita override remoto: um
+	# comum com HP elevado no painel admin volta a perseguir.
+	var player_attack: int = Constants.caipora_base_damage_for_phase(phase) \
+		+ MetaProgression.get_damage_bonus()
 	for enemy in _map_enemies:
-		var hit := enemy.take_turn(_player_grid_pos, _is_walkable, _is_occupied_by_enemy)
+		var enemy_hp: int = EnemyStats.max_hp_for(enemy.stats_id(), phase)
+		var fearful := (not enemy.is_boss) and player_attack >= enemy_hp
+		var hit := enemy.take_turn(_player_grid_pos, _is_walkable, _is_occupied_by_enemy, fearful)
 		if hit:
 			_trigger_combat(enemy)
 			return

@@ -156,6 +156,8 @@ When modifying input, arena, exploration, or timing — run `/validate-controls`
 
 21. **Stale `AGENTS.md` is a harness bug.** Codex/GPT-5.5 follows durable instructions literally; if `AGENTS.md` conflicts with `PLAN.md` or current code, fix the stale instruction before implementing related behavior. Do not carry old mechanics forward just because they remain in project guidance.
 
+22. **Inimigo fraco FOGE na exploração.** Quando o ataque base do jogador (`Constants.caipora_base_damage_for_phase(phase) + MetaProgression.get_damage_bonus()`) `>=` o HP total do inimigo (`EnemyStats.max_hp_for(enemy.stats_id(), phase)` — respeita override remoto), `ExplorationManager._run_enemy_turns` passa `fearful=true` a `MapEnemy.take_turn`, que corre na direção OPOSTA (`_flee`, espelho de `_chase` maximizando a distância) com um tremor de pânico (`_shudder`) e **retorna `false` de propósito** (apavorado nunca inicia combate — o jogador ainda encurrala e mata). **Bosses nunca fogem** (`not enemy.is_boss` — guardam a saída). Não "conserte" o `return false` do ramo `fearful` achando que é bug. Mexeu em exploração? `/validate-controls` + `make gate`. Testes: `tests/unit/test_map_enemy_flee.gd`.
+
 ---
 
 ## Session Protocol
