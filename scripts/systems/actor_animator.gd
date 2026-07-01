@@ -124,6 +124,19 @@ func perfect_dodge(actor: CombatActor, dir: Vector2 = Vector2(-1.0, 0.0)) -> voi
 	tween.tween_property(actor, "position:x", home_x, 0.16) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
+## Recuo de impacto: o alvo e empurrado em `dir` (px) e volta. A reacao do alvo e
+## metade do peso sentido no golpe. Puramente cosmetico (position tween) — NAO toca
+## o timing de combate.
+func recoil(actor: CombatActor, dir: Vector2, px: float) -> void:
+	if not _usable(actor):
+		return
+	var home_x := actor.position.x
+	var tween := actor.create_tween()
+	tween.tween_property(actor, "position:x", home_x + dir.x * px, 0.05) \
+		.set_trans(Tween.TRANS_CIRC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(actor, "position:x", home_x, 0.15) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 func _spawn_afterimages(actor: CombatActor, dir: Vector2) -> void:
 	var sprite := actor.animated_sprite
 	if sprite.sprite_frames == null:

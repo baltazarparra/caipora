@@ -475,6 +475,16 @@ func _caipora_step_forward() -> void:
 	step.tween_property(_caipora, "position:x", home_x + 32.0, 0.08)
 	step.tween_property(_caipora, "position:x", home_x, 0.12)
 
+## Recuo do inimigo ao apanhar, na direcao OPOSTA a Caipora (empurra pra longe).
+## A convergencia (Caipora avanca + inimigo recua) vende o peso do golpe.
+func _enemy_recoil(px: float) -> void:
+	if _enemy == null or _caipora == null:
+		return
+	var away := signf(_enemy.position.x - _caipora.position.x)
+	if away == 0.0:
+		away = 1.0
+	_animator.recoil(_enemy, Vector2(away, 0.0), px)
+
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 	if _combat_over:
 		return
@@ -503,6 +513,8 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(4 + Constants.combo_hitstop_bonus(step))
 		_animator.strike(_caipora)
+		_caipora_step_forward()
+		_enemy_recoil(22.0)
 	elif result == TimingSystem.TimingResult.GOOD:
 		# 2º golpe do duplo na faixa GOOD: golpe normal (sem crítico), combo preservado.
 		_timing_bubble_b.burst_good()
@@ -556,6 +568,8 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_feedback.spawn_critical_particles(_enemy.position)
 		_feedback.trigger_hit_stop(6 + Constants.combo_hitstop_bonus(step))
 		_animator.strike(_caipora)
+		_caipora_step_forward()
+		_enemy_recoil(24.0)
 		_feedback.spawn_result_label(&"critico", _timing_bubble.position + Vector2(0, -55))
 	elif result == TimingSystem.TimingResult.GOOD:
 		# Golpe normal (sem crítico): hoje o ERRO whiffa, então o GOOD ainda fere — o combo
