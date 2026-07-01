@@ -21,6 +21,7 @@ SIZE = 96
 SS = 8
 IDLE_FRAMES = 5        # idle vira loop de respiracao da capa (frame 0 = player_idle.png)
 IDLE_BREATH_AMP = 1.6  # amplitude (px) do sobe/desce da bainha; corpo/olhos travados
+WALK_FRAMES = 6        # walk vira ciclo de 6 frames (bounce do torso + overlap da capa)
 
 TRANSPARENT = (0, 0, 0, 0)
 ORANGE_DK = (139, 42, 0)
@@ -78,6 +79,7 @@ class Rig:
     staff_base: tuple[float, float]
     staff_tip: tuple[float, float]
     breath: float = 0.0
+    bob: float = 0.0
 
 
 class Painter:
@@ -169,13 +171,13 @@ def _outline(img: Image.Image) -> None:
         px[x, y] = BLACK + (255,)
 
 
-def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0) -> Rig:
+def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0, bob: float = 0.0) -> Rig:
     lean_by_pose = {"idle": 0.0, "walk": phase * 0.8, "windup": -1.0, "strike": 7.0, "recover": 1.0, "back": 0.0, "dead": 0.0}
     crouch_by_pose = {"idle": 0.0, "walk": 0.0, "windup": 4.0, "strike": 1.0, "recover": 1.5, "back": 0.0, "dead": 0.0}
     lean = lean_by_pose[pose]
     crouch = crouch_by_pose[pose]
-    head = (43.5 + lean * 0.35, 36.0 + crouch * 0.35)
-    body = (43.0 + lean, 62.0 + crouch)
+    head = (43.5 + lean * 0.35, 36.0 + crouch * 0.35 - bob)
+    body = (43.0 + lean, 62.0 + crouch - bob)
     foot_y = 87.5 + crouch * 0.25
     if pose == "strike":
         staff_base = (31.0, 70.0)
@@ -191,7 +193,7 @@ def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0) -> Rig:
     else:
         staff_base = (66.5 + lean * 0.2, 88.0)
         staff_tip = (66.5 + lean * 0.2, 23.5)
-    return Rig(pose, phase, chama, head, body, foot_y, lean, staff_base, staff_tip, breath)
+    return Rig(pose, phase, chama, head, body, foot_y, lean, staff_base, staff_tip, breath, bob)
 
 
 def _cloak_color(rig: Rig) -> tuple[int, int, int]:
@@ -452,8 +454,8 @@ def _draw_dead(p: Painter, chama: bool) -> None:
     p.ellipse(79.0, 86.0, 1.1, 1.1, CRYSTAL)
 
 
-def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0) -> Image.Image:
-    rig = _rig(pose, leg_phase, chama, breath)
+def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0, bob: float = 0.0) -> Image.Image:
+    rig = _rig(pose, leg_phase, chama, breath, bob)
     p = Painter()
     if pose == "dead":
         _draw_dead(p, chama)
@@ -479,8 +481,6 @@ def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath:
 
 POSES = [
     ("player_idle.png", "idle", 0),
-    ("player_walk_1.png", "walk", -1),
-    ("player_walk_2.png", "walk", 1),
     ("player_windup.png", "windup", 0),
     ("player_strike.png", "strike", 0),
     ("player_recover.png", "recover", 0),
@@ -514,7 +514,7 @@ def _make_contact_sheet() -> None:
 _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("default", [], True, 5.0),
     ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
-    ("walk", ["walk_1", "walk_2"], True, 8.0),
+    ("walk", [f"walk_{i + 1}" for i in range(WALK_FRAMES)], True, 8.0),
     ("windup", ["windup"], False, 5.0),
     ("strike", ["strike"], False, 5.0),
     ("recover", ["recover"], False, 5.0),
@@ -551,6 +551,20 @@ def _write_sprite_frames(chama: bool) -> None:
         f.write("\n".join(lines) + "\n")
 
 
+# Ciclo de caminhada: 6 frames DISTINTOS (leg_swing, bob, cloak_breath). bob
+# levanta o torso (pes plantados) num sobe/desce de passada; a capa segue com
+# defasagem (overlap/secondary motion). Keyframes a mao (o rig frontal nao vira
+# walk-cycle real por 1 seno so).
+_WALK_CYCLE = [
+    (-1.0, 0.2, -0.6),
+    (-0.3, 1.5, 0.4),
+    (0.6, 0.6, 1.3),
+    (1.0, 0.2, 0.6),
+    (0.3, 1.5, -0.4),
+    (-0.6, 0.6, -1.2),
+]
+
+
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
     for name, pose, phase in POSES:
@@ -564,10 +578,18 @@ def generate_all() -> None:
         caipora("idle", 0, chama=True, breath=breath).save(
             os.path.join(OUT, f"player_idle_{i:02d}_chama.png")
         )
+    # Walk multi-frame: ciclo de passada (bounce + overlap da capa).
+    for i, (swing, bob, cbreath) in enumerate(_WALK_CYCLE):
+        caipora("walk", swing, breath=cbreath, bob=bob).save(
+            os.path.join(OUT, f"player_walk_{i + 1}.png")
+        )
+        caipora("walk", swing, chama=True, breath=cbreath, bob=bob).save(
+            os.path.join(OUT, f"player_walk_{i + 1}_chama.png")
+        )
     _write_sprite_frames(False)
     _write_sprite_frames(True)
     _make_contact_sheet()
-    print(f"[gen_caipora] Caipora: idle {IDLE_FRAMES}f + 7 poses (base+CHAMA) + 2 .tres + contact sheet")
+    print(f"[gen_caipora] Caipora: idle {IDLE_FRAMES}f + walk {WALK_FRAMES}f + poses (base+CHAMA) + 2 .tres + sheet")
 
 
 if __name__ == "__main__":

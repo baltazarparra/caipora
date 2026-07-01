@@ -7,9 +7,13 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player_idle_04_chama.png" id="5_idle_04"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1_chama.png" id="6_walk_1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2_chama.png" id="7_walk_2"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_chama.png" id="8_windup"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_strike_chama.png" id="9_strike"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="10_recover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_3_chama.png" id="8_walk_3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_4_chama.png" id="9_walk_4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_5_chama.png" id="10_walk_5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_6_chama.png" id="11_walk_6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup_chama.png" id="12_windup"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_strike_chama.png" id="13_strike"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover_chama.png" id="14_recover"]
 
 [resource]
 animations = [{
@@ -44,6 +48,18 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": ExtResource("7_walk_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_walk_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_walk_4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_walk_5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_walk_6")
 }],
 "loop": true,
 "name": &"walk",
@@ -51,7 +67,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("8_windup")
+"texture": ExtResource("12_windup")
 }],
 "loop": false,
 "name": &"windup",
@@ -59,7 +75,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("9_strike")
+"texture": ExtResource("13_strike")
 }],
 "loop": false,
 "name": &"strike",
@@ -67,7 +83,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("10_recover")
+"texture": ExtResource("14_recover")
 }],
 "loop": false,
 "name": &"recover",
