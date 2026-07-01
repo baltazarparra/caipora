@@ -31,9 +31,19 @@ FIRE = (255, 104, 8)
 FIRE_HOT = (255, 176, 50)
 FIRE_CORE = (255, 239, 178)
 
+# Selout chapado (F1.2): oclusao (sombra profunda) e realce (aresta iluminada)
+# por material, dando volume estilo Cult of the Lamb sem gradiente. O realce
+# nunca e branco puro (branco pertence so aos olhos). Familias travadas pelo
+# teste (_count_orange_family/_count_dark_family) e pela lei (CONCEITO secao 3).
+ORANGE_OCC = (90, 26, 0)     # #5a1a00
+ORANGE_HI = (255, 122, 51)   # #ff7a33
+FIRE_OCC = (194, 74, 8)      # #c24a08
+
 PALETTE = [
     ORANGE_DK,
     ORANGE,
+    ORANGE_OCC,
+    ORANGE_HI,
     BLACK,
     EYE,
     CRYSTAL,
@@ -41,6 +51,7 @@ PALETTE = [
     FIRE,
     FIRE_HOT,
     FIRE_CORE,
+    FIRE_OCC,
 ]
 
 
@@ -176,6 +187,14 @@ def _cloak_shadow(rig: Rig) -> tuple[int, int, int]:
     return FIRE_HOT if rig.chama else ORANGE_DK
 
 
+def _cloak_occlusion(rig: Rig) -> tuple[int, int, int]:
+    return FIRE_OCC if rig.chama else ORANGE_OCC
+
+
+def _cloak_highlight(rig: Rig) -> tuple[int, int, int]:
+    return FIRE_HOT if rig.chama else ORANGE_HI
+
+
 def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
     hx, hy = rig.head
     bx, by = rig.body
@@ -200,6 +219,9 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
         ]
         p.poly(main, orange)
         p.poly([(hx + 15, hy + 20), (hx + 36, hy + 28), (hx + 8, hy + 39)], shadow)
+        # Selout do strike: oclusao dentro da sombra + realce na crista de ataque.
+        p.poly([(hx + 20, hy + 24), (hx + 33, hy + 29), (hx + 12, hy + 37)], _cloak_occlusion(rig))
+        p.poly([(hx - 11, hy - 12), (hx + 7, hy - 15), (hx + 1, hy - 6), (hx - 13, hy - 5)], _cloak_highlight(rig))
         return
 
     left = bx - 31
@@ -238,6 +260,40 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
         (bx + 9, hy + 30),
     ]
     p.poly(shadow_pts, shadow)
+
+    # Selout (fill -> sombra -> oclusao -> realce): pool de oclusao profunda na
+    # bainha inferior-direita (dentro da sombra) e realce na crista superior e no
+    # flanco esquerdo (lado iluminado). Tudo INSET da borda -> sem halo (o
+    # _outline preto fecha a silhueta).
+    occ = _cloak_occlusion(rig)
+    hi = _cloak_highlight(rig)
+    p.poly(
+        [
+            (right - 12, hy + 34),
+            (right - 14, bottom - 7),
+            (bx + 6, bottom - 9),
+            (bx + 9, hy + 37),
+        ],
+        occ,
+    )
+    p.poly(
+        [
+            (hx - 7, top + 3),
+            (hx + 5, top + 1),
+            (hx + 4, top + 6),
+            (hx - 6, top + 8),
+        ],
+        hi,
+    )
+    p.poly(
+        [
+            (left + 3, hy + 7),
+            (left + 6, hy + 4),
+            (left + 7, hy + 24),
+            (left + 4, hy + 28),
+        ],
+        hi,
+    )
 
     # Saw-tooth bites on the left edge, echoing the reference silhouettes.
     for i, y in enumerate((hy + 1, hy + 10, hy + 20, hy + 31, hy + 42)):
