@@ -67,11 +67,11 @@ assets/
    (`constants.gd`), alinhar ao grid, garantir alpha limpo (sem halos), ≤ 64×64.
    Sprite que não passar por isso não entra.
 2c. **Protagonista é especial:** os `player_*.png` saem SOMENTE de
-   `scripts/tools/gen_caipora.py` (pipeline premium: supersample 8× → downsample
-   BOX → threshold de alpha → snap de paleta fechada (**3–4 tons/material**) →
-   **selout chapado (polígonos de oclusão + realce, inset ≥1px)** → outline 1px
-   preto; sem rim light suave, sem gradiente, sem dither). NUNCA editar esses PNGs
-   à mão nem recriá-los pelo `gen_chars.py`. O design é lei:
+   `scripts/tools/gen_caipora.py` (pipeline premium: supersample 8× — **formas +
+   selout de oclusão/realce inset ≥1px, 3–4 tons/material** — → downsample BOX →
+   threshold de alpha → snap de **paleta fechada por variante (base/CHAMA)** →
+   outline 1px preto; sem rim light suave, sem gradiente, sem dither). NUNCA
+   editar esses PNGs à mão nem recriá-los pelo `gen_chars.py`. O design é lei:
    `docs/CONCEITO-protagonista.md`.
 2d. **Inimigos comuns idem:** `enemy_*.png` e `bruxo_*.png` saem SOMENTE de
    `scripts/tools/gen_inimigos.py` (mesma receita premium; 112×112 arena +

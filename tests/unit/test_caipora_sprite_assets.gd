@@ -38,7 +38,12 @@ const COLOR_CHAMA := Color8(255, 176, 50)
 const COLOR_MANE_DK := Color8(139, 42, 0)    # #8b2a00 sombra
 const COLOR_MANE_OCC := Color8(90, 26, 0)    # #5a1a00 oclusão
 const COLOR_MANE_HI := Color8(255, 122, 51)  # #ff7a33 realce
-const COLOR_VOID_COOL := Color8(20, 15, 20)  # #140f14 separação interna do corpo
+
+# Rampa CHAMA — nenhuma pode aparecer num sprite BASE (paleta fechada por variante).
+const FIRE_OCC := Color8(194, 74, 8)      # #c24a08
+const FIRE_BASE := Color8(255, 104, 8)    # #ff6808
+const FIRE_CORE := Color8(255, 239, 178)  # #ffefb2
+const FIRE_COLORS: Array[Color] = [FIRE_OCC, FIRE_BASE, COLOR_CHAMA, FIRE_CORE]
 
 func test_caipora_sprite_contract_assets_are_96x96() -> void:
 	for path: String in SPRITE_PATHS:
@@ -85,6 +90,18 @@ func test_caipora_chama_idle_keeps_fire_variant_color() -> void:
 	assert_true(_has_color(image, COLOR_CHAMA), "CHAMA preserva juba incendiada")
 	assert_true(_has_color(image, COLOR_VOID), "CHAMA preserva rosto-vazio preto")
 	assert_true(_has_color(image, COLOR_EYES), "CHAMA preserva olhos brancos puros")
+
+func test_caipora_base_sprites_are_fire_disjoint() -> void:
+	# F1.2.1 P1: paleta fechada por variante — os player_*.png BASE nao podem
+	# conter cor da rampa CHAMA (senao o snap misturou base+chama, gerando franja).
+	for path: String in SPRITE_PATHS:
+		if path.contains("_chama"):
+			continue
+		var image := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if image.is_empty():
+			continue
+		for fire: Color in FIRE_COLORS:
+			assert_false(_has_color(image, fire), "%s (base) livre da rampa CHAMA" % path)
 
 func test_caipora_back_view_has_no_eyes_and_keeps_orange_first() -> void:
 	# De costas (cena da escolha final) ela olha para DENTRO da cena: os olhos
@@ -138,4 +155,5 @@ func _count_orange_family(image: Image) -> int:
 	return n
 
 func _count_dark_family(image: Image) -> int:
-	return _count_color(image, COLOR_VOID) + _count_color(image, COLOR_VOID_COOL)
+	# So #000000 por ora; re-adicionar #140f14 quando o body-selout de fato o pintar.
+	return _count_color(image, COLOR_VOID)

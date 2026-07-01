@@ -39,7 +39,10 @@ ORANGE_OCC = (90, 26, 0)     # #5a1a00
 ORANGE_HI = (255, 122, 51)   # #ff7a33
 FIRE_OCC = (194, 74, 8)      # #c24a08
 
-PALETTE = [
+# Paleta fechada POR VARIANTE (F1.2.1): o sprite BASE nunca deve encaixar cores
+# da rampa CHAMA no snap (senao aparece franja quente na aresta preta) e a CHAMA
+# nunca encaixa cores da rampa base. render() escolhe a rampa por rig.chama.
+PALETTE_BASE = [
     ORANGE_DK,
     ORANGE,
     ORANGE_OCC,
@@ -48,10 +51,16 @@ PALETTE = [
     EYE,
     CRYSTAL,
     CRYSTAL_HL,
+]
+PALETTE_CHAMA = [
+    FIRE_OCC,
     FIRE,
     FIRE_HOT,
     FIRE_CORE,
-    FIRE_OCC,
+    BLACK,
+    EYE,
+    CRYSTAL,
+    CRYSTAL_HL,
 ]
 
 
@@ -109,7 +118,8 @@ class Painter:
         self.ellipse(x0, y0, wa / 2, wa / 2, col)
         self.ellipse(x1, y1, wb / 2, wb / 2, col)
 
-    def render(self) -> Image.Image:
+    def render(self, chama: bool = False) -> Image.Image:
+        palette = PALETTE_CHAMA if chama else PALETTE_BASE
         small = self.im.resize((SIZE, SIZE), Image.Resampling.BOX)
         px = small.load()
         for y in range(SIZE):
@@ -118,14 +128,16 @@ class Painter:
                 if a < 112:
                     px[x, y] = TRANSPARENT
                 else:
-                    px[x, y] = _nearest_palette((r, g, b))
+                    px[x, y] = _nearest_palette((r, g, b), palette)
         return small
 
 
-def _nearest_palette(color: tuple[int, int, int]) -> tuple[int, int, int, int]:
-    best = PALETTE[0]
+def _nearest_palette(
+    color: tuple[int, int, int], palette: list[tuple[int, int, int]]
+) -> tuple[int, int, int, int]:
+    best = palette[0]
     best_d = 10**12
-    for candidate in PALETTE:
+    for candidate in palette:
         d = (
             (color[0] - candidate[0]) ** 2
             + (color[1] - candidate[1]) ** 2
@@ -287,10 +299,10 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
     )
     p.poly(
         [
-            (left + 3, hy + 7),
-            (left + 6, hy + 4),
-            (left + 7, hy + 24),
-            (left + 4, hy + 28),
+            (left - 1, hy + 1),
+            (left + 4, hy),
+            (left + 2, hy + 11),
+            (left - 2, hy + 9),
         ],
         hi,
     )
@@ -408,6 +420,11 @@ def _draw_dead(p: Painter, chama: bool) -> None:
     ]
     p.poly(heap, orange)
     p.poly([(54.0, 62.0), (70.0, 68.0), (64.0, 80.0), (48.0, 80.0)], shadow)
+    # Selout tambem na mortalha, coerente com as outras poses (chama-aware).
+    occ = FIRE_OCC if chama else ORANGE_OCC
+    hi = FIRE_HOT if chama else ORANGE_HI
+    p.poly([(37.0, 55.0), (44.0, 53.5), (51.0, 53.5), (49.0, 56.0), (43.0, 56.5), (37.0, 57.0)], hi)
+    p.poly([(57.0, 67.0), (69.0, 69.5), (65.0, 78.0), (55.0, 77.0)], occ)
 
     # O cajado caiu junto: haste no chão, lâmina morta apontando para longe.
     p.limb((30.0, 90.0), (74.0, 88.0), 2.8, 2.8, BLACK)
@@ -421,7 +438,7 @@ def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False) -> Imag
     p = Painter()
     if pose == "dead":
         _draw_dead(p, chama)
-        img = p.render()
+        img = p.render(chama)
         _outline(img)
         return img
     if pose == "back":
@@ -436,7 +453,7 @@ def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False) -> Imag
         _draw_black_body(p, rig)
         _draw_staff(p, rig)
         _draw_face_and_horns(p, rig)
-    img = p.render()
+    img = p.render(chama)
     _outline(img)
     return img
 
