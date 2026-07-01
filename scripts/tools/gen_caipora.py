@@ -307,10 +307,18 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
         hi,
     )
 
-    # Saw-tooth bites on the left edge, echoing the reference silhouettes.
-    for i, y in enumerate((hy + 1, hy + 10, hy + 20, hy + 31, hy + 42)):
-        x = left - 2 + (i % 2) * 2
-        p.poly([(x, y), (x - 8, y + 5), (x + 2, y + 9)], orange)
+    # Serrilhado ritmico e assimetrico (3 grandes + 2 pequenos) no flanco esquerdo,
+    # ecoando as silhuetas da prancha — dentes desiguais leem mais organicos/premium.
+    teeth = [
+        (hy + 1, 10, 9),
+        (hy + 11, 5, 6),
+        (hy + 20, 11, 10),
+        (hy + 31, 5, 6),
+        (hy + 41, 9, 9),
+    ]
+    for i, (ty, depth, th) in enumerate(teeth):
+        x = left - 1 + (i % 2) * 2
+        p.poly([(x, ty), (x - depth, ty + th * 0.55), (x + 2, ty + th)], orange)
 
     if rig.chama:
         p.poly([(hx - 2, top - 1), (hx + 2, top - 13), (hx + 8, top)], FIRE_HOT)
@@ -334,8 +342,16 @@ def _draw_face_and_horns(p: Painter, rig: Rig, eyes: bool = True) -> None:
         BLACK,
     )
     if eyes:
-        p.ellipse(hx - 4.8, hy - 0.8, 2.4, 2.7, EYE)
-        p.ellipse(hx + 4.7, hy - 0.1, 2.3, 2.5, EYE)
+        # Olhos IGUAIS (trava de marca): mesmo rx/ry/y, x simetrico. A FORMA muda
+        # por pose, igual nos dois (CONCEITO 2.2): windup arregala, strike vira fenda.
+        eye_rx = 2.4
+        eye_ry = 2.6
+        if rig.pose == "windup":
+            eye_ry *= 1.3
+        elif rig.pose == "strike":
+            eye_ry *= 0.5
+        p.ellipse(hx - 4.75, hy - 0.5, eye_rx, eye_ry, EYE)
+        p.ellipse(hx + 4.75, hy - 0.5, eye_rx, eye_ry, EYE)
 
     p.limb((hx - 7.5, hy - 10.0), (hx - 12.0, hy - 19.0), 4.3, 2.2, BLACK)
     p.limb((hx - 12.0, hy - 19.0), (hx - 9.5, hy - 24.0), 2.1, 1.0, BLACK)

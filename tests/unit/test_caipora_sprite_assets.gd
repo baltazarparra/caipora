@@ -103,6 +103,32 @@ func test_caipora_base_sprites_are_fire_disjoint() -> void:
 		for fire: Color in FIRE_COLORS:
 			assert_false(_has_color(image, fire), "%s (base) livre da rampa CHAMA" % path)
 
+func test_caipora_idle_eyes_are_symmetric() -> void:
+	# F1.3 / trava de marca: os DOIS olhos brancos sao IGUAIS — simetricos no eixo
+	# do rosto (antes divergiam em rx/ry/y no gerador).
+	var image := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_IDLE))
+	if image.is_empty():
+		return
+	var cols: Dictionary = {}
+	var min_x := 96
+	var max_x := 0
+	for y: int in range(image.get_height()):
+		for x: int in range(image.get_width()):
+			if image.get_pixel(x, y).is_equal_approx(COLOR_EYES):
+				cols[x] = int(cols.get(x, 0)) + 1
+				min_x = mini(min_x, x)
+				max_x = maxi(max_x, x)
+	assert_gt(cols.size(), 0, "idle tem olhos brancos")
+	var axis := float(min_x + max_x) / 2.0
+	var left := 0
+	var right := 0
+	for x: int in cols:
+		if float(x) < axis:
+			left += int(cols[x])
+		elif float(x) > axis:
+			right += int(cols[x])
+	assert_almost_eq(left, right, 2, "olhos brancos simetricos (iguais) no eixo do rosto")
+
 func test_caipora_back_view_has_no_eyes_and_keeps_orange_first() -> void:
 	# De costas (cena da escolha final) ela olha para DENTRO da cena: os olhos
 	# brancos não podem existir — e a juba-capa laranja segue dominando.
