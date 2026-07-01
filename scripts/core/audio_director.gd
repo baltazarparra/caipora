@@ -124,6 +124,7 @@ var _bus_volume: Dictionary = {
 }
 var _audio_unlocked: bool = false
 var _music_enabled: bool = true
+var _master_muted: bool = false
 var _ambience_player: AudioStreamPlayer
 var _heartbeat_player: AudioStreamPlayer
 var _current_ambience: String = ""
@@ -189,6 +190,7 @@ func _ready() -> void:
 
 	_load_settings()
 	_apply_all_volumes()
+	_apply_master_mute()
 
 	SignalBus.screen_changed.connect(_on_screen_changed)
 	SignalBus.boss_intro_started.connect(_on_boss_intro)
@@ -220,6 +222,18 @@ func toggle_music_ambience() -> void:
 
 func is_music_enabled() -> bool:
 	return _music_enabled
+
+# ─── Public API: master mute ───────────────────────
+func toggle_master_mute() -> void:
+	set_master_muted(not _master_muted)
+
+func set_master_muted(enabled: bool) -> void:
+	_master_muted = enabled
+	_apply_master_mute()
+	_save_settings()
+
+func is_master_muted() -> bool:
+	return _master_muted
 
 ## Ajusta a intensidade dos stems verticais: 0=base, 1=base+mid, 2=base+mid+top.
 ## Single-loops ignoram a intensidade, mas o valor fica guardado para a proxima arena.
@@ -899,6 +913,12 @@ func _fade_player(player: AudioStreamPlayer, to_db: float, stop_after: bool, dur
 func _apply_all_volumes() -> void:
 	for bus_name in VOLUME_BUSES:
 		_apply_volume(bus_name)
+	_apply_master_mute()
+
+func _apply_master_mute() -> void:
+	var idx := AudioServer.get_bus_index(BUS_MASTER)
+	if idx >= 0:
+		AudioServer.set_bus_mute(idx, _master_muted)
 
 func _apply_volume(bus_name: String) -> void:
 	var idx := AudioServer.get_bus_index(bus_name)
@@ -927,6 +947,8 @@ func _load_settings() -> void:
 			_bus_volume[bus_name] = clampf(cfg.get_value(SETTINGS_SECTION, bus_name), 0.0, 1.0)
 	if cfg.has_section_key(SETTINGS_SECTION, "music_enabled"):
 		_music_enabled = cfg.get_value(SETTINGS_SECTION, "music_enabled")
+	if cfg.has_section_key(SETTINGS_SECTION, "master_muted"):
+		_master_muted = bool(cfg.get_value(SETTINGS_SECTION, "master_muted"))
 
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
@@ -934,4 +956,5 @@ func _save_settings() -> void:
 	for bus_name in VOLUME_BUSES:
 		cfg.set_value(SETTINGS_SECTION, bus_name, _bus_volume[bus_name])
 	cfg.set_value(SETTINGS_SECTION, "music_enabled", _music_enabled)
+	cfg.set_value(SETTINGS_SECTION, "master_muted", _master_muted)
 	cfg.save(SETTINGS_PATH)

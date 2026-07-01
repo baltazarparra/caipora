@@ -24,6 +24,7 @@ func after_each() -> void:
 	MetaProgression.upgrades = {}
 	MetaProgression.fragments = 0.0
 	MetaProgression.phase_reached = 1
+	AudioDirector.set_master_muted(false)
 
 # O conjunto de cards é montado no _ready do HubShop a partir do estado do MetaProgression,
 # então cada teste prepara o estado ANTES de instanciar a cena.
@@ -110,3 +111,13 @@ func test_next_pending_key() -> void:
 	MetaProgression.upgrades = {"forca": 1, "forca_2": 1, "forca_3": 1, "forca_4": 1, "forca_5": 1, "forca_6": 1}
 	assert_eq(MetaProgression.next_pending_key(MetaProgression.FURIA_KEYS), "",
 		"trilha completa: sem pendente")
+
+func test_header_sound_button_toggles_master_mute() -> void:
+	MetaProgression.phase_reached = 1
+	AudioDirector.set_master_muted(false)
+	await _instantiate()
+	assert_true(_shop()._sound_button is SpeakerButton, "Hub usa icone de som, nao painel de opcoes")
+	assert_false(_shop()._sound_button.muted, "icone reflete Master audivel")
+	_shop()._on_sound_pressed()
+	assert_true(AudioDirector.is_master_muted(), "toque muta todo o audio")
+	assert_true(_shop()._sound_button.muted, "icone reflete Master mutado")

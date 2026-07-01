@@ -25,6 +25,7 @@ func after_each():
 	AudioDirector._heartbeat_player.stop()
 	AudioDirector._current_ambience = ""
 	AudioDirector.set_bus_volume("Music", 0.8)
+	AudioDirector.set_master_muted(false)
 	# Remove players one-shot (hover/bolsa) na hora — queue_free só age no idle e
 	# vazaria contagem para o teste seguinte.
 	var fixed := [AudioDirector._music_a, AudioDirector._music_b,
@@ -48,6 +49,18 @@ func test_set_get_bus_volume_clamps():
 	AudioDirector.set_bus_volume("SFX", 2.0)
 	assert_almost_eq(AudioDirector.get_bus_volume("SFX"), 1.0, 0.001)
 	AudioDirector.set_bus_volume("SFX", 1.0)  # restaura
+
+func test_master_mute_toggles_master_bus():
+	var idx := AudioServer.get_bus_index("Master")
+	AudioDirector.set_master_muted(false)
+	assert_false(AudioDirector.is_master_muted(), "Master começa audível")
+	assert_false(AudioServer.is_bus_mute(idx), "bus Master começa audível")
+	AudioDirector.toggle_master_mute()
+	assert_true(AudioDirector.is_master_muted(), "toggle muta o Master")
+	assert_true(AudioServer.is_bus_mute(idx), "AudioServer reflete o mute")
+	AudioDirector.toggle_master_mute()
+	assert_false(AudioDirector.is_master_muted(), "segundo toggle desmuta")
+	assert_false(AudioServer.is_bus_mute(idx), "AudioServer reflete o unmute")
 
 func test_duck_runs_without_error():
 	AudioDirector.duck()

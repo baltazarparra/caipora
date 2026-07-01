@@ -6,24 +6,15 @@ const STRINGS: Dictionary = {
 	# Options Panel
 	&"options.title":           "OPTIONS",
 	&"options.close":           "Close",
-	&"options.language":        "Language",
-	&"options.touch":           "Touch Controls",
-	&"options.touch.auto":      "Auto",
-	&"options.touch.always":    "Always",
-	&"options.touch.never":     "Never",
+	&"options.volume":          "Volume",
 	&"options.reset":           "Wipe save",
 	&"options.reset.confirm":   "For real? Gone forever.",
 	&"options.reset.done":      "Gone.",
-	&"options.audio.master":    "Master",
-	&"options.audio.sfx":       "Effects",
-	&"options.audio.music":     "Music",
-	&"options.audio.ambience":  "Ambience",
 
 	# Hub Shop
 	&"hub.fragments":           "Rare Earth: %d",
 	&"hub.track.furia":         "FURY · damage",
 	&"hub.track.cura":          "HEAL · life",
-	&"hub.options.btn":         "Options",
 	&"hub.track.complete":      "track complete",
 	&"hub.next.phase":          "next: %s — Phase %d",
 	&"hub.next.fire":           "next: %s — at the next camp",
@@ -69,8 +60,7 @@ const STRINGS: Dictionary = {
 	&"boss_intro.subtitle":     "— BOSS —",
 
 	# Main Menu
-	&"menu.start":              "Start",
-	&"menu.quit":               "Quit",
+	&"menu.start":              "AWAKEN",
 	&"menu.update":             "⟳  New balance patch — Update",
 
 	# Dialogues — proper nouns: identical in both languages

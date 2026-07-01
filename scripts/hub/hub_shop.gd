@@ -28,8 +28,7 @@ const HEADER_BAND_OFFSET := 44.0  # altura da linha de fragmentos do cabeçalho
 # ─── State ─────────────────────────────────────────
 var _root: Control
 var _frag_label: Label
-var _options: OptionsPanel
-var _options_button: Button
+var _sound_button: SpeakerButton
 var _margin: MarginContainer
 # Bandeja dos cards: ancorada no topo, abaixo do cabeçalho (ambas as orientações).
 # VBoxContainer (não CenterContainer) para que a pilha cresça pra BAIXO — nunca pra cima
@@ -61,11 +60,9 @@ func _build() -> void:
 	_build_header()
 	_build_cards()
 
-	_options = OptionsPanel.new()
-	add_child(_options)
-	_options_button.pressed.connect(_options.open)
-	_options_button.mouse_entered.connect(AudioDirector.play_ui_hover)
-	_options_button.focus_entered.connect(AudioDirector.play_ui_hover)
+	_sound_button.pressed.connect(_on_sound_pressed)
+	_sound_button.mouse_entered.connect(AudioDirector.play_ui_hover)
+	_sound_button.focus_entered.connect(AudioDirector.play_ui_hover)
 
 	_apply_safe_margins()
 	_relayout()
@@ -74,7 +71,7 @@ func _build() -> void:
 	Lang.language_changed.connect(_refresh_text)
 	refresh()
 
-# Cabeçalho: [ fragmentos + bônus à esquerda ] ··· [ Opções à direita ].
+# Cabeçalho: [ fragmentos + bônus à esquerda ] ··· [ mute à direita ].
 func _build_header() -> void:
 	_margin = MarginContainer.new()
 	_margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
@@ -101,10 +98,12 @@ func _build_header() -> void:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(spacer)
 
-	_options_button = Button.new()
-	_options_button.text = Lang.t(&"hub.options.btn")
-	_options_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	row.add_child(_options_button)
+	_sound_button = SpeakerButton.new()
+	_sound_button.icon_color = Constants.COLOR_AMBER
+	_sound_button.muted_color = Constants.COLOR_BLOOD
+	_sound_button.set_muted(AudioDirector.is_master_muted())
+	_sound_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_child(_sound_button)
 
 # Corpo: as duas trilhas sobre uma bandeja escura (legibilidade contra a mata viva), na faixa
 # superior da tela. Lado a lado em paisagem, empilhadas em retrato — a orientação é definida em
@@ -245,7 +244,6 @@ func refresh() -> void:
 			card.set_affordable(MetaProgression.fragments >= card.cost)
 
 func _refresh_text(_lang: StringName = Lang.current()) -> void:
-	_options_button.text = Lang.t(&"hub.options.btn")
 	if is_instance_valid(_furia_heading):
 		_furia_heading.text = Lang.t(&"hub.track.furia")
 	if is_instance_valid(_cura_heading):
@@ -282,11 +280,21 @@ func _apply_safe_margins() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	var top: int = int(clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0))
 	var side: int = int(clampf(minf(vp.x, vp.y) * 0.055, 40.0, 80.0))
-	var fs: int = int(clampf(minf(vp.x, vp.y) * 0.024, 10.0, 18.0))
 	_margin.add_theme_constant_override("margin_top", top)
 	_margin.add_theme_constant_override("margin_left", side)
 	_margin.add_theme_constant_override("margin_right", side)
-	_options_button.add_theme_font_size_override("font_size", fs)
+
+func _on_sound_pressed() -> void:
+	AudioDirector.play_ui_hover()
+	_pulse_sound_haptic()
+	AudioDirector.toggle_master_mute()
+	_sound_button.set_muted(AudioDirector.is_master_muted())
+
+func _pulse_sound_haptic() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("if (navigator.vibrate) navigator.vibrate(12);", true)
+	else:
+		Input.vibrate_handheld(12)
 
 # ─── Layout responsivo (orientação + largura dos cards) ───
 ## Alterna as trilhas entre lado a lado (paisagem) e empilhadas (retrato), e dimensiona cards/

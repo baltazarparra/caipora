@@ -1,12 +1,8 @@
 class_name MainMenu
 extends CanvasLayer
 
-## Porta de entrada do jogo. Inicia a run e abre o Acampamento de aprimoramentos ANTES da
-## Fase 1: a Caipora desperta no acampamento, pode gastar os fragmentos acumulados de runs
-## anteriores e pisa no rastro para entrar na mata (Exploração da Fase 1). O save é carregado
-## pelo autoload MetaProgression.
-## A abertura "Horizonte Infernal" (fogo, treelines, brasas, Caipora andando) é
-## montada na cena; aqui cuidamos do fade-in/out e da vida do título.
+## Porta de entrada do jogo. Inicia a run no Acampamento: a Caipora desperta,
+## pode gastar Terra Rara e pisa no rastro para entrar na mata.
 
 # ─── Constants ─────────────────────────────────────
 const FADE_LAYER: int = 100
@@ -14,60 +10,45 @@ const FADE_IN_DURATION: float = 1.2
 const LOGO_PATH: String = "res://assets/sprites/logo_title.png"
 const LOGO_BLINK_PATH: String = "res://assets/sprites/logo_title_blink.png"
 const LOGO_BASE_SIZE := Vector2(256.0, 96.0)
-# Retrato (primário): o logo domina a tela alta. Paisagem (tablet/desktop): logo e
-# botões ficam em no máximo 30% da largura, pra não engolir o horizonte da abertura.
 const LOGO_FIT_FRACTION_PORTRAIT := 0.85
 const MENU_MAX_WIDTH_FRACTION := 0.30
+const HERO_HEIGHT_PORTRAIT := 104.0
+const HERO_HEIGHT_LANDSCAPE := 92.0
+const OPTIONS_HEIGHT := 52.0
+const FOOTER_HEIGHT := 48.0
 
 # ─── State ─────────────────────────────────────────
-@onready var _start_button: Button = $Center/VBox/StartButton
-@onready var _quit_button: Button = $Center/VBox/QuitButton
-
 var _fade: ColorRect
 var _logo: TextureRect
+var _scrim: ColorRect
+var _title: RichTextLabel
+var _start_button: StartButton
+var _options_button: Button
+var _options_panel: OptionsPanel
+var _footer: MarginContainer
+var _footer_row: HBoxContainer
+var _version_label: Label
+var _github_link: LinkButton
 var _lang_row: HBoxContainer
 var _btn_pt: Button
 var _btn_en: Button
+var _update_banner: Button
 
 func _ready() -> void:
-	# O save é carregado no _ready() do autoload MetaProgression (independente da cena de boot).
-	_start_button.text = Lang.t(&"menu.start")
-	_quit_button.text = Lang.t(&"menu.quit")
-	$Center/VBox/StartButton.pressed.connect(_on_start_pressed)
-	$Center/VBox/QuitButton.pressed.connect(_on_quit_pressed)
-	$Center/VBox/GithubLink.pressed.connect(_on_github_pressed)
+	_title = $Ui/Title as RichTextLabel
+	_scrim = $Scrim as ColorRect
 	_setup_fade()
 	_setup_logo()
-	_setup_version_label()
+	_setup_start_button()
+	_setup_options()
+	_setup_footer()
 	_setup_update_banner()
-	_setup_lang_toggle()
-	_relayout_buttons()
-	get_viewport().size_changed.connect(_relayout_buttons)
-	# Foco inicial ANTES de ligar o hover: abrir o menu não dá tick, navegar dá.
+	_relayout_menu()
+	get_viewport().size_changed.connect(_relayout_menu)
 	_start_button.grab_focus()
-	# BaseButton, não Button: GithubLink é LinkButton (irmão de Button) — tipar Button
-	# faz o array tipado rejeitá-lo (vira null) e o hover do link morre em silêncio.
-	for button: BaseButton in [$Center/VBox/StartButton, $Center/VBox/QuitButton, $Center/VBox/GithubLink]:
-		button.focus_entered.connect(AudioDirector.play_ui_hover)
-		button.mouse_entered.connect(AudioDirector.play_ui_hover)
-
-## Versão atual (canto inferior direito).
-func _setup_version_label() -> void:
-	var label := Label.new()
-	label.text = _resolve_version()
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.494, 0.514, 0.541, 0.7))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	label.position -= Vector2(12, 10)
-	add_child(label)
 
 ## Banner de balanceamento novo (RemoteConfig). Aparece no topo quando o servidor tem
-## valores de inimigo mais novos que os aplicados; clicar aplica e (no web) recarrega.
-## Trata a corrida: se o fetch já chegou antes deste _ready, o pending já está pronto.
-var _update_banner: Button
+## valores mais novos que os aplicados; clicar aplica e no web recarrega.
 func _setup_update_banner() -> void:
 	SignalBus.remote_config_update_available.connect(_on_update_available)
 	SignalBus.remote_patterns_update_available.connect(_on_update_available)
@@ -93,10 +74,7 @@ func _show_update_banner() -> void:
 		RemoteConfig.apply_pending())
 	add_child(_update_banner)
 
-## Versão a exibir: o carimbo automático do build (scripts/core/build_info.gd, alpha-X.Y.Z
-## com Z = contagem de commits do git, gerado em `make export` — gitignored) quando
-## presente; senão o config/version do projeto ("alpha-X.Y (dev)", rodando do editor,
-## onde o carimbo ainda não foi gerado).
+## Versão a exibir: carimbo automático do build quando presente; senão config/version.
 func _resolve_version() -> String:
 	var path := "res://scripts/core/build_info.gd"
 	if ResourceLoader.exists(path):
@@ -105,9 +83,6 @@ func _resolve_version() -> String:
 			return String(gd.get_script_constant_map()["VERSION"])
 	return str(ProjectSettings.get_setting("application/config/version", "dev"))
 
-## Overlay preto para o fade-in de abertura (handoff do boot splash). O fade-out
-## de Iniciar NÃO vive aqui: toda saída de cena é mascarada pelo SceneTransition
-## (uma linguagem de transição só).
 func _setup_fade() -> void:
 	var fade_layer := CanvasLayer.new()
 	fade_layer.layer = FADE_LAYER
@@ -119,60 +94,164 @@ func _setup_fade() -> void:
 	add_child(fade_layer)
 	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
-## Troca o título em fonte pelo wordmark da marca (gen_brand.py: letras na rampa
-## da juba, "O" como rosto-vazio), com os olhos do "O" piscando. Montado por
-## código no lugar do Title (sem editar a cena); se o asset faltar, o título em
-## fonte continua como fallback.
 func _setup_logo() -> void:
-	var title := $Center/VBox/Title as RichTextLabel
 	if not ResourceLoader.exists(LOGO_PATH):
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://assets/shaders/title_fire.gdshader") as Shader
-		title.material = mat
+		_title.material = mat
 		return
-	title.visible = false
+	_title.visible = false
 	_logo = TextureRect.new()
 	_logo.texture = load(LOGO_PATH)
 	_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var vbox := $Center/VBox
-	vbox.add_child(_logo)
-	vbox.move_child(_logo, title.get_index())
-	_fit_logo()
-	get_viewport().size_changed.connect(_fit_logo)
+	$Ui.add_child(_logo)
 	_schedule_blink()
 
-## Escala INTEIRA do logo (texel uniforme, mesma regra do PixelScale): a maior que
-## couber na fração da largura do viewport — ~85% em retrato, 30% em paisagem.
-func _fit_logo() -> void:
-	if _logo == null:
-		return
+func _setup_start_button() -> void:
+	_start_button = StartButton.new()
+	_start_button.text = Lang.t(&"menu.start")
+	_start_button.pressed.connect(_on_start_pressed)
+	_start_button.focus_entered.connect(AudioDirector.play_ui_hover)
+	_start_button.mouse_entered.connect(AudioDirector.play_ui_hover)
+	$Ui.add_child(_start_button)
+
+func _setup_options() -> void:
+	_options_panel = OptionsPanel.new()
+	add_child(_options_panel)
+	_options_button = Button.new()
+	_options_button.text = Lang.t(&"options.title")
+	_options_button.add_theme_font_size_override("font_size", Constants.FONT_SM)
+	_options_button.pressed.connect(_options_panel.open)
+	_options_button.focus_entered.connect(AudioDirector.play_ui_hover)
+	_options_button.mouse_entered.connect(AudioDirector.play_ui_hover)
+	_apply_options_style(false)
+	_options_button.focus_entered.connect(_apply_options_style.bind(true))
+	_options_button.focus_exited.connect(_apply_options_style.bind(false))
+	_options_button.mouse_entered.connect(_apply_options_style.bind(true))
+	_options_button.mouse_exited.connect(_apply_options_style.bind(false))
+	$Ui.add_child(_options_button)
+
+func _setup_footer() -> void:
+	_footer = MarginContainer.new()
+	_footer.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_footer)
+
+	_footer_row = HBoxContainer.new()
+	_footer_row.add_theme_constant_override("separation", Constants.SPACE_SM)
+	_footer_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_footer_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_footer.add_child(_footer_row)
+
+	_lang_row = HBoxContainer.new()
+	_lang_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_lang_row.add_theme_constant_override("separation", 8)
+	_footer_row.add_child(_lang_row)
+	_btn_pt = _make_flag_btn("res://assets/sprites/flag_br.png")
+	_btn_en = _make_flag_btn("res://assets/sprites/flag_us.png")
+	_lang_row.add_child(_btn_pt)
+	_lang_row.add_child(_btn_en)
+	_btn_pt.pressed.connect(_on_select_pt)
+	_btn_en.pressed.connect(_on_select_en)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_footer_row.add_child(spacer)
+
+	_github_link = LinkButton.new()
+	_github_link.text = "github"
+	_github_link.add_theme_font_size_override("font_size", Constants.FONT_SM)
+	_github_link.pressed.connect(_on_github_pressed)
+	_github_link.focus_entered.connect(AudioDirector.play_ui_hover)
+	_github_link.mouse_entered.connect(AudioDirector.play_ui_hover)
+	_footer_row.add_child(_github_link)
+
+	_version_label = Label.new()
+	_version_label.text = _resolve_version()
+	_version_label.add_theme_font_size_override("font_size", Constants.FONT_SM)
+	_version_label.add_theme_color_override("font_color", Color(0.494, 0.514, 0.541, 0.72))
+	_version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_footer_row.add_child(_version_label)
+
+	_refresh_lang_flags()
+	Lang.language_changed.connect(_on_language_changed)
+
+func _relayout_menu() -> void:
 	var vp := get_viewport().get_visible_rect().size
+	var portrait := Constants.is_portrait(vp)
+	var side := clampf(minf(vp.x, vp.y) * 0.055, 24.0, 80.0)
+	var top := clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0)
+	var bottom := clampf(minf(vp.x, vp.y) * 0.04, 18.0, 56.0)
+	var logo_size := _logo_size(vp)
+	var hero_w := clampf(vp.x - side * 2.0, 280.0, 560.0) if portrait \
+		else clampf(vp.x * MENU_MAX_WIDTH_FRACTION, 260.0, 420.0)
+	var hero_h := HERO_HEIGHT_PORTRAIT if portrait else HERO_HEIGHT_LANDSCAPE
+	var logo_y := top + (18.0 if portrait else 0.0)
+	var hero_y := clampf(vp.y * 0.63, logo_y + logo_size.y + 36.0,
+		vp.y - bottom - FOOTER_HEIGHT - OPTIONS_HEIGHT - hero_h - 12.0) if portrait \
+		else (vp.y - (logo_size.y + 28.0 + hero_h + 10.0 + OPTIONS_HEIGHT)) * 0.5
+	_layout_logo(vp, logo_size, logo_y)
+	_layout_control(_start_button, Vector2((vp.x - hero_w) * 0.5, hero_y), Vector2(hero_w, hero_h))
+	_layout_control(_options_button, Vector2((vp.x - hero_w) * 0.5, hero_y + hero_h + 10.0),
+		Vector2(hero_w, OPTIONS_HEIGHT))
+	_layout_scrim(vp, logo_y, hero_y, hero_h)
+	_layout_footer(side, bottom)
+	if is_instance_valid(_update_banner):
+		_update_banner.custom_minimum_size.y = 42.0
+
+func _logo_size(vp: Vector2) -> Vector2:
 	var fit: float = LOGO_FIT_FRACTION_PORTRAIT if Constants.is_portrait(vp) \
 		else MENU_MAX_WIDTH_FRACTION
 	var scale_i: float = maxf(1.0, floorf(vp.x * fit / LOGO_BASE_SIZE.x))
-	_logo.custom_minimum_size = LOGO_BASE_SIZE * scale_i
+	return LOGO_BASE_SIZE * scale_i
 
-## Em paisagem Iniciar/Sair não esticam até a largura do logo: ficam em no máximo 30%
-## da largura do viewport, centralizados (e o link do github acompanha o centro). Em
-## retrato preenchem o VBox (comportamento original, intocado).
-func _relayout_buttons() -> void:
-	var vp := get_viewport().get_visible_rect().size
-	var portrait := Constants.is_portrait(vp)
-	for button: Button in [_start_button, _quit_button]:
-		if portrait:
-			button.size_flags_horizontal = Control.SIZE_FILL
-			button.custom_minimum_size.x = 0.0
-		else:
-			button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			button.custom_minimum_size.x = vp.x * MENU_MAX_WIDTH_FRACTION
-	var link: LinkButton = $Center/VBox/GithubLink
-	link.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
-	if is_instance_valid(_lang_row):
-		_lang_row.size_flags_horizontal = Control.SIZE_FILL if portrait else Control.SIZE_SHRINK_CENTER
+func _layout_logo(vp: Vector2, logo_size: Vector2, y: float) -> void:
+	if _logo != null:
+		_layout_control(_logo, Vector2((vp.x - logo_size.x) * 0.5, y), logo_size)
+	else:
+		_layout_control(_title, Vector2((vp.x - logo_size.x) * 0.5, y), logo_size)
 
-## Os olhos no "O" piscam em intervalos irregulares — a mata olha de volta.
+func _layout_control(control: Control, pos: Vector2, new_size: Vector2) -> void:
+	if control == null:
+		return
+	control.position = pos.floor()
+	control.size = new_size.floor()
+	control.custom_minimum_size = new_size.floor()
+
+func _layout_scrim(vp: Vector2, logo_y: float, hero_y: float, hero_h: float) -> void:
+	if _scrim == null:
+		return
+	_scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_scrim.offset_left = 0.0
+	_scrim.offset_right = 0.0
+	_scrim.offset_top = maxf(0.0, logo_y - 24.0)
+	_scrim.offset_bottom = -(vp.y - minf(vp.y, hero_y + hero_h + OPTIONS_HEIGHT + 48.0))
+	_scrim.color = Color(0.0, 0.0, 0.0, 0.34)
+
+func _layout_footer(side: float, bottom: float) -> void:
+	if _footer == null:
+		return
+	_footer.add_theme_constant_override("margin_left", int(side))
+	_footer.add_theme_constant_override("margin_right", int(side))
+	_footer.add_theme_constant_override("margin_bottom", int(bottom))
+	_footer.custom_minimum_size.y = FOOTER_HEIGHT
+
+func _apply_options_style(lit: bool) -> void:
+	if _options_button == null:
+		return
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0, 0, 0, 0)
+	normal.border_color = Constants.COLOR_AMBER if lit else Constants.COLOR_JUBA_DARK
+	normal.set_border_width(SIDE_BOTTOM, 1)
+	normal.set_content_margin_all(8)
+	_options_button.add_theme_stylebox_override("normal", normal)
+	_options_button.add_theme_stylebox_override("hover", normal)
+	_options_button.add_theme_stylebox_override("focus", normal)
+	_options_button.add_theme_color_override("font_color", Constants.COLOR_AMBER if lit else Constants.COLOR_TEXT)
+
 func _schedule_blink() -> void:
 	get_tree().create_timer(randf_range(2.2, 5.5)).timeout.connect(func() -> void:
 		if not is_instance_valid(_logo):
@@ -185,39 +264,13 @@ func _schedule_blink() -> void:
 
 func _on_start_pressed() -> void:
 	AudioDirector.unlock_audio()
+	_pulse_press_haptic()
 	_start_button.disabled = true
-	# A run começa pelo acampamento; o SceneTransition mascara a troca com o
-	# flavor do camp — sem fade duplicado aqui.
 	_begin_run()
 
-## Inicia a run e abre o Acampamento (HUB) antes da Fase 1. start_run() já define
-## pending_exploration = EXPLORATION, então o rastro de saída do hub leva direto à
-## Exploração da Fase 1.
 func _begin_run() -> void:
 	GameState.start_run()
 	GameState.change_screen(SignalBus.Screen.HUB)
-
-func _on_quit_pressed() -> void:
-	get_tree().quit()
-
-## Duas bandeiras lado a lado: clica na bandeira do idioma desejado.
-## A bandeira do idioma ativo fica destacada (opacidade plena), a inativa fica esmaecida.
-func _setup_lang_toggle() -> void:
-	_lang_row = HBoxContainer.new()
-	_lang_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_lang_row.add_theme_constant_override("separation", 8)
-	$Center/VBox.add_child(_lang_row)
-
-	_btn_pt = _make_flag_btn("res://assets/sprites/flag_br.png")
-	_btn_en = _make_flag_btn("res://assets/sprites/flag_us.png")
-	_lang_row.add_child(_btn_pt)
-	_lang_row.add_child(_btn_en)
-
-	_btn_pt.pressed.connect(_on_select_pt)
-	_btn_en.pressed.connect(_on_select_en)
-
-	_refresh_lang_flags()
-	Lang.language_changed.connect(_on_language_changed)
 
 func _make_flag_btn(texture_path: String) -> Button:
 	var btn := Button.new()
@@ -240,8 +293,12 @@ func _on_select_en() -> void:
 	Lang.set_language(Lang.LANG_EN)
 
 func _on_language_changed(_lang: StringName) -> void:
-	_start_button.text = Lang.t(&"menu.start")
-	_quit_button.text = Lang.t(&"menu.quit")
+	if is_instance_valid(_start_button):
+		_start_button.text = Lang.t(&"menu.start")
+	if is_instance_valid(_options_button):
+		_options_button.text = Lang.t(&"options.title")
+	if is_instance_valid(_update_banner):
+		_update_banner.text = Lang.t(&"menu.update")
 	_refresh_lang_flags()
 
 func _refresh_lang_flags() -> void:
@@ -255,16 +312,19 @@ func _apply_flag_style(btn: Button, active: bool) -> void:
 	btn.modulate.a = 1.0 if active else 0.4
 	var s := StyleBoxFlat.new()
 	s.bg_color = Color(0, 0, 0, 0)
-	s.set_border_width_all(active_border(active))
+	s.set_border_width_all(1 if active else 0)
 	s.border_color = Constants.COLOR_BLOOD
-	s.set_corner_radius_all(2)
+	s.set_corner_radius_all(0)
 	btn.add_theme_stylebox_override("normal", s)
 	var h := s.duplicate() as StyleBoxFlat
 	h.set_border_width_all(1)
 	btn.add_theme_stylebox_override("hover", h)
 
-func active_border(active: bool) -> int:
-	return 1 if active else 0
+func _pulse_press_haptic() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("if (navigator.vibrate) navigator.vibrate(18);", true)
+	else:
+		Input.vibrate_handheld(18)
 
 func _on_github_pressed() -> void:
 	OS.shell_open("https://github.com/baltazarparra")

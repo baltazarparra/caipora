@@ -6,6 +6,7 @@ signal pressed
 
 # ─── Exports ───────────────────────────────────────
 @export var icon_color: Color = Color(1.0, 0.6, 0.0)
+@export var muted_color: Color = Constants.COLOR_BLOOD
 @export var muted: bool = false
 
 # ─── Constants ─────────────────────────────────────
@@ -15,6 +16,7 @@ const HITBOX_PAD := 8.0
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	custom_minimum_size = Vector2(SIZE + HITBOX_PAD * 2.0, SIZE + HITBOX_PAD * 2.0)
+	focus_mode = Control.FOCUS_ALL
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
@@ -22,7 +24,7 @@ func _draw() -> void:
 	var s := SIZE
 	var ox := HITBOX_PAD
 	var oy := HITBOX_PAD
-	var col := icon_color
+	var col := Color(icon_color, 0.72) if muted else icon_color
 
 	# corpo do alto-falante (retângulo esquerdo)
 	var body := Rect2(ox, oy + s * 0.3, s * 0.35, s * 0.4)
@@ -48,8 +50,8 @@ func _draw() -> void:
 		var y0 := oy + s * 0.25
 		var x1 := ox + s * 0.98
 		var y1 := oy + s * 0.75
-		draw_line(Vector2(x0, y0), Vector2(x1, y1), col, 2.5, true)
-		draw_line(Vector2(x1, y0), Vector2(x0, y1), col, 2.5, true)
+		draw_line(Vector2(x0, y0), Vector2(x1, y1), muted_color, 2.5, false)
+		draw_line(Vector2(x1, y0), Vector2(x0, y1), muted_color, 2.5, false)
 
 func _draw_arc_lines(cx: float, cy: float, r: float, col: Color, width: float) -> void:
 	var steps := 8
@@ -72,6 +74,8 @@ func _gui_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			pressed.emit()
+	elif event.is_action_pressed("ui_accept"):
+		pressed.emit()
 
 func set_muted(value: bool) -> void:
 	muted = value

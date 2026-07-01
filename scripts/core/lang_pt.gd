@@ -5,24 +5,15 @@ const STRINGS: Dictionary = {
 	# Options Panel
 	&"options.title":           "OPÇÕES",
 	&"options.close":           "Fechar",
-	&"options.language":        "Idioma",
-	&"options.touch":           "Controles Touch",
-	&"options.touch.auto":      "Auto",
-	&"options.touch.always":    "Sempre",
-	&"options.touch.never":     "Nunca",
+	&"options.volume":          "Volume",
 	&"options.reset":           "Apagar progresso",
 	&"options.reset.confirm":   "Confirmar? Apaga tudo.",
 	&"options.reset.done":      "Progresso apagado",
-	&"options.audio.master":    "Geral",
-	&"options.audio.sfx":       "Efeitos",
-	&"options.audio.music":     "Música",
-	&"options.audio.ambience":  "Ambiência",
 
 	# Hub Shop
 	&"hub.fragments":           "Terra Rara: %d",
 	&"hub.track.furia":         "FÚRIA · dano",
 	&"hub.track.cura":          "CURA · vida",
-	&"hub.options.btn":         "Opções",
 	&"hub.track.complete":      "trilha completa",
 	&"hub.next.phase":          "próxima: %s — Fase %d",
 	&"hub.next.fire":           "próxima: %s — na próxima fogueira",
@@ -68,8 +59,7 @@ const STRINGS: Dictionary = {
 	&"boss_intro.subtitle":     "— CHEFE —",
 
 	# Main Menu
-	&"menu.start":              "Iniciar",
-	&"menu.quit":               "Sair",
+	&"menu.start":              "DESPERTAR",
 	&"menu.update":             "⟳  Novo balanceamento — Atualizar",
 
 	# Dialogues — nomes próprios idênticos em ambas as línguas
