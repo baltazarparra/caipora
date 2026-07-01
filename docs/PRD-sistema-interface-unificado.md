@@ -1,6 +1,7 @@
 # PRD — Sistema de Interface Unificado ("O Chrome da Mata")
 
-> Status: **proposto** · Escopo: TODA a camada de UI/HUD do jogo (boot → menu → transições → acampamento → exploração → combate → telas de história)
+> Status: **em execução — núcleo EM MAIN** (2026-07-01): tokens+kit+UiRoot (F0–F3), exploração/combate/acampamento migrados, chrome v2 **"Juba viva"** (crista sólida em degraus de pixel — sessão C1–C8: StartButton morto→BrandButton.HERO, Opções com respiro, header de 2 linhas moeda|mudo, hub só-bandeja, badge de fase REMOVIDO por decisão do dono, nomes de golpe clampados). Restam: §9 transições unificadas (F5), §7.8 CombatFeedback screen-space (F6), limpeza do hud.gd/hud.tscn mortos (F7), telas de história.
+> Escopo: TODA a camada de UI/HUD do jogo (boot → menu → transições → acampamento → exploração → combate → telas de história)
 > Alvo de qualidade: coerência e polish de franquia (Final Fantasy) **sem** trair a marca de horror folk — um único sistema de interface, uma linguagem visual, um conjunto de tokens.
 > Decisões travadas com o dono do projeto (2026-07-01): **(1) Híbrido autoral** — a linguagem de garra/serrilhado vira o chrome padrão; **(2) Reescrita unificada (big-bang)** — um `UiRoot` único; **(3) DANO/VIDA** — esconder a trilha só quando não há upgrade a oferecer (predicado A).
 > Não toca em lógica de dano/vida, timing, input, câmera ou balanceamento. É camada de apresentação.
