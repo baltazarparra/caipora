@@ -495,6 +495,21 @@ func _caipora_recoil(px: float) -> void:
 		away = -1.0
 	_animator.recoil(_caipora, Vector2(away, 0.0), px)
 
+var _zoom_punch_active: bool = false
+
+## Zoom-punch: a camera "soca" pra dentro no critico e volta ao fit capturado.
+## Guard evita empilhar; so no crit NAO-fatal (o killing-blow tem zoom proprio).
+func _zoom_punch(factor: float = 1.07) -> void:
+	if _zoom_punch_active or _camera == null:
+		return
+	_zoom_punch_active = true
+	var base_zoom: Vector2 = _camera.zoom
+	var tween := create_tween()
+	tween.tween_property(_camera, "zoom", base_zoom * factor, 0.05).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(0.03)
+	tween.tween_property(_camera, "zoom", base_zoom, 0.12).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func() -> void: _zoom_punch_active = false)
+
 func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 	if _combat_over:
 		return
@@ -526,6 +541,7 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 		_animator.strike(_caipora)
 		_caipora_step_forward()
 		_enemy_recoil(22.0)
+		_zoom_punch()
 	elif result == TimingSystem.TimingResult.GOOD:
 		# 2º golpe do duplo na faixa GOOD: golpe normal (sem crítico), combo preservado.
 		_timing_bubble_b.burst_good()
@@ -582,6 +598,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 		_animator.strike(_caipora)
 		_caipora_step_forward()
 		_enemy_recoil(24.0)
+		_zoom_punch()
 		_feedback.spawn_result_label(&"critico", _timing_bubble.position + Vector2(0, -55))
 	elif result == TimingSystem.TimingResult.GOOD:
 		# Golpe normal (sem crítico): hoje o ERRO whiffa, então o GOOD ainda fere — o combo
