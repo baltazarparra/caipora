@@ -60,7 +60,6 @@ func _apply_screen(screen: SignalBus.Screen) -> void:
 		_enemy_max = -1.0
 		_enemy_is_boss = false
 		_header.set_mode(HudHeader.Mode.COMBAT)
-		_header.set_phase(GameState.active_phase)
 	else:
 		# Linha 1 (moeda|mudo) idêntica no acampamento e na exploração.
 		var camp := screen == SignalBus.Screen.HUB

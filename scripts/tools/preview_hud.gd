@@ -46,7 +46,6 @@ func _process(_delta: float) -> bool:
 				header.set_mode(MODE_COMBAT)
 				header.setup_enemy(emax, boss, "Curupira" if boss else "Caçador")
 				header.set_enemy_health(emax * 0.55, emax)
-				header.set_phase(3 if boss else 2)
 			"camp":
 				header.set_mode(MODE_CAMP)
 				header.set_currency(12)

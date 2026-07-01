@@ -62,8 +62,3 @@ func test_exploration_hp_bar_below_top_row() -> void:
 		_h._mute.position.y + _h._mute.size.y)
 	assert_gt(_h._player_bar.position.y, row_bottom, "HP vive na linha 2, abaixo da linha 1")
 
-func test_phase_badge_only_in_combat() -> void:
-	_h.set_mode(HudHeader.Mode.COMBAT)
-	assert_true(_h._phase_badge.visible, "badge de fase aparece no combate")
-	_h.set_mode(HudHeader.Mode.EXPLORATION)
-	assert_false(_h._phase_badge.visible, "badge de fase some fora do combate")

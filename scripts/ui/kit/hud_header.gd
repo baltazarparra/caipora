@@ -28,7 +28,6 @@ var _enemy_max: float = -1.0
 var _enemy_is_boss: bool = false
 var _enemy_name: String = ""
 var _plates: Array[Rect2] = []
-var _phase_badge: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -56,13 +55,6 @@ func _ready() -> void:
 	_mute.icon_color = Constants.COLOR_AMBER
 	_mute.pressed.connect(func() -> void: mute_toggled.emit())
 	add_child(_mute)
-
-	_phase_badge = Label.new()
-	_phase_badge.add_theme_color_override("font_color", Constants.COLOR_AMBER)
-	_phase_badge.add_theme_font_size_override("font_size", Constants.FONT_SM)
-	_phase_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_phase_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_phase_badge)
 
 	_apply_mode()
 	if get_viewport() != null:
@@ -105,9 +97,6 @@ func set_currency(amount: int) -> void:
 	# A largura do contador muda com a contagem — as placas precisam re-abraçar.
 	relayout()
 
-func set_phase(phase: int) -> void:
-	_phase_badge.text = Lang.tf(&"hud.phase", [phase])
-
 func set_muted(muted: bool) -> void:
 	_mute.set_muted(muted)
 
@@ -129,7 +118,6 @@ func _apply_mode() -> void:
 	_enemy_bar.visible = combat
 	_frag.visible = exploration or camp
 	_mute.visible = exploration or camp
-	_phase_badge.visible = combat
 
 func _font_size(vp: Vector2) -> int:
 	return int(clampf(minf(vp.x, vp.y) * 0.026, 14.0, 24.0))
@@ -195,9 +183,6 @@ func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_player_bar.position = Vector2(side, top)
 	_enemy_bar.configure_size(hw, fs)
 	_enemy_bar.position = Vector2(vp.x - side - hw, top)
-	# Badge de fase centralizado no vão entre as duas placas.
-	_phase_badge.size = Vector2(vp.x, float(fs))
-	_phase_badge.position = Vector2(0.0, top + _player_bar.total_height() * 0.5 - float(fs) * 0.5)
 
 # ─── Placas serrilhadas por grupo (chrome "casca flutuante") ───
 ## Folga vertical das placas (respiro + crista). Estático: quem se ancora abaixo do
