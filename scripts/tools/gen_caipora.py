@@ -19,6 +19,8 @@ from PIL import Image, ImageDraw
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "sprites")
 SIZE = 96
 SS = 8
+IDLE_FRAMES = 5        # idle vira loop de respiracao da capa (frame 0 = player_idle.png)
+IDLE_BREATH_AMP = 1.6  # amplitude (px) do sobe/desce da bainha; corpo/olhos travados
 
 TRANSPARENT = (0, 0, 0, 0)
 ORANGE_DK = (139, 42, 0)
@@ -75,6 +77,7 @@ class Rig:
     lean: float
     staff_base: tuple[float, float]
     staff_tip: tuple[float, float]
+    breath: float = 0.0
 
 
 class Painter:
@@ -166,7 +169,7 @@ def _outline(img: Image.Image) -> None:
         px[x, y] = BLACK + (255,)
 
 
-def _rig(pose: str, phase: int, chama: bool) -> Rig:
+def _rig(pose: str, phase: int, chama: bool, breath: float = 0.0) -> Rig:
     lean_by_pose = {"idle": 0.0, "walk": phase * 0.8, "windup": -1.0, "strike": 7.0, "recover": 1.0, "back": 0.0, "dead": 0.0}
     crouch_by_pose = {"idle": 0.0, "walk": 0.0, "windup": 4.0, "strike": 1.0, "recover": 1.5, "back": 0.0, "dead": 0.0}
     lean = lean_by_pose[pose]
@@ -188,7 +191,7 @@ def _rig(pose: str, phase: int, chama: bool) -> Rig:
     else:
         staff_base = (66.5 + lean * 0.2, 88.0)
         staff_tip = (66.5 + lean * 0.2, 23.5)
-    return Rig(pose, phase, chama, head, body, foot_y, lean, staff_base, staff_tip)
+    return Rig(pose, phase, chama, head, body, foot_y, lean, staff_base, staff_tip, breath)
 
 
 def _cloak_color(rig: Rig) -> tuple[int, int, int]:
@@ -239,7 +242,7 @@ def _draw_serrated_cloak(p: Painter, rig: Rig) -> None:
     left = bx - 31
     right = bx + 29
     top = hy - 18
-    bottom = 86
+    bottom = 86 + rig.breath  # respiracao: so a bainha sobe/desce (corpo/olhos travados)
     cloak = [
         (hx - 8, top + 3),
         (hx + 8, top),
@@ -449,8 +452,8 @@ def _draw_dead(p: Painter, chama: bool) -> None:
     p.ellipse(79.0, 86.0, 1.1, 1.1, CRYSTAL)
 
 
-def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False) -> Image.Image:
-    rig = _rig(pose, leg_phase, chama)
+def caipora(pose: str = "idle", leg_phase: int = 0, chama: bool = False, breath: float = 0.0) -> Image.Image:
+    rig = _rig(pose, leg_phase, chama, breath)
     p = Painter()
     if pose == "dead":
         _draw_dead(p, chama)
@@ -506,13 +509,65 @@ def _make_contact_sheet() -> None:
     sheet.save(os.path.join(OUT, "caipora_pop_dark_contact_sheet.png"))
 
 
+# Contrato do SpriteFrames: os NOMES das animacoes sao estaveis (ActorAnimator e
+# cenas so dependem deles). Cada frame name mapeia para player_<name>[_chama].png.
+_ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
+    ("default", [], True, 5.0),
+    ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
+    ("walk", ["walk_1", "walk_2"], True, 8.0),
+    ("windup", ["windup"], False, 5.0),
+    ("strike", ["strike"], False, 5.0),
+    ("recover", ["recover"], False, 5.0),
+]
+
+
+def _write_sprite_frames(chama: bool) -> None:
+    """Emite o .tres deterministicamente (base E chama pelo MESMO codigo -> a
+    simetria de contrato base<->chama sai por construcao)."""
+    suffix = "_chama" if chama else ""
+    order: list[str] = []
+    for _name, frames, _loop, _speed in _ANIMATIONS:
+        for fr in frames:
+            if fr not in order:
+                order.append(fr)
+    ids = {fr: f"{i + 1}_{fr}" for i, fr in enumerate(order)}
+    lines = ['[gd_resource type="SpriteFrames" format=3]', ""]
+    for fr in order:
+        path = f"res://assets/sprites/player_{fr}{suffix}.png"
+        lines.append(f'[ext_resource type="Texture2D" path="{path}" id="{ids[fr]}"]')
+    lines.append("")
+    lines.append("[resource]")
+    blocks: list[str] = []
+    for name, frames, loop, speed in _ANIMATIONS:
+        entries = ", ".join(
+            '{\n"duration": 1.0,\n"texture": ExtResource("%s")\n}' % ids[fr] for fr in frames
+        )
+        blocks.append(
+            '{\n"frames": [%s],\n"loop": %s,\n"name": &"%s",\n"speed": %s\n}'
+            % (entries, "true" if loop else "false", name, f"{speed:.1f}")
+        )
+    lines.append("animations = [" + ", ".join(blocks) + "]")
+    with open(os.path.join(OUT, f"caipora_sprite_frames{suffix}.tres"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
     for name, pose, phase in POSES:
         caipora(pose, phase).save(os.path.join(OUT, name))
         caipora(pose, phase, chama=True).save(os.path.join(OUT, name.replace(".png", "_chama.png")))
+    # Idle multi-frame: respiracao da capa. Frame 0 = player_idle.png (ja salvo,
+    # breath=0 -> byte-identico); frames 1..N-1 variam SO a bainha.
+    for i in range(1, IDLE_FRAMES):
+        breath = math.sin(2.0 * math.pi * i / IDLE_FRAMES) * IDLE_BREATH_AMP
+        caipora("idle", 0, breath=breath).save(os.path.join(OUT, f"player_idle_{i:02d}.png"))
+        caipora("idle", 0, chama=True, breath=breath).save(
+            os.path.join(OUT, f"player_idle_{i:02d}_chama.png")
+        )
+    _write_sprite_frames(False)
+    _write_sprite_frames(True)
     _make_contact_sheet()
-    print("[gen_caipora] silhouette-board Caipora generated: 8 base + 8 CHAMA + contact sheet")
+    print(f"[gen_caipora] Caipora: idle {IDLE_FRAMES}f + 7 poses (base+CHAMA) + 2 .tres + contact sheet")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,10 @@ extends GutTest
 
 const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_idle.png",
+	"res://assets/sprites/player_idle_01.png",
+	"res://assets/sprites/player_idle_02.png",
+	"res://assets/sprites/player_idle_03.png",
+	"res://assets/sprites/player_idle_04.png",
 	"res://assets/sprites/player_walk_1.png",
 	"res://assets/sprites/player_walk_2.png",
 	"res://assets/sprites/player_windup.png",
@@ -10,6 +14,10 @@ const SPRITE_PATHS: Array[String] = [
 	"res://assets/sprites/player_back.png",
 	"res://assets/sprites/player_dead.png",
 	"res://assets/sprites/player_idle_chama.png",
+	"res://assets/sprites/player_idle_01_chama.png",
+	"res://assets/sprites/player_idle_02_chama.png",
+	"res://assets/sprites/player_idle_03_chama.png",
+	"res://assets/sprites/player_idle_04_chama.png",
 	"res://assets/sprites/player_walk_1_chama.png",
 	"res://assets/sprites/player_walk_2_chama.png",
 	"res://assets/sprites/player_windup_chama.png",

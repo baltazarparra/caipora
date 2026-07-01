@@ -1,11 +1,15 @@
 [gd_resource type="SpriteFrames" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/player_idle.png" id="1_ccmm6"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1.png" id="2_rq8a5"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2.png" id="3_lch3r"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_windup.png" id="4_windup"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_strike.png" id="5_strike"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player_recover.png" id="6_recover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle.png" id="1_idle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_01.png" id="2_idle_01"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_02.png" id="3_idle_02"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_03.png" id="4_idle_03"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle_04.png" id="5_idle_04"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_1.png" id="6_walk_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_walk_2.png" id="7_walk_2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_windup.png" id="8_windup"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_strike.png" id="9_strike"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_recover.png" id="10_recover"]
 
 [resource]
 animations = [{
@@ -16,7 +20,19 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_ccmm6")
+"texture": ExtResource("1_idle")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_idle_01")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_idle_02")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_idle_03")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_idle_04")
 }],
 "loop": true,
 "name": &"idle",
@@ -24,10 +40,10 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("2_rq8a5")
+"texture": ExtResource("6_walk_1")
 }, {
 "duration": 1.0,
-"texture": ExtResource("3_lch3r")
+"texture": ExtResource("7_walk_2")
 }],
 "loop": true,
 "name": &"walk",
@@ -35,7 +51,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4_windup")
+"texture": ExtResource("8_windup")
 }],
 "loop": false,
 "name": &"windup",
@@ -43,7 +59,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_strike")
+"texture": ExtResource("9_strike")
 }],
 "loop": false,
 "name": &"strike",
@@ -51,7 +67,7 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("6_recover")
+"texture": ExtResource("10_recover")
 }],
 "loop": false,
 "name": &"recover",
