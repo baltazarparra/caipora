@@ -14,6 +14,8 @@ const FLASH_SHADER := preload("res://shaders/hit_flash.gdshader")
 const STRIKE_HOLD_S: float = 0.22
 const RECOVER_HOLD_S: float = 0.25
 const FLASH_DECAY_S: float = 0.18
+const FLASH_HOLD_S: float = 0.13
+const FLASH_RELEASE_S: float = 0.07
 const SQUASH_IN_S: float = 0.04
 const SQUASH_OUT_S: float = 0.12
 const BREATH_PERIOD_S: float = 1.1
@@ -24,6 +26,7 @@ var _base_scales: Dictionary = {}   # CombatActor → Vector2 (escala original d
 var _flash_mats: Dictionary = {}    # CombatActor → Array[ShaderMaterial]
 var _breath_tweens: Dictionary = {} # CombatActor → Tween (pausado durante squash)
 var _last_hp: Dictionary = {}
+var _flash_held: Dictionary = {} # actor -> true enquanto a silhueta branca esta segura
 
 func track(actor: CombatActor) -> void:
 	if actor == null or actor.animated_sprite == null:
@@ -81,7 +84,10 @@ func _on_health_changed(new_health: float, _max_health: float, actor: CombatActo
 	var last: float = _last_hp.get(actor, new_health)
 	_last_hp[actor] = new_health
 	if new_health < last:
-		flash(actor)
+		# O flash-hold (impact frame do critico) tem prioridade: nao sobrepor com o
+		# fade automatico enquanto ele segura a silhueta branca.
+		if not _flash_held.get(actor, false):
+			flash(actor)
 		impact_squash(actor)
 
 func flash(actor: CombatActor, strength: float = 1.0) -> void:
@@ -93,6 +99,21 @@ func flash(actor: CombatActor, strength: float = 1.0) -> void:
 		tween.tween_method(
 			func(v: float) -> void: mat.set_shader_parameter("flash_amount", v),
 			strength, 0.0, FLASH_DECAY_S)
+
+## Impact frame (HK): SEGURA a silhueta branca no impacto e solta rapido, em vez do
+## fade do flash automatico. Enquanto ativo, _on_health_changed nao dispara o auto-flash.
+func flash_hold(actor: CombatActor) -> void:
+	if not _usable(actor):
+		return
+	_flash_held[actor] = true
+	for mat: ShaderMaterial in _flash_mats.get(actor, []):
+		mat.set_shader_parameter("flash_amount", 1.0)
+		var tween := actor.animated_sprite.create_tween()
+		tween.tween_interval(FLASH_HOLD_S)
+		tween.tween_method(
+			func(v: float) -> void: mat.set_shader_parameter("flash_amount", v),
+			1.0, 0.0, FLASH_RELEASE_S)
+		tween.tween_callback(func() -> void: _flash_held.erase(actor))
 
 func impact_squash(actor: CombatActor) -> void:
 	if not _usable(actor):

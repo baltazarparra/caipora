@@ -514,6 +514,7 @@ func _on_double_final_result(result: TimingSystem.TimingResult) -> void:
 			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
 			await _play_killing_blow_zoom(step)
+		_animator.flash_hold(_enemy)
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
@@ -569,6 +570,7 @@ func _on_attack_timing_result(result: TimingSystem.TimingResult) -> void:
 			_feedback.spawn_critical_particles(_enemy.position)
 			_animator.strike(_caipora)
 			await _play_killing_blow_zoom(step)
+		_animator.flash_hold(_enemy)
 		_enemy.take_damage(damage)
 		if is_killing_blow:
 			return
