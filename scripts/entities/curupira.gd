@@ -74,7 +74,9 @@ func _play_double_jump_telegraph() -> void:
 
 func _spawn_shadow_aura() -> void:
 	var aura := CPUParticles2D.new()
-	aura.amount = 24
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	aura.amount = maxi(1, int(24.0 * ps))  # densidade cheia em desktop; phone corta (Frente E)
 	aura.lifetime = 2.0
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 32.0

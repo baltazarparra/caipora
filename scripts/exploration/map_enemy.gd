@@ -168,7 +168,9 @@ func _spawn_front_light(is_common: bool) -> void:
 func _spawn_aura(aura_type: String) -> void:
 	var aura := CPUParticles2D.new()
 	aura.z_index = -1
-	aura.amount = 16
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	aura.amount = maxi(1, int(16.0 * ps))  # densidade cheia em desktop; phone corta (Frente E)
 	aura.lifetime = 1.4
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 14.0

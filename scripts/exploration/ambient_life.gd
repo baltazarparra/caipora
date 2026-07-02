@@ -147,7 +147,9 @@ func _spawn_fireflies() -> void:
 	var fireflies := CPUParticles2D.new()
 	fireflies.z_index = 1  # flutuam acima do chão
 	fireflies.position = _bounds.position + _bounds.size * 0.5
-	fireflies.amount = FIREFLY_COUNT
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	fireflies.amount = maxi(1, int(float(FIREFLY_COUNT) * ps))  # phone corta pela metade (Frente E)
 	fireflies.lifetime = 4.5
 	fireflies.preprocess = 4.5  # já espalhados ao iniciar
 	fireflies.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE

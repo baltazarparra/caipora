@@ -15,9 +15,15 @@ const LABEL_FONT_SIZE := 16
 
 var _target_world: Vector2
 var _pulse: float = 0.0
+var _was_off_screen: bool = false
+# Cache do rótulo (get_string_size faz shaping de texto — não pagar por frame).
+var _label_cache: String = ""
+var _label_size: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
-	Lang.language_changed.connect(func(_lang: StringName) -> void: queue_redraw())
+	Lang.language_changed.connect(func(_lang: StringName) -> void:
+		_label_cache = ""
+		queue_redraw())
 
 func setup(target_world: Vector2) -> void:
 	_target_world = target_world
@@ -26,14 +32,27 @@ func setup(target_world: Vector2) -> void:
 
 func _process(delta: float) -> void:
 	_pulse += delta
-	queue_redraw()
+	# Redesenha só quando a seta está (ou acabou de deixar de estar) na tela —
+	# on-screen o _draw early-retorna e redesenhar era puro desperdício; a
+	# transição off→on precisa de UM redraw para apagar a última seta (Frente E).
+	var off := _is_off_screen()
+	if off or _was_off_screen != off:
+		queue_redraw()
+	_was_off_screen = off
+
+## O rastro está fora do quadro (com a folga ON_SCREEN_INSET)? Depende da
+## câmera/zoom, então roda por frame — é 1 transform + 1 has_point, barato.
+func _is_off_screen() -> bool:
+	var vp := get_viewport_rect().size
+	var screen := get_viewport().get_canvas_transform() * _target_world
+	var inset := Vector2(ON_SCREEN_INSET, ON_SCREEN_INSET)
+	return not Rect2(inset, vp - inset * 2.0).has_point(screen)
 
 func _draw() -> void:
 	var vp := get_viewport_rect().size
 	# Projeta a posição-mundo do rastro pra tela usando a transform do canvas (respeita câmera/zoom).
 	var screen := get_viewport().get_canvas_transform() * _target_world
-	var inset := Vector2(ON_SCREEN_INSET, ON_SCREEN_INSET)
-	if Rect2(inset, vp - inset * 2.0).has_point(screen):
+	if not _is_off_screen():
 		return  # rastro no quadro: a luz pulsante do mundo basta
 	var center := vp * 0.5
 	var dir := screen - center
@@ -66,10 +85,12 @@ func _draw_arrow(pos: Vector2, dir: Vector2, alpha: float) -> void:
 	var font := ThemeDB.fallback_font
 	if font == null:
 		return
-	var label := Lang.t(&"hub.exit.trail")
-	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_SIZE)
+	if _label_cache.is_empty():
+		_label_cache = Lang.t(&"hub.exit.trail")
+		_label_size = font.get_string_size(
+			_label_cache, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_SIZE)
 	var anchor := pos - dir * (ARROW_LEN + 8.0)
 	draw_string(
-		font, anchor - Vector2(size.x * 0.5, -size.y * 0.5), label,
+		font, anchor - Vector2(_label_size.x * 0.5, -_label_size.y * 0.5), _label_cache,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_FONT_SIZE, color
 	)

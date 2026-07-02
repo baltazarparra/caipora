@@ -54,7 +54,9 @@ func _play_windup_telegraph() -> void:
 # ─── Private helpers ───────────────────────────────
 func _spawn_torch_embers() -> void:
 	var embers := CPUParticles2D.new()
-	embers.amount = 12
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	embers.amount = maxi(1, int(12.0 * ps))  # densidade cheia em desktop; phone corta (Frente E)
 	embers.lifetime = 0.8
 	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	embers.emission_sphere_radius = 8.0

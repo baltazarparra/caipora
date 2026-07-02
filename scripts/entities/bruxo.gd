@@ -10,7 +10,9 @@ extends Cacador
 # emana uma aura de sombra (o mesmo tom do antigo boss de onde ele veio).
 func _spawn_torch_embers() -> void:
 	var aura := CPUParticles2D.new()
-	aura.amount = 18
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	aura.amount = maxi(1, int(18.0 * ps))  # densidade cheia em desktop; phone corta (Frente E)
 	aura.lifetime = 1.4
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 22.0

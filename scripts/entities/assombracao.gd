@@ -40,7 +40,9 @@ func _play_windup_telegraph() -> void:
 
 func _spawn_spectral_aura() -> void:
 	var aura := CPUParticles2D.new()
-	aura.amount = 14
+	var vp := get_viewport()
+	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	aura.amount = maxi(1, int(14.0 * ps))  # densidade cheia em desktop; phone corta (Frente E)
 	aura.lifetime = 1.2
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 18.0
