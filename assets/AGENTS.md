@@ -89,10 +89,14 @@ assets/
    (128×128 arena, idle/windup, escala de nó 1.2; travas de marca e contrato
    cobrados por `tests/unit/test_saci_sprite_assets.gd`). O design é lei:
    `docs/CONCEITO-saci.md`.
-2g. **Mula idem:** `mula_*.png` saem SOMENTE de `scripts/tools/gen_mula.py`
-   (192×192 arena, idle/windup, escala 0.9 para a altura da lore; contrato
-   cobrado por `tests/unit/test_mula_sprite_assets.gd`). O design é lei:
-   `docs/CONCEITO-mula.md`.
+2g. **Mula idem (v3 — traço da protagonista):** `mula_*.png` E o
+   `mula_sprite_frames.tres` saem SOMENTE de `scripts/tools/gen_mula.py`
+   (192×192 arena a escala 0.9 para a altura da lore; corpo preto-vazio +
+   coroa de fogo serrilhada, encarando a ESQUERDA; set completo de vida:
+   idle 5f, windup 3f, strike/recover/hurt 2f, death 3f — o `.tres` é emitido
+   por código; variante de mapa `mula_map.png` 48×48 re-renderizada dos mesmos
+   vetores). Contratos cobrados por `tests/unit/test_mula_sprite_assets.gd` e
+   `test_mula_sprite_frames.gd`. O design é lei: `docs/CONCEITO-mula.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.

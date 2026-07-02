@@ -23,10 +23,12 @@ Inimigos comuns (cacador & bruxo) derivam desta identidade:
 - `tests/unit/test_inimigos_sprite_assets.gd`
 
 Bosses derivam desta identidade (um por sessao de redesign):
-- `docs/CONCEITO-mula.md` (primeiro boss — Mula sem Cabeça)
+- `docs/CONCEITO-mula.md` (primeiro boss — Mula sem Cabeça; v3 = leitura-espelho
+  da protagonista: corpo preto-vazio + coroa de fogo serrilhada, set completo
+  de vida idle/windup/strike/recover/hurt/death)
 - `assets/sprites/mula_contact_sheet.png`
 - `scripts/tools/gen_mula.py`
-- `tests/unit/test_mula_sprite_assets.gd`
+- `tests/unit/test_mula_sprite_assets.gd` + `tests/unit/test_mula_sprite_frames.gd`
 
 Curupira (boss P3, o parente mais antigo) deriva desta identidade:
 - `docs/CONCEITO-curupira.md` (lei visual do chefe)
