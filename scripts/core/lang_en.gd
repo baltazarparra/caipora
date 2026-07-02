@@ -11,6 +11,14 @@ const STRINGS: Dictionary = {
 	&"options.reset.confirm":   "For real? Gone forever.",
 	&"options.reset.done":      "Gone.",
 
+	# HD (graphics quality)
+	&"hd.confirm.title.on":     "HD ON",
+	&"hd.confirm.title.off":    "HD OFF",
+	&"hd.confirm.body.on":      "Heavy-duty visuals. Game reloads to make it stick.",
+	&"hd.confirm.body.off":     "Back to the light build. Game reloads to make it stick.",
+	&"hd.confirm.ok":           "Do it",
+	&"hd.confirm.cancel":       "Nah",
+
 	# Hub Shop
 	&"hub.track.furia":         "DAMAGE",
 	&"hub.track.cura":          "LIFE",

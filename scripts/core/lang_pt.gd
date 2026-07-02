@@ -10,6 +10,14 @@ const STRINGS: Dictionary = {
 	&"options.reset.confirm":   "Confirmar? Apaga tudo.",
 	&"options.reset.done":      "Progresso apagado",
 
+	# HD (qualidade gráfica)
+	&"hd.confirm.title.on":     "LIGAR HD",
+	&"hd.confirm.title.off":    "DESLIGAR HD",
+	&"hd.confirm.body.on":      "Efeitos visuais pesados. O jogo recarrega para aplicar.",
+	&"hd.confirm.body.off":     "Volta ao modo leve. O jogo recarrega para aplicar.",
+	&"hd.confirm.ok":           "Confirmar",
+	&"hd.confirm.cancel":       "Cancelar",
+
 	# Hub Shop
 	&"hub.track.furia":         "DANO",
 	&"hub.track.cura":          "VIDA",
