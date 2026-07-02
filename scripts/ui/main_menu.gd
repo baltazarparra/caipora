@@ -321,6 +321,17 @@ func _schedule_blink() -> void:
 				_logo.texture = load(LOGO_PATH)
 			_schedule_blink()))
 
+## Autoplay do browser: o áudio só pode nascer num handler de gesto. _input roda
+## ANTES da GUI, então o 1º clique/toque/tecla em QUALQUER lugar do menu (inclusive
+## nos botões, que consomem o evento) acorda a fogueira + música — não só o
+## "Despertar". Um gesto basta: depois dele o processamento de input desliga.
+func _input(event: InputEvent) -> void:
+	var is_gesture: bool = (event is InputEventMouseButton or event is InputEventScreenTouch \
+		or event is InputEventKey) and event.is_pressed()
+	if is_gesture:
+		AudioDirector.unlock_audio()
+		set_process_input(false)
+
 func _on_start_pressed() -> void:
 	AudioDirector.unlock_audio()
 	_pulse_press_haptic()

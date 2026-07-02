@@ -104,6 +104,12 @@ func test_ambience_resolves_church_for_phase5():
 	assert_eq(AudioDirector._current_ambience, AudioDirector.AMB_DREAD,
 		"arenas 1–4 continuam no dread")
 
+func test_ambience_resolves_campfire_for_main_menu():
+	# A tela inicial tem fogueira mansa própria — não a floresta em chamas da P2.
+	AudioDirector._refresh_ambience(SignalBus.Screen.MAIN_MENU)
+	assert_eq(AudioDirector._current_ambience, AudioDirector.AMB_CAMPFIRE,
+		"o menu acende a fogueira, não o incêndio")
+
 func _stinger_path() -> String:
 	return AudioDirector._stinger_player.stream.resource_path
 

@@ -7,7 +7,9 @@ extends Node2D
 
 # ─── Exports ───────────────────────────────────────
 @export var layer_z: int = -60
-@export var ember_count: int = 40
+## Contagem em tela grande; telas de telefone pagam metade via
+## Constants.particle_amount_scale (web/Android fraco seguem leves).
+@export var ember_count: int = 80
 
 # ─── State ─────────────────────────────────────────
 var _vp_w: float = 1280.0
@@ -24,7 +26,7 @@ func _ready() -> void:
 # ─── Private helpers ───────────────────────────────
 func _spawn_embers() -> void:
 	var embers := CPUParticles2D.new()
-	embers.amount = ember_count
+	embers.amount = maxi(1, int(ember_count * Constants.particle_amount_scale(Vector2(_vp_w, _vp_h))))
 	embers.lifetime = 5.0
 	embers.preprocess = 5.0  # já espalhadas ao iniciar
 	embers.position = Vector2(_vp_w * 0.5, _vp_h)

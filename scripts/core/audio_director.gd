@@ -67,6 +67,7 @@ const AMB_FIRE: String = "res://assets/audio/ambience/amb_fire.wav"
 const AMB_FOG: String = "res://assets/audio/ambience/amb_fog.wav"
 const AMB_CHURCH: String = "res://assets/audio/ambience/amb_church.wav"
 const AMB_HEARTBEAT: String = "res://assets/audio/ambience/heartbeat.wav"
+const AMB_CAMPFIRE: String = "res://assets/audio/ambience/amb_campfire.wav"
 
 # Música por contexto: um loop híbrido (maracatu + chiptune) por tela/fase/boss.
 const MUSIC_DIR: String = "res://assets/audio/music/"
@@ -641,6 +642,8 @@ func _apply_space_profile(screen: int) -> void:
 func _refresh_ambience(screen: int) -> void:
 	var path := ""
 	match screen:
+		SignalBus.Screen.MAIN_MENU:
+			path = AMB_CAMPFIRE  # fogueira mansa sob a marcha da tela inicial
 		SignalBus.Screen.EXPLORATION, SignalBus.Screen.HUB:
 			path = AMB_FOREST  # mata noturna
 		SignalBus.Screen.EXPLORATION_PHASE2:

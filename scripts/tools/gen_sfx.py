@@ -1333,6 +1333,32 @@ def heartbeat(dur=2.0):
     return _normalize(biquad(out, "lp", 320.0, q=0.9), 0.7)  # surdo: bate no peito
 
 
+def amb_campfire(dur=9.0):
+    """Tela inicial (fogueira do menu): cama de white noise grave e contínua,
+    respiração lenta de amplitude e estalos esparsos e macios. A fogueira MANSA —
+    sem o rugido inquieto do amb_fire (aquele é a floresta EM CHAMAS da fase 2)."""
+    fade = int(SAMPLE_RATE * 0.6)
+    n = int(SAMPLE_RATE * dur)
+    total = n + fade
+    out = [0.0] * total
+    lp = 0.0
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        raw = _noise()
+        lp = lp * 0.9 + raw * 0.1
+        # cama contínua respirando devagar (o corpo do fogo em brasa)
+        bed = lp * 0.16 * (0.9 + 0.1 * math.sin(2 * math.pi * 0.08 * t))
+        # chiado fino das brasas (banda alta, bem baixo)
+        hiss = (raw - lp) * 0.02
+        # estalos macios e raros (um terço da taxa e força do amb_fire)
+        crackle = _noise() * 0.3 if random.random() < 0.02 else 0.0
+        out[i] = bed + hiss + crackle
+    return _normalize(_loopify(out, n, fade), 0.55)
+
+
+# NOVOS geradores entram sempre no FIM do dicionário: o random.seed(7) é único
+# para o lote e cada gerador consome o stream — inserir no meio muda os bytes
+# de todos os seguintes.
 AMBIENCES = {
     "amb_forest": amb_forest,
     "amb_dread": amb_dread,
@@ -1340,6 +1366,7 @@ AMBIENCES = {
     "amb_fog": amb_fog,
     "amb_church": amb_church,
     "heartbeat": heartbeat,
+    "amb_campfire": amb_campfire,
 }
 
 

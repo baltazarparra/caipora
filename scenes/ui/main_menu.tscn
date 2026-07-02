@@ -37,7 +37,6 @@ rng_seed = 23
 [node name="Embers" type="Node2D" parent="."]
 script = ExtResource("5_embers")
 layer_z = -60
-ember_count = 40
 
 [node name="Ground" type="Node2D" parent="."]
 script = ExtResource("6_ground")
