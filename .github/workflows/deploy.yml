@@ -113,18 +113,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
-      # A fila do Pages engasga de vez em quando (deployment_queued sem progresso):
-      # o timeout interno default de 10 min matou 2 deploys seguidos em 2026-07-02.
-      # Damos 20 min por tentativa e UMA retry antes de declarar derrota.
+      # A fila do Pages engasga de vez em quando (deployment_queued sem progresso)
+      # e matou 2 deploys seguidos em 2026-07-02. O actions/deploy-pages CLAMPA o
+      # timeout em 600000 ms (10 min) — valores maiores viram warning + 10 min.
+      # A proteção real é a RETRY: 2 tentativas × 10 min = 20 min de janela.
       - name: Deploy to GitHub Pages
         id: deploy
         continue-on-error: true
         uses: actions/deploy-pages@v4
         with:
-          timeout: 1200000
+          timeout: 600000
       - name: Retry deploy (fila do Pages engasgada)
         id: deploy_retry
         if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
         with:
-          timeout: 1200000
+          timeout: 600000
