@@ -91,6 +91,9 @@ func setup(spirit_phase: int) -> bool:
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_sprite)
 	_sprite.play()
+	# Risco de giz: o mesmo contorno da Caipora/exploração — sem ele o espírito
+	# some na mata escura (o glow lê a POSIÇÃO, o risco lê a SILHUETA).
+	ActorContrast.apply_outline(_sprite)
 	_spawn_calm_aura(def["aura"])
 	_spawn_glow(def["aura"])
 	_spawn_shadow(def["scale"])
