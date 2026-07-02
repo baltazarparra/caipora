@@ -114,6 +114,11 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		sprite.modulate = Constants.COLOR_BAPTISM_TINT
 		_spawn_aura(p_enemy_type)
 		_spawn_baptism_drip()
+	# Boitatá deixa rastro de brasas no mapa (modo HD): o movimento por tile é
+	# teleporte — em coords globais as brasas seguem queimando nos tiles
+	# anteriores por ~0.9s, sem nenhum hook em take_turn.
+	if boss_type == "boitata" or p_enemy_type == "boitata":
+		_spawn_ember_trail()
 
 ## Chave deste inimigo no catálogo EnemyStats: boss → tipo do chefe; comum → seu
 ## tipo, caindo no caçador quando vazio (mesma regra de _regular_scene_for do
@@ -197,6 +202,34 @@ func _aura_color(aura_type: String) -> Color:
 		"saci":     return Constants.COLOR_AURA_SACI
 		"jesuita":  return Constants.COLOR_AURA_JESUITA
 		_:          return Constants.COLOR_AURA_BOSS
+
+## Brasas do Boitatá em escala de mapa (tile 32px). Gated por HD.
+func _spawn_ember_trail() -> void:
+	if not Quality.hd_enabled():
+		return
+	var trail := CPUParticles2D.new()
+	trail.name = "EmberTrail"
+	trail.amount = 10
+	trail.lifetime = 0.9
+	trail.local_coords = false
+	trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	trail.emission_rect_extents = Vector2(12.0, 5.0)
+	trail.position = Vector2(0.0, -8.0)
+	trail.gravity = Vector2(0, 18)
+	trail.initial_velocity_min = 1.0
+	trail.initial_velocity_max = 5.0
+	trail.scale_amount_min = 1.0
+	trail.scale_amount_max = 2.0
+	trail.color = Constants.COLOR_FIRE_HOT
+	var ramp := Gradient.new()
+	ramp.set_offset(0, 0.0)
+	ramp.set_color(0, Constants.COLOR_FIRE_HOT)
+	ramp.add_point(1.0, Color(Constants.COLOR_AURA_BOITATA.r,
+		Constants.COLOR_AURA_BOITATA.g, Constants.COLOR_AURA_BOITATA.b, 0.0))
+	trail.color_ramp = ramp
+	trail.material = Constants.ADDITIVE_MATERIAL
+	trail.z_index = 1
+	add_child(trail)
 
 func _spawn_baptism_drip() -> void:
 	var drip := CPUParticles2D.new()
