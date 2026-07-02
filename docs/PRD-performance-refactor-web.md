@@ -248,3 +248,37 @@ Cada sessão: commit próprio, gate verde, números antes/depois no REPORT.
    reordenar S3/S4 se P3 (3 passes fullscreen) reprovar feio.
 4. Follow-up fora do PRD: template wasm custom (build profile sem 3D/nav/
    multiplayer) para atacar os ~9,6MB gz restantes do engine.
+
+## 10. Emendas de execução (2026-07-02, durante o rollout)
+
+Correções descobertas na exploração/execução — o texto acima é o plano
+original; em conflito, vale esta seção. Números no `REPORT-performance.md`.
+
+1. **RF-B2 corrigido: "bake na paleta" literal é INVIÁVEL.** O
+   `gradient_map.gdshader` remapeia por LUMINÂNCIA do pixel compositado
+   (LUT 256×1 por fase, mix 0.55) — sprites/partículas compartilhados entre
+   fases exigiriam 5 variantes de cada asset. Caminho real se o grade
+   reprovar a medição: desligar e, SÓ se o diff visual justificar,
+   aproximação bounded (~10 CanvasModulate + `ArenaBackdrop.PHASE_STYLE` +
+   re-derivar `FEEDBACK_GAIN_BY_PHASE`), aprovada por screenshot A/B.
+2. **RF-B1 ganhou afordância permanente:** `?grade=1/?grade=0` na URL
+   sobrepõe `GRADING_ON_WEB` (parse puro + cache estático em
+   `atmosphere.gd`; teste `test_atmosphere_grade.gd`).
+3. **RF-E4 migrou da Frente E para a Frente A** (mesmo alvo: pipeline de
+   export) — implementado como `sed` idempotente pós-export no `Makefile`
+   (o SW é regenerado a cada export).
+4. **RF-C1 refinado:** máscaras por papel são 4 (BRIGHT/DARK/OUTLINE +
+   BODY para o medidor do Cortejo), 100% branco-opaco, moduladas no call
+   site — porque o alpha do papel escuro difere entre widgets (bolha/dpad
+   ×0,7; botão 1,0) e os lerps de estado são independentes. Parâmetros
+   tipados como `int` (identidade de enum entre scripts é frágil no
+   GDScript 4.6 — enum externo ≠ enum interno via cache global).
+5. **Resultado-surpresa da Frente D:** o vilão do menu era o
+   `queue_redraw()` redundante do `title_treeline` (~284 primitivas
+   re-gravadas/frame), não o DoomFire — só o RF-D1 levou o menu desktop de
+   52,9fps/p95 33,4ms para 60fps/p95 16,8ms/0% frames >20ms. A S4
+   (cadência do DoomFire) segue condicional aos números de device.
+6. **Auditoria do pck é por ENTRADAS do diretório GDPC v3** (dir_offset no
+   header; script `pck_ls.py`), não por grep de strings — o uid cache e o
+   cache de classes globais guardam paths dos excluídos como bytes
+   inofensivos dentro de `project.binary`/metadados.

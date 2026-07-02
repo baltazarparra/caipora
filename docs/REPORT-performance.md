@@ -86,9 +86,24 @@ floating_dpad verdes).
 causa do grade ⇒ mantém. Senão: desligar; aproximação bounded só se o diff visual
 (screenshots A/B) justificar.
 
-### 2.5 Após S4/S5 e fechamento
+### 2.5 Após S5 (Frente E, código) — 2026-07-02 ✅ (parcial)
 
-⏳ — matriz final completa + repasse item a item do PRD §5.
+| Item | Antes | Depois |
+|---|---|---|
+| Auras de inimigo (9 sites: assombração/bruxo/caçador/boss/curupira/mula/jesuíta/saci/mapa) | 12–28 fixo | × `particle_amount_scale` (desktop intacto; phone ×0,5) |
+| Vaga-lumes exploração | 60 fixo | idem (phone: 30) |
+| HealthBar com HP baixo | ~42 primitivas/frame (barra inteira + ticks) | **2 rects/frame** (camada do fill; trilho/ticks/moldura event-driven) |
+| ExitBeacon com rastro na tela | redraw + `get_string_size` por frame | **zero redraw** (só off-screen + 1 na transição; rótulo cacheado) |
+
+Validação: 707 testes verdes; header de combate capturado via `--screen=ARENA`
+(barras normal+espelhada com fill/ticks/moldura corretos). Pendente para o
+fechamento: A/B do grading em device (decisão S3), S4 condicional, matriz final
++ repasse do PRD §5.
+
+### 2.6 Fechamento
+
+⏳ — aguardando medição em device (iPhone/Android) do usuário para a decisão do
+grading; depois matriz final + repasse item a item do PRD §5.
 
 ## 3. Decisões tomadas durante a execução
 
@@ -112,7 +127,11 @@ causa do grade ⇒ mantém. Senão: desligar; aproximação bounded só se o dif
 | Frente | Commit | Descrição |
 |---|---|---|
 | — | 57ef1d7 | PRD |
-| S1 | ⏳ | baseline + REPORT; export enxuto + patch SW |
+| S1 | 95445be | export só embarca runtime (pck −72%) + patch SW + baseline |
+| S2 | 60e397b | GlyphAtlas (máscaras) + menu sem redraw redundante (60fps) |
+| S3a | 56ded81 | toggle ?grade= para A/B em device |
+| S5 | cfe777f | escala de partículas universal + HealthBar/ExitBeacon |
+| S3b/S4/fechamento | ⏳ | aguardando números de device |
 
 ## 6. Referências
 
