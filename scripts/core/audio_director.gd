@@ -692,7 +692,7 @@ func _play_ambience(path: String) -> void:
 func _music_for_screen(screen: int) -> String:
 	match screen:
 		SignalBus.Screen.MAIN_MENU:
-			return _mus("mus_menu")
+			return ""  # a tela inicial é só a fogueira (cozy); a música nasce no Despertar
 		SignalBus.Screen.HUB:
 			return _mus("mus_hub")
 		SignalBus.Screen.ENDING:

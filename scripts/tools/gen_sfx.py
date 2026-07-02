@@ -1334,26 +1334,40 @@ def heartbeat(dur=2.0):
 
 
 def amb_campfire(dur=9.0):
-    """Tela inicial (fogueira do menu): cama de white noise grave e contínua,
-    respiração lenta de amplitude e estalos esparsos e macios. A fogueira MANSA —
-    sem o rugido inquieto do amb_fire (aquele é a floresta EM CHAMAS da fase 2)."""
+    """Tela inicial (fogueira do menu): cozy, quase white noise. Cama de ruído
+    MUITO abafada (lowpass de 2 polos) respirando devagar + estalos RAROS (~5/s)
+    e macios — pops de ~40 ms com decay, não impulsos. A 1ª versão disparava
+    estalos de 1 sample a 2% POR AMOSTRA (~440 cliques/s): soava fritura
+    agressiva, não fogueira. Segue MANSA — o incêndio da fase 2 é o amb_fire."""
     fade = int(SAMPLE_RATE * 0.6)
     n = int(SAMPLE_RATE * dur)
     total = n + fade
     out = [0.0] * total
     lp = 0.0
+    lp2 = 0.0
     for i in range(total):
         t = i / SAMPLE_RATE
         raw = _noise()
-        lp = lp * 0.9 + raw * 0.1
-        # cama contínua respirando devagar (o corpo do fogo em brasa)
-        bed = lp * 0.16 * (0.9 + 0.1 * math.sin(2 * math.pi * 0.08 * t))
-        # chiado fino das brasas (banda alta, bem baixo)
-        hiss = (raw - lp) * 0.02
-        # estalos macios e raros (um terço da taxa e força do amb_fire)
-        crackle = _noise() * 0.3 if random.random() < 0.02 else 0.0
-        out[i] = bed + hiss + crackle
-    return _normalize(_loopify(out, n, fade), 0.55)
+        lp = lp * 0.96 + raw * 0.04
+        lp2 = lp2 * 0.85 + lp * 0.15  # 2º polo: some a aspereza de banda alta
+        out[i] = lp2 * 0.6 * (0.85 + 0.15 * math.sin(2 * math.pi * 0.07 * t))
+    # Pops macios ancorados no loop: ruído lowpassado com decay exponencial.
+    # Âncora com espelho na cauda (idx < fade também soma em n+idx) — o
+    # crossfade do _loopify vira pop*w + pop*(1-w) = pop intacto, sem emenda
+    # (mesma semântica do `pos = i % n` dos pingos do amb_church).
+    pop_n = int(SAMPLE_RATE * 0.04)
+    for _ in range(int(dur * 5)):
+        at = random.randrange(n)
+        amp = random.uniform(0.4, 1.0)
+        plp = 0.0
+        for j in range(pop_n):
+            plp = plp * 0.85 + _noise() * 0.15  # pop abafado: estalo surdo, não seco
+            v = plp * math.exp(-j / (pop_n * 0.25)) * amp
+            idx = (at + j) % n
+            out[idx] += v
+            if idx < fade:
+                out[n + idx] += v
+    return _normalize(_loopify(out, n, fade), 0.5)
 
 
 # NOVOS geradores entram sempre no FIM do dicionário: o random.seed(7) é único

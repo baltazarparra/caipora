@@ -69,8 +69,8 @@ func test_duck_runs_without_error():
 func test_music_resolves_per_screen():
 	# Cada fase de exploração e arena mapeia para a sua própria faixa.
 	GameState.active_combat_is_boss = false
-	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.MAIN_MENU),
-		"res://assets/audio/music/mus_menu.wav")
+	# Tela inicial é SÓ a fogueira (amb_campfire): sem música até o Despertar.
+	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.MAIN_MENU), "")
 	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.EXPLORATION_PHASE3),
 		"res://assets/audio/music/mus_explore_p3.wav")
 	assert_eq(AudioDirector._music_for_screen(SignalBus.Screen.ARENA_PHASE2),
