@@ -321,6 +321,8 @@ func _apply_furia_visual() -> void:
 	if animated_sprite == null:
 		return
 	FuriaVisual.attach_to(animated_sprite)
+	# Rim HD junto do refresh da Fúria: cobre o spawn e o re-attach da CHAMA.
+	ParticleRim.attach_caipora(animated_sprite)
 
 func _spawn_enemy() -> void:
 	# Consome o flag volátil para nunca vazar estado para o próximo combate. O HP de

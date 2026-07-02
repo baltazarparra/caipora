@@ -21,7 +21,11 @@ static func is_portrait(vp: Vector2) -> bool:
 const PHONE_PARTICLE_SCALE := 0.5
 
 ## Fator aplicado ao `amount` dos CPUParticles2D do FeedbackSystem.
+## No modo HD o corte de telefone não se aplica — o jogador pediu efeitos pesados
+## (densidade cheia; o gate do front-light per-ator em ActorContrast abre junto).
 static func particle_amount_scale(vp: Vector2) -> float:
+	if Quality.hd_enabled():
+		return 1.0
 	return PHONE_PARTICLE_SCALE if minf(vp.x, vp.y) < PHONE_SHORT_SIDE_MAX else 1.0
 
 # ─── Color grading (gradient map) ──────────────────
@@ -343,6 +347,17 @@ const COLOR_DIALOGUE_JESUITA  := Color(0.92, 0.82, 0.45, 1.0)  # voz do Jesuíta
 const COLOR_PARTICLE_SPARK := Color(0.6, 1.6, 0.9, 1.0)   # faísca de crítico (cristal do cajado)
 const COLOR_PARTICLE_DODGE := Color(0.9, 0.95, 1.0, 0.95) # flash de esquiva (azul-claro)
 const COLOR_PARTICLE_FAIL := Color(0.20, 0.18, 0.22, 0.9) # estilhaço de erro (cinza-fumaça morto, deriva de COLOR_STONE_DARK)
+
+# ─── ParticleRim (modo HD) ─────────────────────────
+# Contorno de partículas neon dos atores — só com Quality.hd_enabled().
+# Inimigo comum fica FORA da paleta da protagonista (lei da marca: nada de
+# laranja-juba nem verde-cristal em inimigo); bosses usam seus COLOR_AURA_*.
+const COLOR_RIM_ENEMY := Color(0.75, 0.22, 0.28, 0.8)  # sangue frio dessaturado
+const RIM_DUST_BASE_AMOUNT := 18.0
+const RIM_SPREAD_DEG := 26.0
+# Boost overbright no RGB do rim (>1 = glow aditivo intencional): na cor crua
+# da juba o contorno se mistura no próprio sprite em vez de recortá-lo.
+const RIM_GLOW_BOOST := 1.5
 
 # ─── Ganho de cor dos feedbacks por fase ───────────
 # Algumas fases têm um CanvasModulate de arena muito escuro (clima), que multiplica
