@@ -51,9 +51,10 @@ const WANDER_INSET: float = 16.0   # margem pra borda da clareira (não encosta 
 # Identidade visual de cada espírito: os MESMOS frames premium da arena, em escala de
 # set piece (2–4 tiles), com a cor de aura canônica da fase. `flip` vira o encantado
 # para dentro da clareira (Mula ao norte olha pro fogo; Saci a sudeste olha pra oeste).
+# A Mula v3 já encara a ESQUERDA no PNG (lei do CONCEITO), então fica sem flip.
 const DEFS := {
 	1: { "frames": "res://assets/sprites/mula_sprite_frames.tres",
-		"scale": 0.55, "flip": true, "aura": Constants.COLOR_AURA_MULA },
+		"scale": 0.55, "flip": false, "aura": Constants.COLOR_AURA_MULA },
 	2: { "frames": "res://assets/sprites/boitata_sprite_frames.tres",
 		"scale": 0.7, "flip": true, "aura": Constants.COLOR_AURA_BOITATA },
 	3: { "frames": "res://assets/sprites/curupira_sprite_frames.tres",

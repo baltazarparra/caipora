@@ -1,4 +1,4 @@
-# CONCEITO — A Mula sem Cabeça (Boss da Fase 1)
+# CONCEITO — A Mula sem Cabeça (Boss da Fase 1) — v3
 
 > **Este documento é lei visual** para o primeiro chefe do jogo. Deriva da
 > protagonista (`docs/CONCEITO-protagonista.md`) e da skill de identidade visual
@@ -11,20 +11,26 @@
 
 ---
 
-## 1. O conceito
+## 1. O conceito — a leitura-espelho da Caipora
 
 A Mula sem Cabeça é a **primeira impressão** do jogador sobre os chefes de
-*caipora*. Ela é o pesadelo da estrada de terra: uma égua negra amaldiçoada,
-sem cabeça, cujo pescoço termina num **toco cru de onde jorra uma coluna de
-fogo** que serve como "cabeça". As ferraduras de ferro reluzem a cada
-passada, e o arreio vermelho-sangue ainda pinga da última cavalgada.
+*caipora* — e a primeira prova de que todos vivem no mesmo universo da
+protagonista. A Caipora lê como **massa laranja serrilhada + vazio preto +
+olhos brancos**. A Mula é o espelho invertido:
 
-- **Horror físico:** carne viva no toco, sangue seco no arreio, pelo empapado
-  de fuligem e sangue.
+> **um monumento preto-vazio de montaria + uma "juba" de fogo serrilhada no
+> lugar da cabeça — e nenhum olho, porque não há cabeça para tê-los.**
+
+Ela é o pesadelo da estrada de terra: uma égua negra amaldiçoada cujo pescoço
+termina num toco cru de onde erupciona uma coroa de fogo. As ferraduras de
+ferro reluzem a cada passada, e o arreio vermelho-sangue ainda pinga da última
+cavalgada.
+
+- **Horror físico:** carne viva no toco, sangue no arreio, breu no pelo.
 - **Folclore brasileiro:** a Mula do folclore é castigo e fogo — nunca uma
   fera genérica de fantasia ocidental.
-- **Hostilidade:** encara a Caipora (lado esquerdo, como todos os inimigos) e
-  a silhueta deve ler ameaça antes de qualquer detalhe.
+- **Hostilidade:** ela ENCARA a Caipora — o desenho aponta para a ESQUERDA,
+  como todos os inimigos (lei corrigida na v3: a v2 dava as costas).
 
 ## 2. Lei de escala — a montaria sobre todos
 
@@ -38,83 +44,97 @@ Saci (menino de uma perna) < Caipora ≈ Curupira (criança da mata)
 < Mula sem Cabeça (montaria + coluna de fogo, agiganta sobre todos)
 ```
 
-- Canvas: **192×192** (4× a área do sprite legado).
-- Escala de cena: aproximadamente **0.9** para manter altura visual ~168 px,
-  preservando a hierarquia sem esticar pixels.
-- Os pés assentam na mesma linha de chão da Caipora (`offset.y ≈ -77`).
+- Canvas: **192×192**; escala de cena **0.9** (altura visual ~166 px).
+- Os pés assentam na mesma linha de chão da Caipora (`offset.y = -77`);
+  a linha inferior opaca do desenho fica na banda **y ∈ [184, 191]** do canvas
+  (travada por teste).
+- A crista do fogo fica em y ≈ 2–8 px — imponência máxima SEM clipar o canvas.
 
 ## 3. Assinaturas visuais (leitura a 32 px)
 
-1. **Toco decepado + coluna de fogo** — sem cabeça. O fogo é a "cabeça";
-   leitura imediata de silhueta. A coluna é viva, composta de múltiplas línguas
-   entrelaçadas com bordas irregulares, brasas orbitando e brasa caindo do toco.
-2. **Ferraduras de ferro reluzentes** — flash prateado nos cascos, visível
-   mesmo em escala reduzida.
-3. **Arreio amaldiçoado** — sela escura com debrum vermelho-sangue; traça o
-   flanco e desce como barrigueira.
-4. **Pelo negro-terra com bordas serrilhadas** — massa escura, quase uma sombra
-   com músculo; o contorno é agressivamente irregular, inspirado na juba
-   serrilhada da Caipora. Crina, cauda e bordas do corpo terminam em "dentes"
-   de pelo negro.
-5. **Rim light de fogo** — luz laranja do toco lambendo o pescoço, ombros e
-   flanco, conectando visualmente a coluna de fogo ao corpo escuro.
-6. **Pose de montaria prestes a galopar** — não estática; peso recolhido,
-   peito aberto, patas firmes.
+1. **Corpo preto-vazio chapado** — a massa dominante é a família VOID (preto
+   quase puro), como o corpo/chifres/cajado da Caipora. SEM modelagem interna,
+   SEM marrom-lamacento, SEM músculos desenhados: a informação vive na
+   silhueta. Dentes deliberados de pelo no peito (encarando a jogadora), na
+   anca e na barriga — grandes, duros, desenhados um a um (nunca ruído).
+2. **Coroa de fogo serrilhada = a "juba" dela** — o toco decepado erupciona
+   uma coluna de fogo desenhada com a MESMA linguagem da juba da protagonista:
+   dentes triangulares deliberados (1 grande + escada decrescente arrastando
+   para trás), selout chapado de 4 tons e coração branco-quente junto ao toco.
+   Sem cabeça; o fogo é a cabeça.
+3. **Ferraduras de ferro reluzentes** — banda de ferro + flash prateado nos
+   cascos próximos; o par distante fica sem brilho (profundidade chapada).
+4. **Arreio amaldiçoado** — sela escura com debrum vermelho-sangue, barrigueira
+   e peiteira; fivela e gota de sangue como acentos.
+5. **Toco cru sangrento** — elipse de carne viva onde o fogo nasce, com um
+   crescente branco-quente no contato fogo↔ferida.
+6. **Pose de montaria prestes a galopar** — peso recolhido, peito aberto para
+   a esquerda, patas firmes. Três brasas fixas trilham atrás da coroa
+   (deliberadas, nunca spray aleatório).
 
-## 4. Paleta-guia (fechada, máx. 2 tons por material)
+## 4. Paleta fechada (selout chapado, 3–4 tons por material)
 
 | Material | Ramp |
 |----------|------|
-| Pelo/corpo | `#341e1a → #54342c` (negro-terra, não preto puro) |
+| Corpo-vazio | `#0a0708` (oclusão/patas distantes) → `#150f10` (base) → `#261a1a` (acento de borda, chapado) |
 | Casco | `#100a09` |
 | Ferradura de ferro | `#7a7c8a → #bcc0ce` (flash prateado) |
 | Carne do toco | `#4a0808` |
-| Fogo (base → núcleo) | `#bc2a00 → #ff6b08 → #ffa838 → #fff0c8` |
+| Fogo (oclusão → coração) | `#bc2a00 → #ff6b08 → #ffa838 → #fff0c8` |
 | Arreio/sela | `#28160e → #961810` (couro escuro + debrum sangue) |
 | Contorno | `#1a120a` (1 px, mesmo do mundo) |
 
 **Travas de marca (nunca quebrar):**
 - Nenhum olho branco redondo (`#ffffff`) — assinatura exclusiva da Caipora.
-- Nenhum laranja da juba (`#ff4500` / `#8b2a00`) no corpo da Mula. O fogo pode
-  tocar `#ff6b08`, mas nunca a massa laranja-marca da protagonista.
+  O branco-quente do fogo é `#fff0c8`, nunca branco puro.
+- Nenhum laranja da juba (`#ff4500` / `#8b2a00`) — o fogo da Mula vive na
+  rampa própria dela (`#ff6b08`), nunca na massa laranja-marca da protagonista.
 - Nenhum verde `#00fa9a` — exclusivo do cristal/Fúria.
+- **Sem rim light, sem gradiente, sem dither, sem brasas aleatórias** — o
+  acabamento é pixel art chapada com formas deliberadas (v3 removeu o rim
+  light e o spray de brasas da v2).
 
 ## 5. Poses e animações
 
 | Animação | Descrição | Uso |
 |----------|-----------|-----|
-| `idle` | Mula firme, fogo pulsando, ferraduras no chão, crina e cauda com brasas. | Loop da arena/exploração. |
-| `windup` | Corpo recolhe, patas afundam, coluna de fogo **incha drasticamente** com mais línguas, brasas e overbright. | Telegraph visual do ataque especial. |
+| `idle` | Monumento firme, coroa de fogo com dentes desenhados, ferraduras assentadas. | Loop da arena/exploração/HUB. |
+| `windup` | Corpo AFUNDA (coil ~2.2 unidades de grid), joelhos abrem, patas traseiras se recolhem, e a coroa **erupciona** (~2× a massa de fogo: dente extra, mais largura, mais coração branco-quente). | Telegraph visual do ataque. |
+
+O gerador expõe canais paramétricos (`coil`, `breath`, `flame`) — a vida
+multi-frame (respiração, pulso do fogo, strike/hurt/death) entra por cima
+destes canais nos estágios seguintes do redesign.
 
 ## 6. Pipeline técnico (premium reprodutível)
 
-`scripts/tools/gen_mula.py`, determinístico, stdlib + Pillow:
+`scripts/tools/gen_mula.py`, **100% determinístico (sem RNG)**, stdlib + Pillow:
 
-1. **Desenho vetorial supersampled 8×** (1536×1536): formas orgânicas de
-   silhueta, pelo com bordas serrilhadas (perturbação senoidal nos vértices,
-   inspirada na juba da Caipora), arreio, ferraduras, toco e fogo.
+1. **Desenho vetorial supersampled 8×** (1536×1536): formas DELIBERADAS em
+   grade lógica de 64 — polígonos de dentes desenhados um a um (corpo, crina,
+   coroa de fogo), cápsulas de membro, elipses de acento.
 2. **Downsample por área → 192×192** + threshold de alpha (sem halos).
-3. **Snap de paleta**: cada pixel cai na cor mais próxima da paleta fechada da
-   Mula.
-4. **Rim light de fogo**: polígonos e elipses de `FIRE_MID`/`FIRE_DEEP` ao
-   longo das bordas do pescoço, ombros e flanco, simulando a luz da coluna
-   incandescente sobre o pelo negro.
-5. **Outline 1 px `#1a120a`**: todo pixel opaco que toca transparência vira
+3. **Snap de paleta fechada**: cada pixel cai na cor mais próxima da paleta da
+   Mula (saída 100% dentro da paleta — verificado).
+4. **Outline 1 px `#1a120a`**: todo pixel opaco que toca transparência vira
    contorno escuro contínuo.
 
 Regras de manutenção:
-- **Nunca editar `mula_idle.png` / `mula_windup.png` à mão** — toda mudança
-  visual passa por `gen_mula.py` e por este documento.
-- Contrato de saída: 2 poses (`idle`, `windup`) em 192×192, validado pelos
-  testes de assets e de escala.
+- **Nunca editar `mula_*.png` à mão** — toda mudança visual passa por
+  `gen_mula.py` e por este documento.
+- Contrato de saída atual: 2 poses (`idle`, `windup`) em 192×192, validado
+  pelos testes de assets e de escala.
+- Fluxo: `python3 scripts/tools/gen_mula.py` → `make import` → `make gate`.
 
 ## 7. O que NUNCA muda / o que pode evoluir
 
-**Imutável:** as travas de marca (§4); toco decepado + coluna de fogo como
-assinatura; escala de montaria maior que todos os outros atores; ferraduras de
-ferro reluzentes; arreio vermelho-sangue; pelo negro-terra; acabamento flat +
-outline 1 px; tom GORE/TERROR.
+**Imutável:** as travas de marca (§4); corpo preto-vazio chapado (a v2
+marrom-lamacenta é regressão, travada por teste); toco decepado + coroa de
+fogo serrilhada como assinatura; encarar a esquerda; escala de montaria maior
+que todos os outros atores; ferraduras de ferro reluzentes; arreio
+vermelho-sangue; acabamento flat + outline 1 px; formas deliberadas (nunca
+jag-noise/spray aleatório); tom GORE/TERROR.
 
-**Evolui livremente:** forma específica das chamas, quantidade de sangue no
-arreio, agressividade da crina em brasa, poses extras (`hurt`, `attack`,
-`death`) — desde que derivem das 5 assinaturas de silhueta.
+**Evolui livremente:** número e fase dos dentes da coroa, quantidade de sangue
+no arreio, poses extras (`strike`, `recover`, `hurt`, `death`) e a vida
+multi-frame via canais `coil`/`breath`/`flame` — desde que derivem das 6
+assinaturas de silhueta.
