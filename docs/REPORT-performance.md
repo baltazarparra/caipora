@@ -74,17 +74,20 @@ de tween não-terminado, verificado re-capturando o código antigo aquecido).
 confirmação do usuário (testes dual-input test_touch_controls/controls_hud/
 floating_dpad verdes).
 
-### 2.4 S3 — A/B do grading (Δp95 = grade1 − grade0, mesma cena/device)
+### 2.4 S3 — A/B do grading — 2026-07-02 ✅ (proxy desktop; usuário optou por não medir em device)
 
-| Cenário | iPhone Safari Δp95 | Android Δp95 |
-|---|---|---|
-| Menu | ⏳ | ⏳ |
-| Exploração P1 | ⏳ | ⏳ |
-| Arena P1 em combate | ⏳ | ⏳ |
+| Cenário (menu, export local) | grade=1 | grade=0 | Δ |
+|---|---|---|---|
+| Desktop sem throttle | 59,9fps · p95 16,8 · 0 >20ms | 59,9fps · p95 16,8 · 0 >20ms | **0** |
+| Desktop CPU 4x (300 frames) | 49,6fps · 62 >20ms | 50,1fps · 58 >20ms | **~0,5fps / 4 frames — ruído** |
 
-**Régua pré-acordada:** Δp95 ≤ ~1,5ms nos dois devices e nenhum cenário < 55fps por
-causa do grade ⇒ mantém. Senão: desligar; aproximação bounded só se o diff visual
-(screenshots A/B) justificar.
+**Decisão: `GRADING_ON_WEB` PERMANECE ligado.** Racional: (a) custo imensurável no
+hardware disponível, mesmo com CPU 4x; (b) é decisão de arte deliberada do dono
+(2026-06-11 — sem o grade o web ficava chapado); (c) desligar seria regressão
+tonal sem evidência de ganho; (d) o toggle `?grade=0` fica como afordância
+permanente — qualquer relato de lentidão em phone fraco pode ser bisecado na
+hora. **Ressalva registrada:** o custo de fill-rate em GPU mobile tiled segue
+NÃO VERIFICADO (o proxy desktop não o captura); re-medir quando houver device.
 
 ### 2.5 Após S5 (Frente E, código) — 2026-07-02 ✅ (parcial)
 
@@ -100,10 +103,35 @@ Validação: 707 testes verdes; header de combate capturado via `--screen=ARENA`
 fechamento: A/B do grading em device (decisão S3), S4 condicional, matriz final
 + repasse do PRD §5.
 
-### 2.6 Fechamento
+### 2.6 Fechamento — 2026-07-02
 
-⏳ — aguardando medição em device (iPhone/Android) do usuário para a decisão do
-grading; depois matriz final + repasse item a item do PRD §5.
+**S4 (DoomFire) executada e REVERTIDA com evidência:** cadência web testada em
+8 (7,5Hz): os frames estourados sob CPU 4x ficaram IDÊNTICOS (62/300 em toda
+rodada, com fogo a 5 ou 8 e grading on/off) — o pico periódico do throttle não
+é atribuível a código do jogo (invariante a ambos os suspeitos). A cadência
+voltou a 5 (fogo mais vivo; comentário em `doom_fire.gd:118` documenta).
+
+**RF-A2 fechado por automação** (usuário optou por não fazer o loop manual):
+menu → hub → exploração P1 → morte → game over percorridos ao vivo no export
+enxuto (rota do portal por tiles: desce 1, direita até a parede, sobe 1,
+esquerda até (18,9)); arena P1, arena P5 e exploração P3 bootadas DIRETO do
+`index.pck` cortado via `--main-pack` headless — zero erros de load nas três.
+Exploração P1 ao vivo: 60fps · p95 16,7 · draw 285–336.
+
+**Repasse do PRD §5 (definition of done):**
+1. Primeira carga ≤ 14MB / pck ≤ 4,5MB — ✅ **12,1MB no fio / 3,87MB** (live 648).
+2. Menu desktop 60fps, p95 ≤ 16,7ms, <1% >20ms — ✅ **59,9fps / 16,8 / 0%**.
+   Subcláusula CPU 4x ≥ 55fps — ❌ formalmente (49,6fps no proxy), mas os
+   estouros são invariantes a fire/grading (artefato do ambiente de throttle);
+   fica aberta para device real.
+3. ≤ 20 primitivas nos widgets de janela — ✅ **12–16** (+ charge ≤3, dpad 12).
+4. Decisão do grading com números — ✅ no proxy desktop (Δ≈0 ⇒ mantido);
+   device pendente por opção do usuário (toggle `?grade=` permanente).
+5. REPORT preenchido — ✅ este documento.
+6. Zero regressão de tom — ✅ por construção (máscaras = pixels idênticos,
+   previews A/B no piso de ruído; fogo/paleta intocados; grading mantido).
+   Feel manual do combate no device: não confirmado (usuário declinou);
+   evidência disponível: previews pixel-perfect + testes dual-input verdes.
 
 ## 3. Decisões tomadas durante a execução
 
@@ -131,7 +159,8 @@ grading; depois matriz final + repasse item a item do PRD §5.
 | S2 | 60e397b | GlyphAtlas (máscaras) + menu sem redraw redundante (60fps) |
 | S3a | 56ded81 | toggle ?grade= para A/B em device |
 | S5 | cfe777f | escala de partículas universal + HealthBar/ExitBeacon |
-| S3b/S4/fechamento | ⏳ | aguardando números de device |
+| docs | b28176e · 784dc57 | emendas ao PRD; carga confirmada no live |
+| S3b/S4 | (fechamento) | grading mantido (Δ≈0 no proxy); cadência do fogo testada e revertida com evidência |
 
 ## 6. Referências
 

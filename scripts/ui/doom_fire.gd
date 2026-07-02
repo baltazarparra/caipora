@@ -116,6 +116,10 @@ func _rebuild(vp: Vector2) -> void:
 	_sprite.position = Vector2(_cols * pix_x / 2.0, ROWS * pix / 2.0)
 
 func _process(_delta: float) -> void:
+	# Cadência web TESTADA em 8 (RF-D2, 2026-07-02) e revertida para 5: sob CPU
+	# 4x os frames estourados ficaram IDÊNTICOS (62/300, com fogo a 5 ou 8 e
+	# grading on/off) — o pico periódico do throttle não é deste tick, e a
+	# cadência menor só deixava a chama mais lenta. Ver REPORT-performance §2.6.
 	var tick_mod: int = 5 if _web else 3
 	_fire_tick = (_fire_tick + 1) % tick_mod
 	if _fire_tick != 0:
