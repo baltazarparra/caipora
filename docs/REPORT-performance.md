@@ -41,7 +41,7 @@ index.js ~316KB ⇒ **~22,6MB no fio**. Draw calls: menu 145 · hub 162-176. Nod
 |---|---|---|
 | `index.pck` (bytes) | 14.021.968 | **3.866.092 (−72%)** |
 | Entradas reais de paths excluídos no pck (parser GDPC v3) | site 38 · gut ~271 · tests ~209 · tools 28 | **0** (989 entradas, todas runtime) |
-| Primeira carga no fio (wasm gz + pck gz) | ~22,6MB | ⏳ confirmar no live pós-deploy (esperado ~13,6MB) |
+| Primeira carga no fio (wasm gz + pck gz) | ~22,6MB | **~12,1MB** (9,1 + 2,7 + ~0,3 js; live `alpha-0.1.648`) ✅ aceite ≤14MB |
 | SW re-embrulha Responses (COOP/COEP com threads off) | sim | **não** (`ENSURE_CROSSORIGIN_ISOLATION_HEADERS=false`, sed pós-export no Makefile) |
 
 Nota de método: o grep bruto por `res://<path>` no pck acha strings residuais nos blobs de
