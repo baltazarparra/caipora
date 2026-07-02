@@ -13,6 +13,7 @@ const FLASH_SHADER := preload("res://shaders/hit_flash.gdshader")
 
 const STRIKE_HOLD_S: float = 0.22
 const RECOVER_HOLD_S: float = 0.25
+const HURT_HOLD_S: float = 0.28
 const FLASH_DECAY_S: float = 0.18
 const FLASH_HOLD_S: float = 0.13
 const FLASH_RELEASE_S: float = 0.07
@@ -100,6 +101,19 @@ func _on_health_changed(new_health: float, _max_health: float, actor: CombatActo
 		if not _flash_held.get(actor, false):
 			flash(actor)
 		impact_squash(actor)
+		if new_health > 0.0:
+			_flinch(actor)
+
+## Flinch de dano: quem tem frames de hurt (Mula v3+) verga sob o golpe e
+## reassenta; nos demais o play_pose é no-op e o timer não acha a pose.
+func _flinch(actor: CombatActor) -> void:
+	if not _usable(actor):
+		return
+	var frames := actor.animated_sprite.sprite_frames
+	if frames == null or not frames.has_animation(&"hurt"):
+		return
+	actor.animated_sprite.play(&"hurt")
+	get_tree().create_timer(HURT_HOLD_S).timeout.connect(_back_to_idle.bind(actor, &"hurt"))
 
 func flash(actor: CombatActor, strength: float = 1.0) -> void:
 	if not _usable(actor):

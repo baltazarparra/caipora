@@ -245,6 +245,13 @@ def _legs(p: Painter, coil: float, mode: str = "stand") -> None:
         _leg(p, (16.0, 42.5), (11.5, 50.5), (10.0, _GROUND_Y), VOID, True)
         _leg(p, (44.0, 42.0), (49.5, 49.5), (46.5, _GROUND_Y), VOID, True)
         return
+    if mode == "kneel":
+        # Morte a caminho: joelhos da frente no chão, traseiras vergadas.
+        _leg(p, (19.0, 47.0), (15.5, 56.0), (20.0, 58.0), VOID_DK, False)
+        _leg(p, (48.5, 45.0), (53.0, 53.0), (50.5, _GROUND_Y), VOID_DK, False)
+        _leg(p, (15.0, 47.0), (11.0, 55.5), (16.0, 57.5), VOID, True)
+        _leg(p, (44.0, 44.0), (50.0, 52.0), (46.5, _GROUND_Y), VOID, True)
+        return
     s = _sink(coil)
     gather = coil * 2.0   # hind feet slide toward the body when coiling
     bend = coil * 1.8     # knees push outward as the body drops
@@ -466,17 +473,60 @@ def _harness(p: Painter, coil: float) -> None:
     p.ellipse(13.8, 34.4 + s, 0.55, 0.9, SADDLE_BLOOD)
 
 
-# Presets por pose: warp do torso (pitch/lunge), modo das pernas e canais do
-# fogo. O strike é o coice-atropelo da lore: EMPINA (rear, fogo comprimido pelo
-# drag) e DESABA as ferraduras à frente (impact, fogo esticado em smear).
+# Presets por pose: warp do torso (pitch/lunge), modo das pernas, coil e canais
+# do fogo. O strike é o coice-atropelo da lore: EMPINA (rear, fogo comprimido
+# pelo drag) e DESABA as ferraduras à frente (impact, fogo esticado em smear).
+# hurt recua para a DIREITA (lunge negativo — o golpe vem da Caipora) com o
+# fogo em gutter; death verga → ajoelha → desaba (frame final dedicado).
 _POSE_PRESETS: dict[str, dict[str, float | str]] = {
-    "idle":      {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0},
-    "windup":    {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0},
-    "strike_1":  {"pitch": -1.15, "lunge": 0.0, "legs": "rear", "stretch": 0.0, "h_mult": 0.55},
-    "strike":    {"pitch": 0.4, "lunge": 1.0, "legs": "impact", "stretch": 1.0, "h_mult": 0.9},
-    "recover_1": {"pitch": 0.15, "lunge": 0.3, "legs": "settle", "stretch": 0.0, "h_mult": 0.95},
-    "recover":   {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0},
+    "idle":      {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0, "coil": 0.0},
+    "windup":    {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0, "coil": 1.0},
+    "strike_1":  {"pitch": -1.15, "lunge": 0.0, "legs": "rear", "stretch": 0.0, "h_mult": 0.55, "coil": 0.0},
+    "strike":    {"pitch": 0.4, "lunge": 1.0, "legs": "impact", "stretch": 1.0, "h_mult": 0.9, "coil": 0.0},
+    "recover_1": {"pitch": 0.15, "lunge": 0.3, "legs": "settle", "stretch": 0.0, "h_mult": 0.95, "coil": 0.0},
+    "recover":   {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0, "coil": 0.0},
+    "hurt_1":    {"pitch": 0.3, "lunge": -0.5, "legs": "stand", "stretch": 0.0, "h_mult": 0.65, "coil": 0.35},
+    "hurt":      {"pitch": 0.12, "lunge": -0.3, "legs": "stand", "stretch": 0.0, "h_mult": 0.85, "coil": 0.15},
+    "death_1":   {"pitch": 0.3, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 0.75, "coil": 0.75},
+    "death_2":   {"pitch": 0.85, "lunge": 0.0, "legs": "kneel", "stretch": 0.0, "h_mult": 0.6, "coil": 1.0},
 }
+
+
+def _draw_collapsed(p: Painter, flame: float) -> None:
+    """Frame final da morte: a montaria desabada, o fogo morrendo rente ao chão."""
+    g = 3.8  # assenta a massa caída na linha de chão dos cascos (px ~187)
+    # Cauda largada no chão, tufo apagando (só brasa funda).
+    p.poly([(52.0, 53.0 + g), (58.5, 55.5 + g), (60.5, 58.0 + g), (56.0, 58.5 + g), (51.0, 56.0 + g)], VOID)
+    p.ellipse(59.0, 57.0 + g, 1.3, 0.9, FIRE_DEEP)
+    # Monte do corpo caído — massa única, dorso ainda serrilhado.
+    p.poly([
+        (12.0, 52.0 + g),
+        (20.0, 46.5 + g),
+        (26.0, 45.2 + g),                # dente do dorso →
+        (28.5, 47.0 + g),
+        (34.0, 44.8 + g),                # dente do dorso →
+        (37.0, 46.8 + g),
+        (44.0, 46.0 + g),
+        (50.0, 48.5 + g),
+        (54.0, 52.5 + g),
+        (52.0, 58.5 + g),
+        (16.0, 58.5 + g),
+    ], VOID)
+    # Cascos da frente à mostra sob o monte — o ferro reluz até na morte.
+    _hoof_and_shoe(p, (15.0, 56.5 + g), True)
+    _hoof_and_shoe(p, (21.5, 57.0 + g), False)
+    # Sela ainda presa ao dorso, sangue escorrido.
+    p.poly([(27.0, 46.2 + g), (36.0, 45.6 + g), (38.0, 48.5 + g), (35.0, 51.0 + g), (28.0, 51.5 + g), (25.5, 48.5 + g)], SADDLE)
+    p.poly([(27.0, 46.2 + g), (36.0, 45.6 + g), (36.8, 47.2 + g), (27.8, 47.8 + g)], SADDLE_BLOOD)
+    # Pescoço estendido no chão até o toco.
+    p.poly([(13.0, 52.0 + g), (12.0, 58.0 + g), (5.0, 57.5 + g), (4.5, 53.5 + g), (8.0, 51.5 + g)], VOID)
+    p.ellipse(5.0, 55.5 + g, 1.7, 1.9, WOUND)
+    # O fogo agoniza: dentes baixos subindo do toco, mais brasa que chama.
+    p.poly(_flame_pts((5.5, 52.5 + g), 5.2, 0.75, _FIRE_CROWN[:11], flame), FIRE_DEEP)
+    p.poly(_flame_pts((5.5, 52.3 + g), 3.6, 0.55, _FIRE_CROWN[:9], flame), FIRE_MID)
+    p.ellipse(5.5, 50.8 + g, 1.0, 1.3, FIRE_HOT)
+    p.ellipse(12.0, 50.5 + g, 0.5, 0.5, FIRE_DEEP)
+    p.ellipse(17.5, 48.5 + g, 0.45, 0.45, FIRE_DEEP)
 
 
 def _draw_mula(
@@ -487,9 +537,15 @@ def _draw_mula(
     flame: float = 0.0,
 ) -> Image.Image:
     """Compose one frame. Pose presets set warp/legs/fire; keyframes override coil."""
+    if pose == "death":
+        p_dead = Painter()
+        _draw_collapsed(p_dead, flame)
+        img_dead = p_dead.render(MULA_PALETTE)
+        _outline(img_dead, MULA_PALETTE)
+        return img_dead
     preset = _POSE_PRESETS[pose]
     if coil is None:
-        coil = 1.0 if pose == "windup" else 0.0
+        coil = float(preset["coil"])
     p = Painter()
     torso_warp = (float(preset["pitch"]), float(preset["lunge"]))
     # Ordem de desenho estável (cauda → pernas → corpo → arreio → pescoço →
@@ -538,6 +594,8 @@ _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("windup", [f"windup_{i}" for i in range(1, len(_WINDUP_KEYS))] + ["windup"], False, 12.0),
     ("strike", ["strike_1", "strike"], False, 12.0),
     ("recover", ["recover_1", "recover"], False, 14.0),
+    ("hurt", ["hurt_1", "hurt"], False, 12.0),
+    ("death", ["death_1", "death_2", "death"], False, 6.0),
 ]
 
 
@@ -581,8 +639,12 @@ def _frame_images() -> dict[str, Image.Image]:
         frames[key] = _draw_mula("windup", coil=coil, flame=flame)
     # strike_1 sem flicker: o pitch da empinada já leva o dente A ao topo do
     # canvas — wobble ali arriscaria clipar a coroa.
-    for key, flame in [("strike_1", 0.0), ("strike", 0.0), ("recover_1", 0.5), ("recover", 0.25)]:
-        frames[key] = _draw_mula(key, coil=0.0, flame=flame)
+    for key, flame in [
+        ("strike_1", 0.0), ("strike", 0.0), ("recover_1", 0.5), ("recover", 0.25),
+        ("hurt_1", 0.55), ("hurt", 0.15),
+        ("death_1", 0.3), ("death_2", 0.6), ("death", 0.0),
+    ]:
+        frames[key] = _draw_mula(key, flame=flame)
     return frames
 
 

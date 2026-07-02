@@ -13,6 +13,8 @@ const CONTRACT: Dictionary = {
 	&"windup": [3, false, 12.0],
 	&"strike": [2, false, 12.0],
 	&"recover": [2, false, 14.0],
+	&"hurt": [2, false, 12.0],
+	&"death": [3, false, 6.0],
 }
 
 func _frames() -> SpriteFrames:

@@ -94,16 +94,20 @@ Saci (menino de uma perna) < Caipora ≈ Curupira (criança da mata)
   acabamento é pixel art chapada com formas deliberadas (v3 removeu o rim
   light e o spray de brasas da v2).
 
-## 5. Poses e animações
+## 5. Poses e animações (contrato do `mula_sprite_frames.tres`, emitido por código)
 
-| Animação | Descrição | Uso |
-|----------|-----------|-----|
-| `idle` | Monumento firme, coroa de fogo com dentes desenhados, ferraduras assentadas. | Loop da arena/exploração/HUB. |
-| `windup` | Corpo AFUNDA (coil ~2.2 unidades de grid), joelhos abrem, patas traseiras se recolhem, e a coroa **erupciona** (~2× a massa de fogo: dente extra, mais largura, mais coração branco-quente). | Telegraph visual do ataque. |
+| Animação | Frames | Loop | Speed | Descrição |
+|----------|--------|------|-------|-----------|
+| `idle` | 5 | sim | 5.0 | Respiração de barril (seno) + pulso de fase na coroa. Frame 0 = `mula_idle.png` (âncora byte-estável). |
+| `windup` | 3 | não | 12.0 | BUILD-UP do coil (0.45→0.78→1.0): corpo afunda, joelhos abrem, traseiras recolhem, coroa **erupciona** (~2× massa de fogo). Último frame = `mula_windup.png`, segurado; 0.25s cabem no wind-up mais curto (coice). |
+| `strike` | 2 | não | 12.0 | Coice-atropelo: EMPINA (frentes dobradas no ar, fogo comprimido) e DESABA as ferraduras à frente (lunge, arcos prateados nos cascos, coroa em smear). |
+| `recover` | 2 | não | 14.0 | Assenta de volta ao chão. Nomes = contrato da Caipora (`ActorAnimator.strike()` roda a cadeia sem adaptação). |
+| `hurt` | 2 | não | 12.0 | Flinch: recua para longe do golpe (direita), fogo em gutter. Disparado pelo `ActorAnimator._flinch` (dano não-letal). |
+| `death` | 3 | não | 6.0 | Verga → ajoelha → DESABA (frame final dedicado: monte caído, fogo agonizando rente ao chão). Toca sob o flash/fade de `CombatActor._on_health_died`. |
 
-O gerador expõe canais paramétricos (`coil`, `breath`, `flame`) — a vida
-multi-frame (respiração, pulso do fogo, strike/hurt/death) entra por cima
-destes canais nos estágios seguintes do redesign.
+Canais paramétricos do gerador: `coil` (anticipação), `breath` (respiração),
+`flame` (fase do fogo), warp de `pitch`/`lunge` no torso (pivô nas ancas) e
+modos de perna por pose (stand/rear/impact/settle/kneel).
 
 ## 6. Pipeline técnico (premium reprodutível)
 

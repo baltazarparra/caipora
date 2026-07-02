@@ -63,6 +63,11 @@ func _on_health_died() -> void:
 	_is_dying = true
 	if animated_sprite == null:
 		return
+	# Quem tem frames de morte (Mula v3+) DESABA sob o flash/fade — 3f a 6fps
+	# preenchem os 0.55s do tween; no killing blow o slow-mo do finisher estica
+	# a queda de graça.
+	if animated_sprite.sprite_frames != null and animated_sprite.sprite_frames.has_animation(&"death"):
+		animated_sprite.play(&"death")
 	var tween := create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color(2, 2, 2, 1), 0.05)
 	tween.tween_property(animated_sprite, "modulate", Color(1, 1, 1, 0), 0.5)

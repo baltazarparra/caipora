@@ -12,6 +12,11 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/mula_strike.png" id="10_strike"]
 [ext_resource type="Texture2D" path="res://assets/sprites/mula_recover_1.png" id="11_recover_1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/mula_recover.png" id="12_recover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_hurt_1.png" id="13_hurt_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_hurt.png" id="14_hurt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_death_1.png" id="15_death_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_death_2.png" id="16_death_2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_death.png" id="17_death"]
 
 [resource]
 animations = [{
@@ -70,4 +75,29 @@ animations = [{
 "loop": false,
 "name": &"recover",
 "speed": 14.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_hurt_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_hurt")
+}],
+"loop": false,
+"name": &"hurt",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_death_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_death_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_death")
+}],
+"loop": false,
+"name": &"death",
+"speed": 6.0
 }]
