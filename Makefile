@@ -44,6 +44,7 @@ export: ## build the reproducible HTML5 release
 	ln -sfn "$(GODOT_TEMPLATES_SRC)" "$(GODOT_USER_DATA_DIR)/godot/export_templates"; \
 	$(GODOT_HEADLESS_ENV) $(GODOT) --headless --path $(PROJECT) --export-release "Web" export/index.html; \
 	cp html/update-notifier.js export/; \
+	sed -i 's/^const ENSURE_CROSSORIGIN_ISOLATION_HEADERS = true;$$/const ENSURE_CROSSORIGIN_ISOLATION_HEADERS = false;/' export/index.service.worker.js; \
 	printf '{"version":"%s","build":"%s","date":"%s"}\n' "$$VERSION" "$$SHA" "$$DATE" > export/version.json; \
 	echo "version.json -> $$VERSION ($$SHA, $$DATE)"
 
