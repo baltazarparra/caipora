@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1783033490|3730228';
+const CACHE_VERSION = '1783033764|3796671';
 /** @type {string} */
 const CACHE_PREFIX = 'caipora-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
