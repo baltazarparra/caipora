@@ -26,31 +26,9 @@ const FLASH_S: float = 0.12
 ## Halo âmbar (faixa GOOD = bloqueio parcial) desenhado por fora do anel-alvo.
 const GOOD_HALO_GAP: float = 8.0
 
-# ─── Glifo direcional — Garra Tribal 16×16 (mesmo de CombatArrowButton) ────
-# K = outline preto  O = juba clara  D = juba escura  . = transparente
-# Exibido a ARROW_CELL px por célula → ~60×60 px totais.
-# Rotação por _key_hint usa o mesmo padrão do CombatArrowButton:
-#   up    → (c, r)          right → (GRID-1-r, c)
-#   down  → (GRID-1-c, GRID-1-r)  left → (r, GRID-1-c)
-const ARROW_GLYPH: PackedStringArray = [
-	"................",   # 0
-	".......KK.......",   # 1 — ponta 2 px
-	"......KOOK......",   # 2
-	"....KKOOOOKK....",   # 3
-	"...KKOOOOOOKK...",   # 4
-	"..KKOOODDOOOKK..",   # 5
-	".KKOOODDDDOOOKK.",   # 6
-	"KKOOODDKKDDOOOKK",   # 7 — ombros totais
-	"KKKK.KOOODK.KKKK",   # 8 — entalhe tribal (arrowhead → shaft)
-	".....KOOODK.....",   # 9 — shaft
-	".....KOOODK.....",   # 10
-	".....KOOODK.....",   # 11
-	".....KOOODK.....",   # 12
-	".....KDDDDK.....",   # 13 — base com sombra
-	".....KKKKKK.....",   # 14 — base fechada
-	"................",   # 15
-]
-const ARROW_GRID: int = 16
+# ─── Glifo direcional — Garra Tribal 16×16 (fonte única: GlyphAtlas) ────────
+# Desenhado por máscaras (BRIGHT/DARK/OUTLINE, e BODY no medidor de carga)
+# moduladas com as MESMAS cores do antigo célula-a-célula.
 const ARROW_CELL: float = 3.75   # px por célula → 60 px total (16 × 3.75)
 const ARROW_NUDGE_DIST: float = 4.0   # px de "toque" na direção durante a janela
 
@@ -95,6 +73,8 @@ var _color_gain: Color = Color(1, 1, 1)
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	visible = false
+	# Máscaras do glifo exigem NEAREST mesmo se um pai futuro sobrescrever o filtro.
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 
 func _process(delta: float) -> void:
@@ -244,30 +224,20 @@ func _draw() -> void:
 
 # ─── Glifo pixel-art ───────────────────────────────
 func _draw_arrow_glyph(alpha: float, color: Color) -> void:
-	# Origem: canto superior-esquerdo do glifo 12×12 centrado em (0,0) + nudge.
-	var half: float = ARROW_GRID * ARROW_CELL * 0.5
-	var origin: Vector2 = Vector2(-half, -half) + _arrow_offset
-	var cs: Vector2 = Vector2.ONE * (ARROW_CELL + 0.5)  # overlap mínimo anti-seam
-
-	var bright: Color = _g(Color(color.r, color.g, color.b, alpha))
-	var dark: Color = _g(Color(
-		Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g,
-		Constants.COLOR_JUBA_DARK.b, alpha * 0.7))
-	var outline: Color = Color(0.0, 0.0, 0.0, alpha)
-
-	for r: int in ARROW_GRID:
-		var row: String = ARROW_GLYPH[r]
-		for c: int in ARROW_GRID:
-			var ch: String = row[c]
-			if ch == ".":
-				continue
-			var col: Color
-			match ch:
-				"O": col = bright
-				"D": col = dark
-				_:   col = outline
-			var cell_pos: Vector2 = _glyph_rotated_cell(r, c)
-			draw_rect(Rect2(origin + cell_pos * ARROW_CELL, cs), col, true)
+	# Origem: canto superior-esquerdo do glifo centrado em (0,0) + nudge.
+	# Máscaras do GlyphAtlas moduladas por papel: mesmas cores do antigo
+	# célula-a-célula (o ganho de fase _g entra no modulate; outline sem _g).
+	var half: float = GlyphAtlas.GRID * ARROW_CELL * 0.5
+	var dst := Rect2(Vector2(-half, -half) + _arrow_offset,
+		Vector2.ONE * (GlyphAtlas.GRID * ARROW_CELL))
+	var o: int = GlyphAtlas.orientation_for_hint(_key_hint)
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.OUTLINE, o), dst, false,
+		Color(0.0, 0.0, 0.0, alpha))
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.DARK, o), dst, false,
+		_g(Color(Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g,
+			Constants.COLOR_JUBA_DARK.b, alpha * 0.7)))
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.BRIGHT, o), dst, false,
+		_g(Color(color.r, color.g, color.b, alpha)))
 
 
 # ─── Modo carga: medidor de fogo (immediate-mode, sem nós/partículas) ──────
@@ -321,11 +291,12 @@ func _draw_charge() -> void:
 
 
 ## A Garra Tribal vira medidor: bordas SEMPRE flamejantes, miolo enche com a carga.
+## Máscara BODY em 2 regiões (dim no topo apagado / fill na base carregada) +
+## OUTLINE por cima — mesmo corte por LINHA do antigo célula-a-célula (src_rect
+## em texels inteiros + NEAREST). Cortejo é sempre "up".
 func _draw_charge_glyph(progress: float, in_release: bool, overcharge: bool, flick: float) -> void:
-	var half: float = ARROW_GRID * ARROW_CELL * 0.5
+	var half: float = GlyphAtlas.GRID * ARROW_CELL * 0.5
 	var origin: Vector2 = Vector2(-half, -half)
-	var cs: Vector2 = Vector2.ONE * (ARROW_CELL + 0.5)
-	var fill_top: float = (1.0 - progress) * float(ARROW_GRID)   # linha r acima = carregado
 
 	var fill_col: Color = Constants.COLOR_CHAMA_CORE.lerp(Constants.COLOR_CHAMA_HOT, flick)
 	var edge_col: Color = Constants.COLOR_JUBA.lerp(Constants.COLOR_AMBER, flick)
@@ -336,22 +307,22 @@ func _draw_charge_glyph(progress: float, in_release: bool, overcharge: bool, fli
 		edge_col = Color(0.7, 0.1, 0.05)
 	var dim: Color = Color(Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g, Constants.COLOR_JUBA_DARK.b, 0.45)
 
-	for r: int in ARROW_GRID:
-		var row: String = ARROW_GLYPH[r]
-		var charged: bool = float(r) >= fill_top
-		for c: int in ARROW_GRID:
-			var ch: String = row[c]
-			if ch == ".":
-				continue
-			var col: Color
-			if ch == "K":
-				col = _g(Color(edge_col.r, edge_col.g, edge_col.b, 0.95))   # borda de fogo
-			elif charged:
-				col = _g(Color(fill_col.r, fill_col.g, fill_col.b, 0.95))
-			else:
-				col = _g(dim)
-			var cell_pos: Vector2 = _glyph_rotated_cell(r, c)   # cortejo é sempre "up"
-			draw_rect(Rect2(origin + cell_pos * ARROW_CELL, cs), col, true)
+	# Primeira linha carregada: r >= fill_top ⟺ r >= ceil((1-progress)*GRID).
+	var split: int = clampi(ceili((1.0 - progress) * float(GlyphAtlas.GRID)), 0, GlyphAtlas.GRID)
+	var body: ImageTexture = GlyphAtlas.mask(GlyphAtlas.Role.BODY, GlyphAtlas.Orientation.UP)
+	if split > 0:
+		draw_texture_rect_region(body,
+			Rect2(origin, Vector2(GlyphAtlas.GRID * ARROW_CELL, split * ARROW_CELL)),
+			Rect2(0, 0, GlyphAtlas.GRID, split), _g(dim))
+	if split < GlyphAtlas.GRID:
+		draw_texture_rect_region(body,
+			Rect2(origin + Vector2(0.0, split * ARROW_CELL),
+				Vector2(GlyphAtlas.GRID * ARROW_CELL, (GlyphAtlas.GRID - split) * ARROW_CELL)),
+			Rect2(0, split, GlyphAtlas.GRID, GlyphAtlas.GRID - split),
+			_g(Color(fill_col.r, fill_col.g, fill_col.b, 0.95)))
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.OUTLINE, GlyphAtlas.Orientation.UP),
+		Rect2(origin, Vector2.ONE * (GlyphAtlas.GRID * ARROW_CELL)), false,
+		_g(Color(edge_col.r, edge_col.g, edge_col.b, 0.95)))
 
 
 ## Marca radial curta no medidor de carga, na fração dada (0..1 do arco; topo = 0).
@@ -361,16 +332,6 @@ func _draw_charge_tick(fraction: float, color: Color, alpha: float, length: floa
 	var dir: Vector2 = Vector2(cos(ang), sin(ang))
 	draw_line(dir * (RADIUS_TARGET - length * 0.5), dir * (RADIUS_TARGET + length * 0.5),
 		_g(Color(color.r, color.g, color.b, alpha)), 2.0)
-
-
-## Mapeia (row, col) do glifo UP para a posição rotacionada por _key_hint.
-func _glyph_rotated_cell(r: int, c: int) -> Vector2:
-	var g: int = ARROW_GRID - 1
-	match _key_hint:
-		"right": return Vector2(float(g - r), float(c))
-		"down":  return Vector2(float(g - c), float(g - r))
-		"left":  return Vector2(float(r), float(g - c))
-		_:       return Vector2(float(c), float(r))  # up
 
 
 ## Vetor unitário na direção de _key_hint (coords de tela: Y+ = baixo).

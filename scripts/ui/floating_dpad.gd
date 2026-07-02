@@ -39,27 +39,8 @@ const POP_DURATION: float = 0.09
 const RELEASE_FADE_DURATION: float = 0.14
 const REST_FADE_DURATION: float = 0.3
 
-# Garra Tribal — mesmo glifo canônico de CombatArrowButton.
-# K = outline preto  O = juba clara  D = juba escura  . = transparente
-const ARROW_GLYPH: PackedStringArray = [
-	"................",   # 0
-	".......KK.......",   # 1 — ponta 2 px
-	"......KOOK......",   # 2
-	"....KKOOOOKK....",   # 3
-	"...KKOOOOOOKK...",   # 4
-	"..KKOOODDOOOKK..",   # 5
-	".KKOOODDDDOOOKK.",   # 6
-	"KKOOODDKKDDOOOKK",   # 7 — ombros totais
-	"KKKK.KOOODK.KKKK",   # 8 — entalhe tribal (arrowhead → shaft)
-	".....KOOODK.....",   # 9 — shaft
-	".....KOOODK.....",   # 10
-	".....KOOODK.....",   # 11
-	".....KOOODK.....",   # 12
-	".....KDDDDK.....",   # 13 — base com sombra
-	".....KKKKKK.....",   # 14 — base fechada
-	"................",   # 15
-]
-const ARROW_GLYPH_SIZE: int = 16
+# Garra Tribal — glifo canônico e máscaras por papel vivem no GlyphAtlas
+# (fonte única; mesma identidade do CombatArrowButton e da TimingBubble).
 
 const _ARROW_DIRECTIONS: Dictionary = {
 	"ui_up": Vector2.UP,
@@ -88,6 +69,8 @@ var _highlight_tween: Tween = null
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Máscaras do glifo exigem NEAREST mesmo se um pai futuro sobrescrever o filtro.
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	modulate.a = 0.0
 	_fade_to(ALPHA_REST, REST_FADE_DURATION)
 
@@ -245,7 +228,7 @@ func _draw() -> void:
 	draw_arc(_knob_offset, knob_r, 0.0, TAU, 24, Color(0.0, 0.0, 0.0, 0.5), 1.5, true)
 	# Setas Garra Tribal — mesmo glifo 16×16 do D-pad de combate.
 	var dist := _radius * ARROW_DISTANCE_FRACTION
-	var base_cell := _radius * ARROW_SIZE_FRACTION / float(ARROW_GLYPH_SIZE)
+	var base_cell := _radius * ARROW_SIZE_FRACTION / float(GlyphAtlas.GRID)
 	for action: String in _ARROW_DIRECTIONS:
 		var is_active := action == _highlight_action
 		var cell: float = base_cell * lerp(1.0, ARROW_ACTIVE_SCALE, _highlight_amount if is_active else 0.0)
@@ -255,28 +238,15 @@ func _draw() -> void:
 
 
 func _draw_arrow_glyph(action: String, center: Vector2, cell_size: float, alpha: float) -> void:
-	var half := ARROW_GLYPH_SIZE * cell_size * 0.5
-	var origin := center - Vector2(half, half)
-	var cs := Vector2.ONE * (cell_size + 0.5)
-	var bright := Color(Constants.COLOR_JUBA.r, Constants.COLOR_JUBA.g, Constants.COLOR_JUBA.b, alpha)
-	var dark   := Color(Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g, Constants.COLOR_JUBA_DARK.b, alpha * 0.7)
-	var outline := Color(0.0, 0.0, 0.0, alpha)
-	var g := ARROW_GLYPH_SIZE - 1
-	for r: int in ARROW_GLYPH_SIZE:
-		var row: String = ARROW_GLYPH[r]
-		for c: int in ARROW_GLYPH_SIZE:
-			var ch: String = row[c]
-			if ch == ".":
-				continue
-			var col: Color
-			match ch:
-				"O": col = bright
-				"D": col = dark
-				_:   col = outline
-			var cell_pos: Vector2
-			match action:
-				"ui_right": cell_pos = Vector2(float(g - r), float(c))
-				"ui_down":  cell_pos = Vector2(float(g - c), float(g - r))
-				"ui_left":  cell_pos = Vector2(float(r),     float(g - c))
-				_:          cell_pos = Vector2(float(c),     float(r))
-			draw_rect(Rect2(origin + cell_pos * cell_size, cs), col, true)
+	# 3 máscaras do GlyphAtlas moduladas por papel — mesmas cores/alphas do
+	# antigo célula-a-célula (dark ×0.7, outline preto).
+	var half := GlyphAtlas.GRID * cell_size * 0.5
+	var dst := Rect2(center - Vector2(half, half), Vector2.ONE * (GlyphAtlas.GRID * cell_size))
+	var o: int = GlyphAtlas.orientation_for_action(action)
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.OUTLINE, o), dst, false,
+		Color(0.0, 0.0, 0.0, alpha))
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.DARK, o), dst, false,
+		Color(Constants.COLOR_JUBA_DARK.r, Constants.COLOR_JUBA_DARK.g,
+			Constants.COLOR_JUBA_DARK.b, alpha * 0.7))
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.BRIGHT, o), dst, false,
+		Color(Constants.COLOR_JUBA.r, Constants.COLOR_JUBA.g, Constants.COLOR_JUBA.b, alpha))

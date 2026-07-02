@@ -51,13 +51,28 @@ ENTRADAS do diretório GDPC v3 (script `pck_ls.py`, dir_offset no header). Smoke
 (393×852 / 852×393 / 820×1180) renderiza correta; manifest `orientation: any`. Loop
 completo menu→arena→morte: checagem manual do usuário (servidor local em `:8765`).
 
-### 2.3 Após S2 (glifo cacheado + menu sem redraw redundante)
+### 2.3 Após S2 (glifo cacheado + menu sem redraw redundante) — 2026-07-02 ✅
 
 | Métrica | Antes | Depois |
 |---|---|---|
-| Primitivas/frame na janela de timing (bolha + botão ativo) | ~120 (2× glifo célula-a-célula) | ⏳ (aceite: ≤ 20) |
-| Menu desktop (rAF 240f) | p95 33,4 · 13% >20ms | ⏳ |
-| Draw calls em combate (PerfHud) | ⏳ (capturar antes) | ⏳ (estável ou ↓) |
+| Primitivas/frame na janela de timing (bolha + botão ativo) | ~120 (2× glifo célula-a-célula, ~50 rects cada) | **12–16** (3 `draw_texture_rect`/glifo; auditoria de código) |
+| Glifo do medidor de carga (Cortejo) | ~50 rects/frame | **≤3** (`draw_texture_rect_region` em 2 regiões + outline) |
+| FloatingDpad visível (exploração/hub) | ~200 rects/frame (4 glifos) | **12** (3 texturas × 4 direções) |
+| Menu desktop (rAF 240f) | 52,9fps · p95 33,4 · **13% >20ms** | **59,9fps · p95 16,8 · worst 16,8 · 0% >20ms** ✅ |
+| Menu desktop CPU 4x | 42fps · worst 50ms | 49,1fps · p95 33,4 (resto é DoomFire/grading → S3/S4) |
+
+**Causa-raiz do menu encontrada:** o vilão era o `queue_redraw()` redundante do
+`title_treeline` (~284 primitivas re-gravadas/frame), não o DoomFire — removido o
+redraw, o menu desktop cravou 60fps com zero frames estourados. Equivalência visual
+da Frente C provada por previews A/B (xvfb): D-pad de combate idle/press e bolha
+com/sem ganho de fase = diffs no piso de ruído do grão (~0,2–0,5%, fronteiras ≤0,5px
+do fim do hack anti-seam +0.5); medidor de carga @0.30/0.72/0.87/0.98 = 0,00–0,51%
+contra baseline QUENTE (as capturas frias da 1ª baseline em 0.30/0.72 eram artefato
+de tween não-terminado, verificado re-capturando o código antigo aquecido).
+`test_glyph_atlas.gd` trava matriz/papéis/rotações/cache (Tests 697→703, Scripts
+103→104 — contagem SUBIU, gotcha #12 respeitado). Feel manual no live: pendente
+confirmação do usuário (testes dual-input test_touch_controls/controls_hud/
+floating_dpad verdes).
 
 ### 2.4 S3 — A/B do grading (Δp95 = grade1 − grade0, mesma cena/device)
 

@@ -53,14 +53,16 @@ func _ready() -> void:
 
 	_start_loop()
 	get_viewport().size_changed.connect(_on_viewport_resized)
+	queue_redraw()  # 1ª pintura da sombra (o _process não redesenha mais)
 
 func _on_viewport_resized() -> void:
 	_start_loop()
 
 func _process(delta: float) -> void:
+	# Bob move só o filho _sprite (transform); a sombra do _draw é estática —
+	# sem queue_redraw por frame (RF-D1).
 	_bob_t += delta * BOB_SPEED
 	_sprite.position.y = _rest_y + sin(_bob_t) * BOB_AMPLITUDE
-	queue_redraw()
 
 # ─── Drawing (sombra) ──────────────────────────────
 func _draw() -> void:

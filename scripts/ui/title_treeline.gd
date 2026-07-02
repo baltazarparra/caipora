@@ -61,11 +61,13 @@ func _apply_wind() -> void:
 	material = mat
 
 func _process(delta: float) -> void:
+	# Scroll é transform puro (position.x) e o vento é vertex shader: a geometria
+	# desenhada (2 strips fixas do wrap) NUNCA muda — sem queue_redraw por frame
+	# (re-gravava ~284 primitivas/frame à toa; PRD-performance-refactor-web RF-D1).
 	_offset += scroll_speed * delta
 	if _offset >= _vp_w:
 		_offset -= _vp_w
 	position.x = -_offset
-	queue_redraw()
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:

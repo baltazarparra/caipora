@@ -15,32 +15,10 @@ extends BaseButton
 # permanecem no ControlsHud, dono do contrato com o jogo (mesmo split do FloatingDpad).
 
 # ─── Constants ─────────────────────────────────────
-const GRID := 16
-# Garra Tribal da Mata — ponta afiada 2px (vs 4px do arrowhead genérico), corpo
-# simétrico com D-pixels de profundidade, base V-aberta (dois entalhes divergentes).
-# Desenhado apontando para CIMA; as outras direções rotacionam no _draw via _rotated_cell.
-# '.'=vazio  'K'=outline preto  'O'=juba clara  'D'=juba escura.
+# Garra Tribal da Mata: matriz canônica e máscaras por papel vivem no
+# GlyphAtlas (fonte única — Frente C do PRD-performance-refactor-web).
 # Tuning visual: xvfb-run -a godot --path . --resolution 393x852
 #   -s scripts/tools/preview_combat_dpad.gd -- --out=/tmp/dpad.png [--press=ui_right]
-const GLYPH: PackedStringArray = [
-	"................",   # 0
-	".......KK.......",   # 1 — ponta 2 px
-	"......KOOK......",   # 2
-	"....KKOOOOKK....",   # 3
-	"...KKOOOOOOKK...",   # 4
-	"..KKOOODDOOOKK..",   # 5
-	".KKOOODDDDOOOKK.",   # 6
-	"KKOOODDKKDDOOOKK",   # 7 — ombros totais
-	"KKKK.KOOODK.KKKK",   # 8 — entalhe tribal (arrowhead → shaft)
-	".....KOOODK.....",   # 9 — shaft
-	".....KOOODK.....",   # 10
-	".....KOOODK.....",   # 11
-	".....KOOODK.....",   # 12
-	".....KDDDDK.....",   # 13 — base com sombra
-	".....KKKKKK.....",   # 14 — base fechada
-	"................",   # 15
-]
-
 const GLYPH_PAD_CELLS := 2
 const PLATE_BG         := Color(0.04, 0.025, 0.025, 0.92)
 const PLATE_BG_PRESSED := Color(0.0, 0.0, 0.0, 0.98)
@@ -122,6 +100,8 @@ var _charge_tween: Tween = null
 
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
+	# Máscaras do glifo exigem NEAREST mesmo se um pai futuro sobrescrever o filtro.
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	button_down.connect(_on_visual_press)
 	button_up.connect(_on_visual_release)
 
@@ -250,7 +230,7 @@ func _draw() -> void:
 	if _plate_rect.size.x <= 0.0:
 		return
 	var border_w := float(Constants.UI_BORDER_WIDTH)
-	var cell := (_plate_rect.size.x - border_w * 2.0) / float(GRID + GLYPH_PAD_CELLS * 2)
+	var cell := (_plate_rect.size.x - border_w * 2.0) / float(GlyphAtlas.GRID + GLYPH_PAD_CELLS * 2)
 
 	# ── Plate: base. Janela ativa clareia o background e aquece a borda. ──
 	var border_color := Constants.COLOR_JUBA_DARK.lerp(Constants.COLOR_JUBA, _press_amount)
@@ -305,8 +285,9 @@ func _draw() -> void:
 		bc.a = _miss_amount * 0.45
 		draw_rect(_plate_rect.grow(-border_w), bc, true)
 
-	# ── Glifo: célula a célula, rotacionado para a direção; no press, troca a paleta
-	# para CHAMA e avança ("bote") na direção do comando. Janela ativa aquece levemente. ──
+	# ── Glifo: 3 máscaras do GlyphAtlas moduladas por papel (outline preto, juba
+	# escura, juba clara — cores idênticas ao antigo célula-a-célula); no press,
+	# troca a paleta para CHAMA e avança ("bote") na direção. Janela aquece leve. ──
 	var bright := Constants.COLOR_JUBA.lerp(Constants.COLOR_CHAMA_CORE, _press_amount)
 	var dark := Constants.COLOR_JUBA_DARK.lerp(Constants.COLOR_CHAMA_HOT, _press_amount)
 	if _window_amount > 0.0:
@@ -314,28 +295,8 @@ func _draw() -> void:
 		dark = dark.lerp(Constants.COLOR_CHAMA_HOT, _window_amount * 0.3)
 	var lunge: Vector2 = _LUNGE_DIRS[_orientation] * (PRESS_LUNGE_CELLS * cell * _press_amount)
 	var origin := _plate_rect.position + Vector2.ONE * (border_w + GLYPH_PAD_CELLS * cell) + lunge
-	# Overlap mínimo entre células vizinhas: mata as emendas de float sem borrar.
-	var cell_size := Vector2.ONE * (cell + 0.5)
-
-	for r in GRID:
-		var row := GLYPH[r]
-		for c in GRID:
-			var ch := row[c]
-			if ch == ".":
-				continue
-			var color: Color
-			match ch:
-				"O": color = bright
-				"D": color = dark
-				_: color = Color.BLACK
-			var cell_pos := _rotated_cell(r, c)
-			draw_rect(Rect2(origin + cell_pos * cell, cell_size), color, true)
-
-
-## Mapeia a célula (r, c) do glifo "para cima" na posição (x, y) da orientação atual.
-func _rotated_cell(r: int, c: int) -> Vector2:
-	match _orientation:
-		1: return Vector2(float(GRID - 1 - r), float(c))
-		2: return Vector2(float(GRID - 1 - c), float(GRID - 1 - r))
-		3: return Vector2(float(r), float(GRID - 1 - c))
-		_: return Vector2(float(c), float(r))
+	var dst := Rect2(origin, Vector2.ONE * (GlyphAtlas.GRID * cell))
+	# _orientation (0..3) coincide com GlyphAtlas.Orientation — travado por teste.
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.OUTLINE, _orientation), dst, false, Color.BLACK)
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.DARK, _orientation), dst, false, dark)
+	draw_texture_rect(GlyphAtlas.mask(GlyphAtlas.Role.BRIGHT, _orientation), dst, false, bright)
