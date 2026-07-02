@@ -62,6 +62,10 @@ const PALETTE: Array[Color] = [
 ]
 
 # ─── State ─────────────────────────────────────────
+# Web = gl_compatibility mobile: células 2× mais largas em _rebuild + update a
+# cada 5 frames em _process. Membro (não OS.has_feature inline) para os testes
+# cobrirem a geometria web — o bug de cobertura só aparecia em export.
+var _web: bool = OS.has_feature("web")
 var _cols: int = 0
 var _vp_size: Vector2 = Vector2.ZERO
 var _grid: PackedInt32Array
@@ -93,11 +97,12 @@ func _rebuild(vp: Vector2) -> void:
 	# Em portrait (2768px): pix=62 → fire 45×62=2790px tall, cobre tudo.
 	# Em landscape (720px): pix=16 → mesma cobertura do comportamento original.
 	var pix: int = maxi(SCALE, ceili(vp.y / float(ROWS)))
-	_cols = ceili(vp.x / float(pix))
-	# Em web (gl_compatibility mobile) reduz a grade pela metade — ~55% menos
-	# operações por update, sem impacto visual perceptível na tela pequena.
-	if OS.has_feature("web"):
-		_cols = maxi(1, _cols / 2)
+	# Web: células 2× mais LARGAS (metade das colunas = a MESMA economia de ~55%
+	# do corte antigo de grade), mas cobrindo 100% do width — o corte de _cols
+	# sem alargar célula deixava metade da tela sem fogo (borda vertical dura no
+	# centro do menu e das arenas, só visível em export web).
+	var pix_x: int = pix * 2 if _web else pix
+	_cols = maxi(1, ceili(vp.x / float(pix_x)))
 	_grid = PackedInt32Array()
 	_grid.resize(_cols * ROWS)
 	for col in _cols:
@@ -107,11 +112,11 @@ func _rebuild(vp: Vector2) -> void:
 	_image = Image.create(_cols, ROWS, false, Image.FORMAT_RGBA8)
 	_texture = ImageTexture.create_from_image(_image)
 	_sprite.texture = _texture
-	_sprite.scale = Vector2(float(pix), float(pix))
-	_sprite.position = Vector2(_cols * pix / 2.0, ROWS * pix / 2.0)
+	_sprite.scale = Vector2(float(pix_x), float(pix))
+	_sprite.position = Vector2(_cols * pix_x / 2.0, ROWS * pix / 2.0)
 
 func _process(_delta: float) -> void:
-	var tick_mod: int = 5 if OS.has_feature("web") else 3
+	var tick_mod: int = 5 if _web else 3
 	_fire_tick = (_fire_tick + 1) % tick_mod
 	if _fire_tick != 0:
 		return

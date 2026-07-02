@@ -22,6 +22,19 @@ func test_seed_row_uses_top_palette_index() -> void:
 	for col in fire._cols:
 		assert_eq(fire._grid[seed_row + col], DoomFire.PALETTE.size() - 1)
 
+# KI-021: em export web as colunas caem pela metade — a célula deve DOBRAR de
+# largura para o fogo seguir cobrindo 100% do viewport (o corte antigo deixava
+# metade da tela sem fogo, invisível em captura local pois _web é false aqui).
+func test_web_grid_covers_full_width() -> void:
+	var vp := Vector2(1620.0, 1080.0)
+	var fire := _make_fire()
+	fire._web = true
+	fire._rebuild(vp)
+	assert_gte(fire._cols * fire._sprite.scale.x, vp.x, "web: fogo de borda a borda")
+	fire._web = false
+	fire._rebuild(vp)
+	assert_gte(fire._cols * fire._sprite.scale.x, vp.x, "desktop: fogo de borda a borda")
+
 func test_fire_propagates_upward() -> void:
 	var fire := _make_fire()
 	fire._update_fire()
