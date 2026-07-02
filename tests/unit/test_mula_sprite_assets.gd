@@ -6,8 +6,10 @@ extends GutTest
 
 const MULA_IDLE := "res://assets/sprites/mula_idle.png"
 const MULA_WINDUP := "res://assets/sprites/mula_windup.png"
+const MULA_MAP := "res://assets/sprites/mula_map.png"
 
 const SIZE := Vector2(192, 192)
+const MAP_SIZE := Vector2(48, 48)
 const MIN_OPAQUE_FRACTION := 0.15
 # Fração mínima dos pixels opacos que pertencem à família do corpo-vazio
 # (VOID_DK/VOID/VOID_EDGE/HOOF): a Mula é uma massa negra, não marrom.
@@ -111,8 +113,28 @@ func test_mula_windup_inflames_the_column() -> void:
 	assert_true(windup_fire >= idle_fire,
 		"windup aumenta ou mantem a massa de fogo (idle=%d, windup=%d)" % [idle_fire, windup_fire])
 
+func test_mula_map_variant_contract() -> void:
+	# Variante de mapa 48×48 re-renderizada dos MESMOS vetores (KI-016 pago:
+	# a Mula sai do clamp interino do map_enemy). Leitura mínima: massa void
+	# dominante + coroa de fogo presente, pés na base do canvas.
+	var texture := load(MULA_MAP) as Texture2D
+	assert_not_null(texture, "mula_map.png carrega")
+	if texture == null:
+		return
+	assert_eq(texture.get_size(), MAP_SIZE, "mula_map mantem contrato 48x48")
+	var image := Image.load_from_file(ProjectSettings.globalize_path(MULA_MAP))
+	assert_false(image.is_empty(), "mula_map carrega como Image")
+	if image.is_empty():
+		return
+	var min_opaque := int(MAP_SIZE.x * MAP_SIZE.y * MIN_OPAQUE_FRACTION)
+	assert_gt(_count_opaque_pixels(image), min_opaque, "mula_map tem massa visual suficiente")
+	assert_true(_has_color(image, COLOR_VOID), "mula_map preserva o corpo preto-vazio")
+	assert_true(_has_color(image, COLOR_FIRE_MID), "mula_map preserva a coroa de fogo")
+	var bottom := _bottom_opaque_row(image)
+	assert_between(bottom, 44, 47, "mula_map assenta na base do canvas (leu %d)" % bottom)
+
 func test_mula_never_steals_caipora_brand() -> void:
-	for path: String in [MULA_IDLE, MULA_WINDUP]:
+	for path: String in [MULA_IDLE, MULA_WINDUP, MULA_MAP]:
 		var image := Image.load_from_file(ProjectSettings.globalize_path(path))
 		assert_false(image.is_empty(), "%s carrega como Image" % path)
 		if image.is_empty():

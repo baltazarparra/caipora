@@ -535,10 +535,14 @@ def _draw_mula(
     coil: float | None = None,
     breath: float = 0.0,
     flame: float = 0.0,
+    size: int = SIZE,
 ) -> Image.Image:
-    """Compose one frame. Pose presets set warp/legs/fire; keyframes override coil."""
+    """Compose one frame. Pose presets set warp/legs/fire; keyframes override coil.
+
+    `size` re-renderiza os MESMOS vetores em outro canvas (mapa 48×48 — o
+    Painter é paramétrico: grade lógica de 64 em qualquer resolução)."""
     if pose == "death":
-        p_dead = Painter()
+        p_dead = Painter(size)
         _draw_collapsed(p_dead, flame)
         img_dead = p_dead.render(MULA_PALETTE)
         _outline(img_dead, MULA_PALETTE)
@@ -546,7 +550,7 @@ def _draw_mula(
     preset = _POSE_PRESETS[pose]
     if coil is None:
         coil = float(preset["coil"])
-    p = Painter()
+    p = Painter(size)
     torso_warp = (float(preset["pitch"]), float(preset["lunge"]))
     # Ordem de desenho estável (cauda → pernas → corpo → arreio → pescoço →
     # fogo). Pernas em coordenadas explícitas (sem warp); torso/fogo sob o warp.
@@ -686,10 +690,13 @@ def generate_all() -> None:
     frames = _frame_images()
     for key, img in frames.items():
         img.save(os.path.join(OUT, f"mula_{key}.png"))
+    # Variante de mapa: mesmos vetores do idle re-renderizados em 48×48
+    # (padrão curupira_map/jesuita_map — tira a Mula do clamp interino KI-016).
+    _draw_mula("idle", size=48).save(os.path.join(OUT, "mula_map.png"))
     _write_sprite_frames()
     _contact_sheet(frames)
     print(
-        "[gen_mula] Mula sem Cabeça v3: %d frames (192x192) + sprite_frames.tres + contact sheet"
+        "[gen_mula] Mula sem Cabeça v3: %d frames (192x192) + mapa 48x48 + sprite_frames.tres + contact sheet"
         % len(frames)
     )
 
