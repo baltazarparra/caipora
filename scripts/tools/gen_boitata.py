@@ -273,13 +273,14 @@ _SPINE_TEETH = [
 ]
 
 
-def _draw_crest(p: Painter, rise: float, flame: float) -> None:
+def _draw_crest(p: Painter, rise: float, flame: float, crest_mult: float = 1.0) -> None:
     """A "juba" do Boitatá: crista de fogo serrilhada correndo a espinha.
 
     Uma cumeeira contínua conecta os dentes na base — a crista é UMA massa
-    serrilhada (linguagem da juba/coroa), nunca velas soltas."""
+    serrilhada (linguagem da juba/coroa), nunca velas soltas. `crest_mult`
+    apaga o fogo em gutter (hurt) e agonia (death)."""
     t = rise * 2.0
-    grow = 1.0 + rise * 0.35
+    grow = (1.0 + rise * 0.35) * crest_mult
     p.poly([
         (58.0 - t, 67.0 - t),
         (78.0 - t, 62.5 - t),
@@ -289,7 +290,8 @@ def _draw_crest(p: Painter, rise: float, flame: float) -> None:
         (58.0 - t, 71.0 - t),
     ], FIRE_DEEP)
     for i, (x, y, h) in enumerate(_SPINE_TEETH):
-        _flame_tooth(p, x - t, y - t * 0.8 + 1.0, h * grow, 2.5, flame, white_heart=(i == 0))
+        _flame_tooth(p, x - t, y - t * 0.8 + 1.0, h * grow, 2.5, flame,
+            white_heart=(i == 0 and crest_mult >= 0.8))
 
 
 # Poses explícitas do pescoço fora do eixo idle↔windup:
@@ -300,6 +302,20 @@ _NECK_POSES: dict[str, tuple] = {
     "strike":    ((84.0, 78.0), (56.0, 64.0), (30.0, 56.0), 9.0, True, 14.0),
     "recover_1": ((86.0, 77.0), (64.0, 60.0), (42.0, 50.0), 3.0, False, 15.0),
     "recover":   ((86.0, 76.0), (71.0, 59.0), (52.0, 47.0), 0.5, False, 16.0),
+    # hurt: a cabeça chicoteia para LONGE do golpe (direita/cima), depois assenta.
+    "hurt_1":    ((88.0, 74.0), (82.0, 52.0), (72.0, 38.0), 1.0, False, 15.0),
+    "hurt":      ((87.0, 75.0), (76.0, 56.0), (62.0, 44.0), 0.5, False, 16.0),
+    # death: as espirais afrouxam e a cabeça despenca até o chão.
+    "death_1":   ((85.0, 78.0), (70.0, 68.0), (50.0, 62.0), 3.0, False, 15.0),
+    "death_2":   ((84.0, 80.0), (62.0, 78.0), (38.0, 84.0), 2.0, False, 14.0),
+}
+
+# Fator da crista por pose: hurt/death apagam o fogo progressivamente (gutter).
+_POSE_CREST: dict[str, float] = {
+    "hurt_1": 0.65,
+    "hurt": 0.85,
+    "death_1": 0.7,
+    "death_2": 0.45,
 }
 
 
@@ -397,17 +413,62 @@ _POSE_RISE: dict[str, float] = {
 }
 
 
+def _draw_collapsed(p: Painter, flame: float) -> None:
+    """Frame final da morte: a serpente-muralha desmontada, o fogo extinto."""
+    # Monte afrouxado — mais baixo e mais largo que a espiral viva.
+    p.poly([
+        (30.0, 96.0),
+        (48.0, 88.0),
+        (80.0, 85.0),
+        (112.0, 88.0),
+        (140.0, 94.0),
+        (148.0, 102.0),
+        (142.0, _GROUND_Y),
+        (38.0, _GROUND_Y),
+        (32.0, 105.0),
+    ], CHAR)
+    # Brasas agonizando onde a crista ardia — só o tom fundo, nada de coração.
+    _flame_tooth(p, 70.0, 86.0, 5.0, 1.0, flame)
+    p.poly([(86.0, 86.5), (89.0, 82.0), (92.0, 87.0)], FIRE_DEEP)
+    p.poly([(102.0, 89.5), (104.5, 85.5), (107.0, 90.0)], FIRE_DEEP)
+    # Rabo largado.
+    p.poly([(140.0, 100.0), (152.0, 104.0), (150.0, 109.0), (138.0, 108.0)], CHAR)
+    # Cabeça caída de lado à esquerda, fendas APAGADAS (o fogo morreu).
+    p.poly([
+        (46.0, 100.0), (30.0, 98.0), (18.0, 103.0), (16.0, 108.0),
+        (28.0, 112.0), (46.0, 110.0),
+    ], CHAR)
+    p.limb((26.0, 100.0), (18.0, 94.0), 2.5, 1.0, ASH)
+    p.limb((34.0, 99.0), (30.0, 91.0), 2.5, 1.0, ASH)
+    p.limb((24.0, 105.0), (32.0, 104.5), 1.2, 1.0, CHAR_DK)
+    # Placas de barriga ainda visíveis no monte + o sangue da queda.
+    p.poly([(48.0, 104.0), (126.0, 102.0), (130.0, 109.5), (46.0, 110.5)], SCALE)
+    for gx in (66.0, 84.0, 102.0, 118.0):
+        p.limb((gx, 103.0), (gx - 1.0, 110.0), 1.6, 1.6, CHAR_DK)
+    p.ellipse(52.0, 111.5, 5.0, 1.1, BLOOD)
+    p.limb((118.0, 92.0), (127.0, 99.0), 2.0, 1.2, BLOOD)
+    # Um único fogo-fátuo apagando.
+    p.ellipse(24.0, 90.0, 1.0, 1.0, FIRE_DEEP)
+
+
 def boitata(pose: str = "idle", *, rise: float | None = None,
         breath: float = 0.0, flame: float = 0.0) -> Image.Image:
     """Compose one frame. Pose presets set the rise channel; keyframes override."""
+    if pose == "death":
+        p_dead = Painter()
+        _draw_collapsed(p_dead, flame)
+        img_dead = p_dead.render()
+        _outline(img_dead)
+        return img_dead
     if rise is None:
         rise = _POSE_RISE.get(pose, 0.0)
+    crest_mult = _POSE_CREST.get(pose, 1.0)
     p = Painter()
     _draw_ground_fire(p, rise, flame)
     _draw_sparks(p, rise, flame)
     _draw_tail(p, flame)
     _draw_coils(p, rise, breath)
-    _draw_crest(p, rise, flame)
+    _draw_crest(p, rise, flame, crest_mult)
     _draw_belly_plates(p)
     _draw_neck_head(p, rise, flame, pose)
     img = p.render()
@@ -444,6 +505,8 @@ _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("windup", [f"windup_{i}" for i in range(1, len(_WINDUP_KEYS))] + ["windup"], False, 15.0),
     ("strike", ["strike_1", "strike"], False, 12.0),
     ("recover", ["recover_1", "recover"], False, 14.0),
+    ("hurt", ["hurt_1", "hurt"], False, 12.0),
+    ("death", ["death_1", "death_2", "death"], False, 6.0),
 ]
 
 
@@ -485,7 +548,11 @@ def _frame_images() -> dict[str, Image.Image]:
     for i, (rise, flame) in enumerate(_WINDUP_KEYS):
         key = "windup" if i == len(_WINDUP_KEYS) - 1 else f"windup_{i + 1}"
         frames[key] = boitata("windup", rise=rise, flame=flame)
-    for key, flame in [("strike_1", 0.0), ("strike", 0.0), ("recover_1", 0.5), ("recover", 0.25)]:
+    for key, flame in [
+        ("strike_1", 0.0), ("strike", 0.0), ("recover_1", 0.5), ("recover", 0.25),
+        ("hurt_1", 0.55), ("hurt", 0.15),
+        ("death_1", 0.3), ("death_2", 0.6), ("death", 0.0),
+    ]:
         frames[key] = boitata(key, flame=flame)
     return frames
 

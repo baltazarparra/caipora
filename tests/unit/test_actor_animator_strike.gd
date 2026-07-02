@@ -57,3 +57,13 @@ func test_boss_sem_hurt_ignora_flinch() -> void:
 	curupira.health.take_damage(1.0)
 	assert_eq(curupira.animated_sprite.animation, &"idle",
 		"boss sem frames de hurt segue no idle (flinch é no-op)")
+
+func test_boitata_flinches_and_collapses() -> void:
+	# Hooks genéricos de hurt/death pegam o 2º boss sem mudanças de runtime.
+	var boitata := _spawn(BOITATA_SCENE)
+	boitata.health.take_damage(1.0)
+	assert_eq(boitata.animated_sprite.animation, &"hurt",
+		"dano não-letal toca o flinch do Boitatá")
+	boitata.health.take_damage(9999.0)
+	assert_eq(boitata.animated_sprite.animation, &"death",
+		"golpe letal toca o desmonte (death)")
