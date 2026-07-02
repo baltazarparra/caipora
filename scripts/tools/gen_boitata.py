@@ -382,38 +382,113 @@ def boitata(pose: str = "idle", *, rise: float | None = None,
     return img
 
 
-def _contact_sheet() -> None:
-    frames = [("idle", boitata("idle")), ("windup", boitata("windup"))]
+# ── Animation contract ────────────────────────────────────
+# Nomes estáveis: boitata.tscn/camp_spirit/boss_intro dependem só deles.
+# idle  — 5f loop: respiração das espirais (seno) + fase da crista/faíscas.
+#         Frame 0 = boitata_idle.png (canais zerados — âncora byte-estável).
+# windup — 3f build-up do rise (0.45→0.78→1.0); loop=false segura o último
+#         frame = boitata_windup.png. 3f @ 15fps = 0.2s — cabe no wind_up
+#         mais curto do kit dele (Brasa Rasteira, 0.2s).
+IDLE_FRAMES = 5
+_IDLE_KEYS = [
+    (0.0, 0.0),                        # (breath, flame) — frame 0 canônico
+    (0.951, 0.2),
+    (0.588, 0.4),
+    (-0.588, 0.6),
+    (-0.951, 0.8),
+]
+_WINDUP_KEYS = [
+    (0.45, 0.35),                      # (rise, flame) — a vigia se ergue
+    (0.78, 0.7),                       # espirais apertam, crista inchando
+    (1.0, 0.0),                        # pose canônica, segurada pelo loop=false
+]
+
+_ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
+    ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
+    ("windup", [f"windup_{i}" for i in range(1, len(_WINDUP_KEYS))] + ["windup"], False, 15.0),
+]
+
+
+def _write_sprite_frames() -> None:
+    """Emite boitata_sprite_frames.tres deterministicamente (formato do .tres
+    escrito à mão que ele substitui: format=3, sem uid, ext_resource por path)."""
+    order: list[str] = []
+    for _name, frames, _loop, _speed in _ANIMATIONS:
+        for fr in frames:
+            if fr not in order:
+                order.append(fr)
+    ids = {fr: f"{i + 1}_{fr}" for i, fr in enumerate(order)}
+    lines = ['[gd_resource type="SpriteFrames" format=3]', ""]
+    for fr in order:
+        path = f"res://assets/sprites/boitata_{fr}.png"
+        lines.append(f'[ext_resource type="Texture2D" path="{path}" id="{ids[fr]}"]')
+    lines.append("")
+    lines.append("[resource]")
+    blocks: list[str] = []
+    for name, frames, loop, speed in _ANIMATIONS:
+        entries = ", ".join(
+            '{\n"duration": 1.0,\n"texture": ExtResource("%s")\n}' % ids[fr] for fr in frames
+        )
+        blocks.append(
+            '{\n"frames": [%s],\n"loop": %s,\n"name": &"%s",\n"speed": %s\n}'
+            % (entries, "true" if loop else "false", name, f"{speed:.1f}")
+        )
+    lines.append("animations = [" + ", ".join(blocks) + "]")
+    with open(os.path.join(OUT, "boitata_sprite_frames.tres"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def _frame_images() -> dict[str, Image.Image]:
+    """Render every animation frame keyed by its PNG stem (sans boitata_)."""
+    frames: dict[str, Image.Image] = {}
+    for i, (breath, flame) in enumerate(_IDLE_KEYS):
+        key = "idle" if i == 0 else f"idle_{i:02d}"
+        frames[key] = boitata("idle", breath=breath, flame=flame)
+    for i, (rise, flame) in enumerate(_WINDUP_KEYS):
+        key = "windup" if i == len(_WINDUP_KEYS) - 1 else f"windup_{i + 1}"
+        frames[key] = boitata("windup", rise=rise, flame=flame)
+    return frames
+
+
+def _contact_sheet(frames: dict[str, Image.Image]) -> None:
+    """Contact sheet: uma linha por animação + a Caipora para escala/traço."""
+    rows: list[tuple[str, list[str]]] = [(name, keys) for name, keys, _l, _s in _ANIMATIONS]
+    cell_w = SIZE[0] + 16
+    cell_h = SIZE[1] + 16
+    label_h = 22
+    cols = max(len(keys) for _n, keys in rows)
     caipora_path = os.path.join(OUT, "player_idle.png")
-    caipora = Image.open(caipora_path).convert("RGBA") if os.path.exists(caipora_path) else None
-    zoom = 2
-    cell_w = SIZE[0] * zoom + 18
-    height = SIZE[1] * zoom + 54
-    width = cell_w * len(frames) + ((caipora.width * zoom + 18) if caipora else 0)
-    sheet = Image.new("RGBA", (width, height), (18, 14, 15, 255))
+    ref = Image.open(caipora_path).convert("RGBA") if os.path.exists(caipora_path) \
+        else Image.new("RGBA", (1, 1), TRANSPARENT)
+    sheet_w = cell_w * cols + ref.size[0] + 48
+    sheet_h = (cell_h + label_h) * len(rows)
+    sheet = Image.new("RGBA", (sheet_w, sheet_h), (18, 14, 15, 255))
     draw = ImageDraw.Draw(sheet)
-    base_y = height - 32
-    for i, (label, img) in enumerate(frames):
-        x = i * cell_w
-        big = img.resize((SIZE[0] * zoom, SIZE[1] * zoom), Image.Resampling.NEAREST)
-        sheet.alpha_composite(big, (x + 8, base_y - big.height))
-        tiny = img.resize((40, 32), Image.Resampling.BOX)
-        sheet.alpha_composite(tiny, (x + 8, base_y + 4))
-        draw.text((x + 8, 4), f"boitata {label}", fill=(230, 210, 180, 255))
-    if caipora:
-        x = cell_w * len(frames)
-        big = caipora.resize((caipora.width * zoom, caipora.height * zoom), Image.Resampling.NEAREST)
-        sheet.alpha_composite(big, (x + 8, base_y - big.height))
-        draw.text((x + 8, 4), "caipora ref", fill=(230, 210, 180, 255))
+
+    for r, (name, keys) in enumerate(rows):
+        y = r * (cell_h + label_h)
+        draw.text((16, y + 4), f"boitata {name} ({len(keys)}f)", fill=(230, 210, 180, 255))
+        for c, key in enumerate(keys):
+            sheet.alpha_composite(frames[key], (16 + c * cell_w, y + label_h))
+
+    ref_x = cell_w * cols + 24
+    draw.text((ref_x, 4), "caipora ref (96px)", fill=(230, 210, 180, 255))
+    sheet.alpha_composite(ref, (ref_x, label_h))
+
     sheet.save(os.path.join(OUT, "boitata_contact_sheet.png"))
 
 
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
-    boitata("idle").save(os.path.join(OUT, "boitata_idle.png"))
-    boitata("windup").save(os.path.join(OUT, "boitata_windup.png"))
-    _contact_sheet()
-    print("[gen_boitata] Boitatá v2 idle/windup (160x128) + contact sheet generated")
+    frames = _frame_images()
+    for key, img in frames.items():
+        img.save(os.path.join(OUT, f"boitata_{key}.png"))
+    _write_sprite_frames()
+    _contact_sheet(frames)
+    print(
+        "[gen_boitata] Boitatá v2: %d frames (160x128) + sprite_frames.tres + contact sheet"
+        % len(frames)
+    )
 
 
 if __name__ == "__main__":
