@@ -1178,6 +1178,7 @@ func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
 	_screen_changed = true
 	if caipora_won and screen != SignalBus.Screen.FINAL_CHOICE:
 		GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
+		GameState.last_defeated_enemy_id = GameState.active_map_enemy_id
 	GameState.change_screen(screen)
 
 ## Pausa efeitos visuais de background imediatamente após o fade de entrada cobrir

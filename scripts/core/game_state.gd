@@ -27,6 +27,9 @@ var run_seed: int = 0
 
 # ─── Exploration State ─────────────────────────────
 var defeated_enemy_ids: Array[String] = []
+# Último caído (volátil): a exploração consome na volta do combate para estourar
+# a brasa de libertação (modo HD) no tile do esqueleto recém-tombado.
+var last_defeated_enemy_id: String = ""
 var active_map_enemy_id: String = ""
 var active_combat_is_boss: bool = false
 var active_combat_name: String = ""  # nome real da criatura/boss em combate (HUD)
@@ -47,6 +50,7 @@ func start_run() -> void:
 	run_active = true
 	active_phase = 1
 	defeated_enemy_ids.clear()  # inimigos renascem a cada run (sem persistência entre runs)
+	last_defeated_enemy_id = ""
 	active_map_enemy_id = ""
 	active_combat_is_boss = false
 	active_combat_name = ""

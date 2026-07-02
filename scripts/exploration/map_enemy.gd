@@ -105,6 +105,8 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		rim_color = _aura_color(p_enemy_type)
 	ParticleRim.attach_to(sprite, rim_color, 1.0, Color.TRANSPARENT,
 		set_piece, set_piece, Constants.RIM_LIGHT_SCALE_MAP)
+	if set_piece:
+		_spawn_hd_crown(rim_color)
 
 	# Sombra + luz frontal: ancora visual contra o chão escuro (mesmo sistema da arena).
 	_spawn_shadow(not boss and not miniboss)
@@ -185,7 +187,9 @@ func _spawn_front_light(is_common: bool) -> void:
 func _spawn_aura(aura_type: String) -> void:
 	var aura := CPUParticles2D.new()
 	aura.z_index = -1
-	aura.amount = 16
+	# ×heavy (não ambient_amount_scale): o amount era fixo — o modo leve fica
+	# byte a byte idêntico e só o HD dobra.
+	aura.amount = int(16.0 * Quality.heavy())
 	aura.lifetime = 1.4
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 14.0
@@ -207,13 +211,45 @@ func _aura_color(aura_type: String) -> Color:
 		"jesuita":  return Constants.COLOR_AURA_JESUITA
 		_:          return Constants.COLOR_AURA_BOSS
 
+## Coroa de brasas ORBITANDO o chefe (modo HD): leitura de set piece à
+## distância. local_coords = TRUE — com coords globais o centro da órbita
+## congela no transform do spawn e a coroa fica para trás no teleporte por tile.
+func _spawn_hd_crown(color: Color) -> void:
+	if not Quality.hd_enabled():
+		return
+	var crown := CPUParticles2D.new()
+	crown.name = "AuraRing"
+	crown.amount = 14
+	crown.lifetime = 1.8
+	crown.local_coords = true
+	crown.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	crown.emission_sphere_radius = 15.0
+	crown.orbit_velocity_min = 0.3
+	crown.orbit_velocity_max = 0.5
+	crown.gravity = Vector2.ZERO
+	crown.initial_velocity_min = 0.0
+	crown.initial_velocity_max = 0.0
+	crown.scale_amount_min = 1.0
+	crown.scale_amount_max = 1.8
+	var glow := ParticleRim._overbright(color)
+	crown.color = glow
+	var ramp := Gradient.new()
+	ramp.set_offset(0, 0.0)
+	ramp.set_color(0, glow)
+	ramp.add_point(1.0, Color(glow.r, glow.g, glow.b, 0.0))
+	crown.color_ramp = ramp  # fade no fim da volta = cauda de cometa
+	crown.material = Constants.ADDITIVE_MATERIAL
+	crown.z_index = 1
+	crown.position = Vector2(0.0, -8.0)  # centro do corpo (offset dos sprites de chefe)
+	add_child(crown)
+
 ## Brasas do Boitatá em escala de mapa (tile 32px). Gated por HD.
 func _spawn_ember_trail() -> void:
 	if not Quality.hd_enabled():
 		return
 	var trail := CPUParticles2D.new()
 	trail.name = "EmberTrail"
-	trail.amount = 10
+	trail.amount = int(10.0 * Quality.heavy())
 	trail.lifetime = 0.9
 	trail.local_coords = false
 	trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
