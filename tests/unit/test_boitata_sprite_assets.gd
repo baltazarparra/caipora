@@ -22,6 +22,8 @@ const MIN_BBOX_WIDTH := 120
 
 const BOITATA_IDLE := "res://assets/sprites/boitata_idle.png"
 const BOITATA_WINDUP := "res://assets/sprites/boitata_windup.png"
+const BOITATA_MAP := "res://assets/sprites/boitata_map.png"
+const MAP_SIZE := Vector2(60, 48)
 
 # Palette anchors from gen_boitata.py (v2)
 const COLOR_CHAR_DK := Color8(12, 7, 6)         # #0c0706 oclusão/mandíbula
@@ -134,8 +136,29 @@ func test_boitata_windup_inflames_the_crest() -> void:
 	assert_true(windup_fire >= idle_fire,
 		"windup aumenta ou mantem a massa de fogo (idle=%d, windup=%d)" % [idle_fire, windup_fire])
 
+func test_boitata_map_variant_contract() -> void:
+	# Variante de mapa 60×48 re-renderizada dos MESMOS vetores (KI-016 pago:
+	# o Boitatá sai do clamp interino do map_enemy; altura 48 = padrão dos
+	# bosses, largura 60 preserva a serpente horizontal). Base alinhada aos
+	# outros bosses de mapa (~46).
+	var texture := load(BOITATA_MAP) as Texture2D
+	assert_not_null(texture, "boitata_map.png carrega")
+	if texture == null:
+		return
+	assert_eq(texture.get_size(), MAP_SIZE, "boitata_map mantem contrato 60x48")
+	var image := Image.load_from_file(ProjectSettings.globalize_path(BOITATA_MAP))
+	assert_false(image.is_empty(), "boitata_map carrega como Image")
+	if image.is_empty():
+		return
+	var min_opaque := int(MAP_SIZE.x * MAP_SIZE.y * MIN_OPAQUE_FRACTION)
+	assert_gt(_count_opaque_pixels(image), min_opaque, "boitata_map tem massa visual suficiente")
+	assert_true(_has_color(image, COLOR_CHAR), "boitata_map preserva o corpo carbonizado")
+	assert_gt(_count_any_color(image, FIRE_COLORS), 0, "boitata_map preserva a crista de fogo")
+	var bottom := _bottom_opaque_row(image)
+	assert_between(bottom, 44, 47, "boitata_map assenta na base do canvas (leu %d)" % bottom)
+
 func test_boitata_does_not_steal_caipora_brand_colors() -> void:
-	for path: String in SPRITE_SIZES:
+	for path: String in SPRITE_SIZES.keys() + [BOITATA_MAP]:
 		var image := Image.load_from_file(ProjectSettings.globalize_path(path))
 		assert_false(image.is_empty(), "%s carrega como Image" % path)
 		if image.is_empty():

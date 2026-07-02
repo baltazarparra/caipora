@@ -64,16 +64,23 @@ PALETTE = [
 
 
 class Painter:
-    def __init__(self) -> None:
-        self.im = Image.new("RGBA", (SIZE[0] * SS, SIZE[1] * SS), TRANSPARENT)
+    def __init__(self, size: tuple[int, int] = SIZE, y_shift: float = 0.0) -> None:
+        # Paramétrico: os MESMOS vetores (coords do canvas 160×128) re-renderizam
+        # em qualquer canvas proporcional (mapa 60×48 → escala 0.375). `y_shift`
+        # (em coords de origem) assenta a base na linha dos outros bosses de mapa.
+        self.size = size
+        self.k = SS * (size[0] / SIZE[0])
+        self.dy = y_shift
+        self.im = Image.new("RGBA", (size[0] * SS, size[1] * SS), TRANSPARENT)
         self.d = ImageDraw.Draw(self.im)
 
     def poly(self, pts: list[tuple[float, float]], col: tuple[int, int, int]) -> None:
-        self.d.polygon([(x * SS, y * SS) for x, y in pts], fill=col)
+        self.d.polygon([(x * self.k, (y + self.dy) * self.k) for x, y in pts], fill=col)
 
     def ellipse(self, cx: float, cy: float, rx: float, ry: float, col: tuple[int, int, int]) -> None:
+        cy += self.dy
         self.d.ellipse(
-            [(cx - rx) * SS, (cy - ry) * SS, (cx + rx) * SS, (cy + ry) * SS],
+            [(cx - rx) * self.k, (cy - ry) * self.k, (cx + rx) * self.k, (cy + ry) * self.k],
             fill=col,
         )
 
@@ -105,10 +112,10 @@ class Painter:
         self.ellipse(x1, y1, wb / 2, wb / 2, col)
 
     def render(self) -> Image.Image:
-        small = self.im.resize(SIZE, Image.Resampling.BOX)
+        small = self.im.resize(self.size, Image.Resampling.BOX)
         px = small.load()
-        for y in range(SIZE[1]):
-            for x in range(SIZE[0]):
+        for y in range(self.size[1]):
+            for x in range(self.size[0]):
                 r, g, b, a = px[x, y]
                 if a < 112:
                     px[x, y] = TRANSPARENT
@@ -452,10 +459,15 @@ def _draw_collapsed(p: Painter, flame: float) -> None:
 
 
 def boitata(pose: str = "idle", *, rise: float | None = None,
-        breath: float = 0.0, flame: float = 0.0) -> Image.Image:
-    """Compose one frame. Pose presets set the rise channel; keyframes override."""
+        breath: float = 0.0, flame: float = 0.0,
+        size: tuple[int, int] = SIZE, y_shift: float = 0.0) -> Image.Image:
+    """Compose one frame. Pose presets set the rise channel; keyframes override.
+
+    `size` re-renderiza os MESMOS vetores em outro canvas proporcional
+    (variante de mapa 60×48 — padrão dos bosses: altura 48, largura preserva
+    a massa horizontal da serpente); `y_shift` assenta a base no rodapé."""
     if pose == "death":
-        p_dead = Painter()
+        p_dead = Painter(size, y_shift)
         _draw_collapsed(p_dead, flame)
         img_dead = p_dead.render()
         _outline(img_dead)
@@ -463,7 +475,7 @@ def boitata(pose: str = "idle", *, rise: float | None = None,
     if rise is None:
         rise = _POSE_RISE.get(pose, 0.0)
     crest_mult = _POSE_CREST.get(pose, 1.0)
-    p = Painter()
+    p = Painter(size, y_shift)
     _draw_ground_fire(p, rise, flame)
     _draw_sparks(p, rise, flame)
     _draw_tail(p, flame)
@@ -590,10 +602,14 @@ def generate_all() -> None:
     frames = _frame_images()
     for key, img in frames.items():
         img.save(os.path.join(OUT, f"boitata_{key}.png"))
+    # Variante de mapa: mesmos vetores do idle re-renderizados em 60×48
+    # (altura 48 = padrão dos bosses no mapa; largura preserva a serpente
+    # horizontal — tira o Boitatá do clamp interino KI-016).
+    boitata("idle", size=(60, 48), y_shift=13.0).save(os.path.join(OUT, "boitata_map.png"))
     _write_sprite_frames()
     _contact_sheet(frames)
     print(
-        "[gen_boitata] Boitatá v2: %d frames (160x128) + sprite_frames.tres + contact sheet"
+        "[gen_boitata] Boitatá v2: %d frames (160x128) + mapa 60x48 + sprite_frames.tres + contact sheet"
         % len(frames)
     )
 

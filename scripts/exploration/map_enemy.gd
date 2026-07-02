@@ -8,7 +8,7 @@ const ENEMY_TEXTURE    = preload("res://assets/sprites/enemy_map.png")
 const BRUXO_TEXTURE    = preload("res://assets/sprites/bruxo_map.png")
 const BOSS_TEXTURE     = preload("res://assets/sprites/boss_idle.png")
 const MULA_TEXTURE     = preload("res://assets/sprites/mula_map.png")
-const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_idle.png")
+const BOITATA_TEXTURE  = preload("res://assets/sprites/boitata_map.png")
 const CURUPIRA_TEXTURE = preload("res://assets/sprites/curupira_map.png")
 const SACI_TEXTURE     = preload("res://assets/sprites/saci_idle.png")
 const JESUITA_TEXTURE  = preload("res://assets/sprites/jesuita_map.png")
@@ -78,12 +78,13 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 			"bruxo":    sprite.texture = BRUXO_TEXTURE
 			_:          sprite.texture = ENEMY_TEXTURE
 	# Invasores comuns usam a variante de mapa 56px (maiores que a Caipora, que
-	# anda o mapa a ~51px); bosses/minibosses usam variantes 48px (Curupira,
-	# Jesuíta e Mula já re-renderizados do pipeline premium; demais seguem a
-	# arte legada até seus redesigns). Sempre transborda pra cima: pés na base do tile.
+	# anda o mapa a ~51px); bosses/minibosses usam variantes de ~48px de altura
+	# (Curupira, Jesuíta, Mula e Boitatá já re-renderizados do pipeline premium;
+	# o Boitatá é 60×48 — serpente horizontal). Sempre transborda pra cima:
+	# pés na base do tile.
 	sprite.offset = Vector2(0, -13) if (not boss and not miniboss) else Vector2(0, -8)
 	# Clamp interino (KI-016): bosses premium ainda SEM variante de mapa
-	# (Saci 128, Boitatá 160×128) estourariam o tile de 32px —
+	# (só resta o Saci 128) estourariam o tile de 32px —
 	# reduz para ~48px visuais e mantém a base do desenho na linha do legado
 	# (16px abaixo do nó). Sai quando cada um ganhar variante re-renderizada.
 	if sprite.texture != null and sprite.texture.get_height() > 64:
