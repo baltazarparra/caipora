@@ -58,8 +58,7 @@ func _spawn_front_light() -> void:
 # ─── Private helpers ───────────────────────────────
 func _spawn_shadow_aura() -> void:
 	var aura := CPUParticles2D.new()
-	# ×heavy: o amount era fixo — modo leve byte a byte, HD dobra e clareia.
-	aura.amount = int(22.0 * Quality.heavy())
+	aura.amount = 22
 	aura.lifetime = 1.8
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 28.0
@@ -67,16 +66,7 @@ func _spawn_shadow_aura() -> void:
 	aura.initial_velocity_min = 4.0
 	aura.initial_velocity_max = 12.0
 	aura.scale_amount_min = 2.5
-	aura.scale_amount_max = Quality.pick(5.0, 6.0)
-	aura.color = ParticleRim._overbright(Constants.COLOR_AURA_BOSS) \
-		if Quality.hd_enabled() else Constants.COLOR_AURA_BOSS
+	aura.scale_amount_max = 5.0
+	aura.color = Constants.COLOR_AURA_BOSS
 	aura.z_index = -1
 	add_child(aura)
-
-## Rim HD na cor da aura canônica do chefe.
-func _rim_color() -> Color:
-	return Constants.COLOR_AURA_BOSS
-
-## Halo volumétrico HD: chefe é set piece — ganha o bloom da silhueta.
-func _rim_with_halo() -> bool:
-	return true

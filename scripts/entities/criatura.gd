@@ -43,7 +43,6 @@ func _ready() -> void:
 	_spawn_shadow()
 	_spawn_front_light()
 	_apply_outline_shader()
-	_spawn_particle_rim()
 
 # ─── Telegraph ─────────────────────────────────────
 func _on_state_changed(new_state: EnemyStateMachine.State) -> void:
@@ -120,25 +119,3 @@ func _apply_outline_shader() -> void:
 	if animated_sprite == null:
 		return
 	ActorContrast.apply_outline(animated_sprite)
-
-## Contorno de brasas do modo HD (no-op sem HD). Nó de partículas irmão do
-## material do sprite: sobrevive ao swap p/ hit_flash do ActorAnimator.track().
-func _spawn_particle_rim() -> void:
-	if animated_sprite == null:
-		return
-	ParticleRim.attach_to(animated_sprite, _rim_color(), 1.0, Color.TRANSPARENT,
-		_rim_with_light(), _rim_with_halo())
-
-## Cor do rim HD. Lei da marca: inimigo comum fica FORA da paleta da
-## protagonista (sem laranja-juba, sem verde-cristal); bosses sobrescrevem
-## com seus COLOR_AURA_* canônicos.
-func _rim_color() -> Color:
-	return Constants.COLOR_RIM_ENEMY
-
-## Luz de rim HD: a arena tem UM inimigo por vez — cabe no orçamento de luzes.
-func _rim_with_light() -> bool:
-	return true
-
-## Halo volumétrico: só chefes — comum fica nas brasas nítidas.
-func _rim_with_halo() -> bool:
-	return false

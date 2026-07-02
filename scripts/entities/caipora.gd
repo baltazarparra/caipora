@@ -60,8 +60,6 @@ func try_move(direction: Vector2) -> void:
 # ─── Private helpers ───────────────────────────────
 func _apply_furia_visual() -> void:
 	FuriaVisual.attach_to(_animated_sprite)
-	# Rim HD junto do refresh da Fúria: mesma evolução (tier/CHAMA), mesmo gatilho.
-	ParticleRim.attach_caipora(_animated_sprite)
 
 func _spawn_shadow() -> void:
 	ActorContrast.add_ground_shadow(self, Vector2(0.62, 0.22), Vector2(0.0, 2.0))

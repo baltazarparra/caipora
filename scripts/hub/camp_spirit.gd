@@ -36,13 +36,10 @@ const AURA_LIFETIME: float = 2.2
 const AURA_RADIUS: float = 22.0
 const AURA_RISE: float = -14.0
 # Luz própria: poça baixa na cor da aura — o espírito LÊ na mata escura sem perder o
-# repouso abatido (a leitura vem da luz, não de clarear o sprite). Em HD a poça
-# sobe de energia e pulsa (dessincronizada por fase); a coroa orbital abraça o corpo.
+# repouso abatido (a leitura vem da luz, não de clarear o sprite).
 const GLOW_ENERGY: float = 0.95
-const GLOW_ENERGY_HD: float = 1.35
 const GLOW_SCALE: float = 1.1
 const GLOW_WHITEN: float = 0.5
-const CROWN_RADIUS: float = 26.0
 # Perambulação livre pela clareira (sem colisão/interação — entidade etérea em repouso).
 # Lento e à deriva, com pausas longas: lê como descanso vagando, não fuga.
 const WANDER_SPEED: float = 14.0   # px/s — bem mais lento que o combate
@@ -100,11 +97,6 @@ func setup(spirit_phase: int) -> bool:
 	_spawn_calm_aura(def["aura"])
 	_spawn_glow(def["aura"])
 	_spawn_shadow(def["scale"])
-	# Modo HD: o encantado vira set piece de verdade — contorno de brasas + halo
-	# na cor canônica (SEM segunda luz: o glow próprio acima já ilumina) e coroa
-	# orbital de raio largo. No-ops sem HD.
-	ParticleRim.attach_to(_sprite, def["aura"], 1.0, Color.TRANSPARENT, false, true)
-	ParticleRim.attach_crown(self, def["aura"], CROWN_RADIUS)
 	return true
 
 ## Liga a perambulação livre dentro de `bounds` (a clareira). O espírito passa a derivar
@@ -154,8 +146,7 @@ func _pick_target() -> Vector2:
 func _spawn_calm_aura(color: Color) -> void:
 	var aura := CPUParticles2D.new()
 	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2.ZERO
-	# ambient: dobra em HD (Quality.heavy); modo leve idêntico ao de sempre.
-	aura.amount = maxi(2, int(AURA_AMOUNT * Constants.ambient_amount_scale(vp)))
+	aura.amount = maxi(2, int(AURA_AMOUNT * Constants.particle_amount_scale(vp)))
 	aura.lifetime = AURA_LIFETIME
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = AURA_RADIUS
@@ -163,23 +154,12 @@ func _spawn_calm_aura(color: Color) -> void:
 	aura.initial_velocity_min = 2.0
 	aura.initial_velocity_max = 6.0
 	aura.scale_amount_min = 1.0
-	aura.scale_amount_max = Quality.pick(2.0, 3.0)
-	# Overbright moderado em HD: brilha mais sem perder o repouso abatido.
-	aura.color = ParticleRim._overbright(color) if Quality.hd_enabled() else color
+	aura.scale_amount_max = 2.0
+	aura.color = color
 	add_child(aura)
 
 func _spawn_glow(color: Color) -> void:
-	var glow := ForestLight.make(color.lerp(Color.WHITE, GLOW_WHITEN),
-		Quality.pick(GLOW_ENERGY, GLOW_ENERGY_HD), GLOW_SCALE)
-	add_child(glow)
-	if Quality.hd_enabled():
-		# Pulso dessincronizado por espírito (período por fase, receita dos fátuos).
-		var period := 1.6 + 0.2 * float(phase)
-		var tween := glow.create_tween().set_loops()
-		tween.tween_property(glow, "energy", GLOW_ENERGY_HD * 1.15, period) \
-			.set_trans(Tween.TRANS_SINE)
-		tween.tween_property(glow, "energy", GLOW_ENERGY_HD * 0.75, period) \
-			.set_trans(Tween.TRANS_SINE)
+	add_child(ForestLight.make(color.lerp(Color.WHITE, GLOW_WHITEN), GLOW_ENERGY, GLOW_SCALE))
 
 # Sombra de chão sob os pés. O sprite é centralizado, então os pés ficam meia-altura
 # abaixo da origem; a escala é por porte real (os frames premium são ~2× o chefe de

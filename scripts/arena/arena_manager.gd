@@ -321,8 +321,6 @@ func _apply_furia_visual() -> void:
 	if animated_sprite == null:
 		return
 	FuriaVisual.attach_to(animated_sprite)
-	# Rim HD junto do refresh da Fúria: cobre o spawn e o re-attach da CHAMA.
-	ParticleRim.attach_caipora(animated_sprite)
 
 func _spawn_enemy() -> void:
 	# Consome o flag volátil para nunca vazar estado para o próximo combate. O HP de
@@ -1178,14 +1176,10 @@ func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
 	_screen_changed = true
 	if caipora_won and screen != SignalBus.Screen.FINAL_CHOICE:
 		GameState.defeated_enemy_ids.append(GameState.active_map_enemy_id)
-		GameState.last_defeated_enemy_id = GameState.active_map_enemy_id
 	GameState.change_screen(screen)
 
 ## Pausa efeitos visuais de background imediatamente após o fade de entrada cobrir
 ## a tela — libera CPU/GPU antes da primeira janela de timing. Idempotente.
-## Em HD o ArenaBackdrop se recusa a pausar (palco aceso — mira 30fps); o
-## DoomFire continua pausado NOS DOIS modos: sim de fogo por pixel na CPU atrás
-## do céu — custo alto, payoff baixo, e protege o timing.
 func _cull_visual_backdrop() -> void:
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.set_combat_mode(true)

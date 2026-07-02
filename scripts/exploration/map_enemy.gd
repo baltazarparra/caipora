@@ -93,20 +93,6 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		sprite.offset.y = 16.0 / clamp_scale - sprite.texture.get_height() * 0.5
 	add_child(sprite)
 	ActorContrast.apply_outline(sprite)
-	# Contorno de brasas HD (no-op sem HD): comuns em sangue frio, chefes e
-	# convertidos na cor da própria aura. Luz + halo SÓ em set piece (boss/
-	# miniboss) — 8 comuns com luz estourariam o orçamento do Compatibility;
-	# o raio da luz é o de MAPA (tile 32px).
-	var set_piece := boss or miniboss
-	var rim_color := Constants.COLOR_RIM_ENEMY
-	if boss:
-		rim_color = _aura_color(boss_type)
-	elif miniboss:
-		rim_color = _aura_color(p_enemy_type)
-	ParticleRim.attach_to(sprite, rim_color, 1.0, Color.TRANSPARENT,
-		set_piece, set_piece, Constants.RIM_LIGHT_SCALE_MAP)
-	if set_piece:
-		_spawn_hd_crown(rim_color)
 
 	# Sombra + luz frontal: ancora visual contra o chão escuro (mesmo sistema da arena).
 	_spawn_shadow(not boss and not miniboss)
@@ -120,11 +106,6 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		sprite.modulate = Constants.COLOR_BAPTISM_TINT
 		_spawn_aura(p_enemy_type)
 		_spawn_baptism_drip()
-	# Boitatá deixa rastro de brasas no mapa (modo HD): o movimento por tile é
-	# teleporte — em coords globais as brasas seguem queimando nos tiles
-	# anteriores por ~0.9s, sem nenhum hook em take_turn.
-	if boss_type == "boitata" or p_enemy_type == "boitata":
-		_spawn_ember_trail()
 
 ## Chave deste inimigo no catálogo EnemyStats: boss → tipo do chefe; comum → seu
 ## tipo, caindo no caçador quando vazio (mesma regra de _regular_scene_for do
@@ -187,9 +168,7 @@ func _spawn_front_light(is_common: bool) -> void:
 func _spawn_aura(aura_type: String) -> void:
 	var aura := CPUParticles2D.new()
 	aura.z_index = -1
-	# ×heavy (não ambient_amount_scale): o amount era fixo — o modo leve fica
-	# byte a byte idêntico e só o HD dobra.
-	aura.amount = int(16.0 * Quality.heavy())
+	aura.amount = 16
 	aura.lifetime = 1.4
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	aura.emission_sphere_radius = 14.0
@@ -198,52 +177,14 @@ func _spawn_aura(aura_type: String) -> void:
 	aura.initial_velocity_max = 8.0
 	aura.scale_amount_min = 1.5
 	aura.scale_amount_max = 3.5
-	aura.color = _aura_color(aura_type)
-	add_child(aura)
-
-## Cor canônica da aura por tipo de chefe (compartilhada com o rim HD).
-func _aura_color(aura_type: String) -> Color:
 	match aura_type:
-		"mula":     return Constants.COLOR_AURA_MULA
-		"boitata":  return Constants.COLOR_AURA_BOITATA
-		"curupira": return Constants.COLOR_AURA_CURUPIRA
-		"saci":     return Constants.COLOR_AURA_SACI
-		"jesuita":  return Constants.COLOR_AURA_JESUITA
-		_:          return Constants.COLOR_AURA_BOSS
-
-## Coroa de brasas orbitando o chefe (modo HD): leitura de set piece à
-## distância. Receita centralizada no ParticleRim (compartilhada com o
-## santuário); o offset -8 é o centro do corpo dos sprites de chefe do mapa.
-func _spawn_hd_crown(color: Color) -> void:
-	ParticleRim.attach_crown(self, color, 15.0, Vector2(0.0, -8.0))
-
-## Brasas do Boitatá em escala de mapa (tile 32px). Gated por HD.
-func _spawn_ember_trail() -> void:
-	if not Quality.hd_enabled():
-		return
-	var trail := CPUParticles2D.new()
-	trail.name = "EmberTrail"
-	trail.amount = int(10.0 * Quality.heavy())
-	trail.lifetime = 0.9
-	trail.local_coords = false
-	trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	trail.emission_rect_extents = Vector2(12.0, 5.0)
-	trail.position = Vector2(0.0, -8.0)
-	trail.gravity = Vector2(0, 18)
-	trail.initial_velocity_min = 1.0
-	trail.initial_velocity_max = 5.0
-	trail.scale_amount_min = 1.0
-	trail.scale_amount_max = 2.0
-	trail.color = Constants.COLOR_FIRE_HOT
-	var ramp := Gradient.new()
-	ramp.set_offset(0, 0.0)
-	ramp.set_color(0, Constants.COLOR_FIRE_HOT)
-	ramp.add_point(1.0, Color(Constants.COLOR_AURA_BOITATA.r,
-		Constants.COLOR_AURA_BOITATA.g, Constants.COLOR_AURA_BOITATA.b, 0.0))
-	trail.color_ramp = ramp
-	trail.material = Constants.ADDITIVE_MATERIAL
-	trail.z_index = 1
-	add_child(trail)
+		"mula":     aura.color = Constants.COLOR_AURA_MULA
+		"boitata":  aura.color = Constants.COLOR_AURA_BOITATA
+		"curupira": aura.color = Constants.COLOR_AURA_CURUPIRA
+		"saci":     aura.color = Constants.COLOR_AURA_SACI
+		"jesuita":  aura.color = Constants.COLOR_AURA_JESUITA
+		_:          aura.color = Constants.COLOR_AURA_BOSS
+	add_child(aura)
 
 func _spawn_baptism_drip() -> void:
 	var drip := CPUParticles2D.new()

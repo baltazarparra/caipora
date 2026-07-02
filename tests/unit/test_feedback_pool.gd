@@ -11,9 +11,6 @@ var _scene_stub: Node2D
 var _prev_scene: Node
 
 func before_each() -> void:
-	# HD desligado: os asserts de densidade valem para o modo leve (em CI linux o
-	# default por dispositivo é HD=true, que zera o corte de telefone).
-	Quality._set_for_test(false)
 	# _attach_to_scene pendura partículas na current_scene; headless o GUT roda
 	# sem uma — apontamos para um stub e restauramos depois.
 	_scene_stub = Node2D.new()
@@ -26,7 +23,6 @@ func before_each() -> void:
 func after_each() -> void:
 	get_tree().current_scene = _prev_scene
 	_scene_stub.queue_free()
-	Quality._reset_for_test()
 
 # ── Telefone (lado curto < 640) corta a densidade pela metade, tablet não ──
 func test_particle_scale_halves_on_phone() -> void:
@@ -36,12 +32,6 @@ func test_particle_scale_halves_on_phone() -> void:
 		Constants.PHONE_PARTICLE_SCALE, "telefone paisagem (giro não muda o lado curto)")
 	assert_eq(Constants.particle_amount_scale(Vector2(1180, 820)), 1.0, "tablet")
 	assert_eq(Constants.particle_amount_scale(Vector2(1920, 1080)), 1.0, "desktop")
-
-# ── Modo HD levanta o corte de telefone: densidade cheia em qualquer device ──
-func test_hd_mode_lifts_phone_particle_cut() -> void:
-	Quality._set_for_test(true)
-	assert_eq(Constants.particle_amount_scale(Vector2(393, 852)), 1.0,
-		"HD ligado: telefone em densidade cheia")
 
 # ── O 3º burst reusa o nó do 1º (round-robin de POOL_PER_KEY=2): zero alocação ──
 func test_burst_reuses_pooled_nodes() -> void:

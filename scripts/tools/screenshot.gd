@@ -6,10 +6,7 @@ extends SceneTree
 ##
 ## Uso:
 ##   DISPLAY=:0 godot --path . -s scripts/tools/screenshot.gd -- \
-##       --scene=res://scenes/ui/main_menu.tscn --out=/tmp/shot.png [--frames=30] [--phase=N] [--screen=HUB] [--run]
-##
-## --run inicia uma run (GameState.start_run) ANTES da cena — arenas/exploração
-## instanciadas sem run ativa matam a Caipora no frame 1 (HP zerado).
+##       --scene=res://scenes/ui/main_menu.tscn --out=/tmp/shot.png [--frames=30] [--phase=N] [--screen=HUB]
 ##
 ## --phase=N seta GameState.active_phase antes de instanciar — cenas de arena e
 ## exploração derivam estilo/dificuldade da fase ativa, não do arquivo .tscn.
@@ -24,7 +21,6 @@ func _initialize() -> void:
 	var scene_path: String = "res://scenes/ui/main_menu.tscn"
 	var phase: int = 0
 	var screen_key: String = ""
-	var start_run: bool = false
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--scene="):
 			scene_path = arg.substr("--scene=".length())
@@ -36,12 +32,7 @@ func _initialize() -> void:
 			phase = int(arg.substr("--phase=".length()))
 		elif arg.begins_with("--screen="):
 			screen_key = arg.substr("--screen=".length())
-		elif arg == "--run":
-			start_run = true
-	if start_run:
-		root.get_node("GameState").start_run()
 	if phase > 0:
-		# Depois do start_run: ele reseta active_phase para 1.
 		root.get_node("GameState").active_phase = phase
 	if not screen_key.is_empty():
 		# Sem referência compile-time a autoloads (gotcha #14): enum lido do script do bus.

@@ -201,12 +201,7 @@ func _spawn_enemies() -> void:
 		if def["id"] in GameState.defeated_enemy_ids:
 			if not def["boss"]:
 				var spawn_pos := Vector2i(def["x"], def["y"])
-				var rest_pos: Vector2i = GameState.map_enemy_positions.get(def["id"], spawn_pos)
-				_spawn_skeleton_at(rest_pos)
-				# Brasa de libertação (modo HD): o tile do recém-tombado explode
-				# em brasas + lampejo na volta do combate vencido.
-				if def["id"] == GameState.last_defeated_enemy_id:
-					_spawn_liberation_burst(rest_pos)
+				_spawn_skeleton_at(GameState.map_enemy_positions.get(def["id"], spawn_pos))
 			continue
 		var spawn := Vector2i(def["x"], def["y"])
 		# Restaura a posição salva no último combate; senão, o spawn do mapa gerado.
@@ -216,47 +211,6 @@ func _spawn_enemies() -> void:
 		enemy.setup(def["id"], pos, def["boss"], def.get("boss_type", ""), spawn,
 			def.get("enemy_type", ""))
 		_map_enemies.append(enemy)
-	# Flag volátil consumido (mesmo sem esqueleto — boss não deixa ossos): nunca
-	# re-estourar em entradas futuras do mapa.
-	GameState.last_defeated_enemy_id = ""
-
-## Brasa de libertação (modo HD): explosão one-shot de brasas + lampejo de luz
-## no tile do caído — o mapa reconhece a morte na volta do combate vencido.
-func _spawn_liberation_burst(grid_pos: Vector2i) -> void:
-	if not Quality.hd_enabled():
-		return
-	var center := Vector2(grid_pos) * Constants.TILE_SIZE \
-		+ Vector2(Constants.TILE_SIZE * 0.5, Constants.TILE_SIZE * 0.5)
-	var burst := CPUParticles2D.new()
-	burst.one_shot = true
-	burst.explosiveness = 1.0
-	burst.amount = 40
-	burst.lifetime = 0.9
-	burst.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
-	burst.emission_sphere_radius = 14.0
-	burst.gravity = Vector2(0, -30)
-	burst.initial_velocity_min = 20.0
-	burst.initial_velocity_max = 60.0
-	burst.scale_amount_min = 1.0
-	burst.scale_amount_max = 2.2
-	burst.color = Constants.COLOR_FIRE_HOT
-	var ramp := Gradient.new()
-	ramp.set_offset(0, 0.0)
-	ramp.set_color(0, Constants.COLOR_FIRE_HOT)
-	ramp.add_point(1.0, Color(Constants.COLOR_AMBER, 0.0))
-	burst.color_ramp = ramp
-	burst.material = Constants.ADDITIVE_MATERIAL
-	burst.position = center
-	burst.emitting = true
-	burst.finished.connect(burst.queue_free)
-	_objects_container.add_child(burst)
-	# Lampejo: luz âmbar que morre em 0.4s (tween vinculado à própria luz).
-	var flash := ForestLight.make(Constants.COLOR_AMBER, 1.4, 1.0)
-	flash.position = center
-	_objects_container.add_child(flash)
-	var tween := flash.create_tween()
-	tween.tween_property(flash, "energy", 0.0, 0.4)
-	tween.tween_callback(flash.queue_free)
 
 func _spawn_skeleton_at(grid_pos: Vector2i) -> void:
 	var s := Sprite2D.new()

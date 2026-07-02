@@ -21,19 +21,8 @@ static func is_portrait(vp: Vector2) -> bool:
 const PHONE_PARTICLE_SCALE := 0.5
 
 ## Fator aplicado ao `amount` dos CPUParticles2D do FeedbackSystem.
-## No modo HD o corte de telefone não se aplica — o jogador pediu efeitos pesados
-## (densidade cheia; o gate do front-light per-ator em ActorContrast abre junto).
 static func particle_amount_scale(vp: Vector2) -> float:
-	if Quality.hd_enabled():
-		return 1.0
 	return PHONE_PARTICLE_SCALE if minf(vp.x, vp.y) < PHONE_SHORT_SIDE_MAX else 1.0
-
-## Densidade de emissores AMBIENTES/persistentes (rim, auras, névoa, brasas de
-## cena, santuário): dobra no modo HD via Quality.heavy(). One-shots de combate
-## (FeedbackSystem) ficam em particle_amount_scale — legibilidade do timing não
-## é decoração e não engorda com o HD.
-static func ambient_amount_scale(vp: Vector2) -> float:
-	return particle_amount_scale(vp) * Quality.heavy()
 
 # ─── Color grading (gradient map) ──────────────────
 # Lê SCREEN_TEXTURE (custo real em gl_compatibility) — por isso a chave dupla:
@@ -354,32 +343,6 @@ const COLOR_DIALOGUE_JESUITA  := Color(0.92, 0.82, 0.45, 1.0)  # voz do Jesuíta
 const COLOR_PARTICLE_SPARK := Color(0.6, 1.6, 0.9, 1.0)   # faísca de crítico (cristal do cajado)
 const COLOR_PARTICLE_DODGE := Color(0.9, 0.95, 1.0, 0.95) # flash de esquiva (azul-claro)
 const COLOR_PARTICLE_FAIL := Color(0.20, 0.18, 0.22, 0.9) # estilhaço de erro (cinza-fumaça morto, deriva de COLOR_STONE_DARK)
-
-# ─── ParticleRim (modo HD) ─────────────────────────
-# Contorno de partículas neon dos atores — só com Quality.hd_enabled().
-# Inimigo comum fica FORA da paleta da protagonista (lei da marca: nada de
-# laranja-juba nem verde-cristal em inimigo); bosses usam seus COLOR_AURA_*.
-const COLOR_RIM_ENEMY := Color(0.75, 0.22, 0.28, 0.8)  # sangue frio dessaturado
-const RIM_DUST_BASE_AMOUNT := 18.0
-const RIM_SPREAD_DEG := 32.0
-# Boost overbright no RGB do rim (>1 = glow aditivo intencional): na cor crua
-# da juba o contorno se mistura no próprio sprite em vez de recortá-lo.
-# 1.85 é o teto — acima disso o glow lava o CanvasModulate claro da P1.
-const RIM_GLOW_BOOST := 1.85
-# Halo volumétrico (bloom fake): quads da textura radial do ForestLight (256px;
-# scale_amount 0.08–0.18 = blobs de ~20–45px) abraçando a silhueta.
-const RIM_HALO_AMOUNT := 7.0
-const RIM_HALO_ALPHA := 0.13
-# Luz por ator (PointLight2D pulsante na cor do rim). O raio do mapa é menor:
-# tile de 32px — o scale da arena (1.3 ≈ 5 tiles) alagaria o grid.
-const RIM_LIGHT_ENERGY := 0.9
-const RIM_LIGHT_SCALE := 1.3
-const RIM_LIGHT_SCALE_MAP := 0.9
-const RIM_LIGHT_WHITEN := 0.35
-# Anel de choque do flare (PERFEITO/crítico): escala sobre a textura de 256px.
-const RIM_RING_SCALE_START := 0.15
-const RIM_RING_SCALE_END := 0.6
-const RIM_RING_ALPHA := 0.55
 
 # ─── Ganho de cor dos feedbacks por fase ───────────
 # Algumas fases têm um CanvasModulate de arena muito escuro (clima), que multiplica

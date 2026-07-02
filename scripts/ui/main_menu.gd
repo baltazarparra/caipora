@@ -39,8 +39,6 @@ var _lang_row: HBoxContainer
 var _btn_pt: Button
 var _btn_en: Button
 var _speaker_btn: SpeakerButton
-var _hd_btn: HdButton
-var _hd_confirm: HdConfirmPanel
 var _update_banner: Button
 
 func _ready() -> void:
@@ -172,26 +170,12 @@ func _setup_top_bar() -> void:
 	_speaker_btn.pressed.connect(_on_speaker_pressed)
 	$Ui.add_child(_speaker_btn)
 
-	# Toggle de qualidade ao lado do som. Só no menu: confirmar RECARREGA o jogo —
-	# no meio de uma run isso a destruiria.
-	_hd_confirm = HdConfirmPanel.new()
-	add_child(_hd_confirm)
-	_hd_btn = HdButton.new()
-	_hd_btn.configure_size(SPEAKER_ICON_PX)
-	_hd_btn.set_hd(Quality.hd_enabled())
-	_hd_btn.pressed.connect(_on_hd_pressed)
-	$Ui.add_child(_hd_btn)
-
 ## Mute GERAL (bus Master): silencia música, ambiência E sfx — difere do speaker
 ## do HUD in-game, que alterna só música+ambiência.
 func _on_speaker_pressed() -> void:
 	AudioDirector.play_ui_hover()
 	AudioDirector.toggle_master_mute()
 	_speaker_btn.set_muted(AudioDirector.is_master_muted())
-
-func _on_hd_pressed() -> void:
-	AudioDirector.play_ui_hover()
-	_hd_confirm.open(not Quality.hd_enabled())
 
 func _setup_footer() -> void:
 	_footer = MarginContainer.new()
@@ -266,17 +250,14 @@ func _hero_height(vp: Vector2, portrait: bool, logo_y: float, logo_size: Vector2
 	return clampf(vp.y - stack_rest,
 		HERO_HEIGHT_LANDSCAPE, HERO_HEIGHT_LANDSCAPE * HERO_HEIGHT_SCALE)
 
-## Bandeiras à esquerda, HD + speaker à direita, centros alinhados; o banner
-## "Atualizar" (TOP_WIDE) empurra todos para baixo quando presente.
+## Bandeiras à esquerda, speaker à direita, centros alinhados; o banner "Atualizar"
+## (TOP_WIDE) empurra os dois para baixo quando presente.
 func _layout_top_bar(vp: Vector2) -> void:
 	if _speaker_btn == null or _lang_row == null:
 		return
 	var insets := Constants.safe_insets(vp)
 	var top_push := (UPDATE_BANNER_HEIGHT + 8.0) if is_instance_valid(_update_banner) else 0.0
 	_speaker_btn.position = Vector2(vp.x - insets.x - _speaker_btn.size.x, insets.y + top_push)
-	if _hd_btn != null:
-		_hd_btn.position = Vector2(_speaker_btn.position.x - _hd_btn.size.x,
-			_speaker_btn.position.y)
 	_lang_row.position = Vector2(insets.x,
 		insets.y + top_push + (_speaker_btn.size.y - FLAG_SIZE.y) * 0.5)
 
