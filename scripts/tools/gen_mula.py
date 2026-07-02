@@ -406,9 +406,16 @@ def _harness(p: Painter, coil: float) -> None:
     p.ellipse(13.8, 34.4 + s, 0.55, 0.9, SADDLE_BLOOD)
 
 
-def _draw_mula(pose: str = "idle", *, breath: float = 0.0, flame: float = 0.0) -> Image.Image:
-    """Compose one frame. Pose presets set the coil channel; E2 threads the rest."""
-    coil = 1.0 if pose == "windup" else 0.0
+def _draw_mula(
+    pose: str = "idle",
+    *,
+    coil: float | None = None,
+    breath: float = 0.0,
+    flame: float = 0.0,
+) -> Image.Image:
+    """Compose one frame. Pose presets set the coil channel; keyframes override."""
+    if coil is None:
+        coil = 1.0 if pose == "windup" else 0.0
     p = Painter()
     _tail(p, coil)
     _legs(p, coil)
@@ -421,6 +428,74 @@ def _draw_mula(pose: str = "idle", *, breath: float = 0.0, flame: float = 0.0) -
     return img
 
 
+# ── Animation contract ────────────────────────────────────
+# Nomes estáveis: mula.tscn/camp_spirit/boss_intro dependem só deles.
+# idle  — 5f loop: respiração de barril (seno) + pulso da coroa de fogo.
+#         Frame 0 = mula_idle.png (canais zerados — âncora byte-estável).
+# windup — 3f build-up: o coil ERGUE do idle ao bote; loop=false segura o
+#         último frame = mula_windup.png (pose canônica do telegraph).
+#         3f @ 12fps = 0.25s — cabe no wind_up mais curto (coice).
+IDLE_FRAMES = 5
+_IDLE_KEYS = [
+    (0.0, 0.0),                        # (breath, flame) — frame 0 canônico
+    (0.951, 0.2),
+    (0.588, 0.4),
+    (-0.588, 0.6),
+    (-0.951, 0.8),
+]
+_WINDUP_KEYS = [
+    (0.45, 0.35),                      # (coil, flame) — eriça
+    (0.78, 0.7),                       # erupção a caminho (surge tooth entra)
+    (1.0, 0.0),                        # pose canônica, segurada pelo loop=false
+]
+
+_ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
+    ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
+    ("windup", [f"windup_{i}" for i in range(1, len(_WINDUP_KEYS))] + ["windup"], False, 12.0),
+]
+
+
+def _write_sprite_frames() -> None:
+    """Emite mula_sprite_frames.tres deterministicamente (formato do .tres
+    escrito à mão que ele substitui: format=3, sem uid, ext_resource por path)."""
+    order: list[str] = []
+    for _name, frames, _loop, _speed in _ANIMATIONS:
+        for fr in frames:
+            if fr not in order:
+                order.append(fr)
+    ids = {fr: f"{i + 1}_{fr}" for i, fr in enumerate(order)}
+    lines = ['[gd_resource type="SpriteFrames" format=3]', ""]
+    for fr in order:
+        path = f"res://assets/sprites/mula_{fr}.png"
+        lines.append(f'[ext_resource type="Texture2D" path="{path}" id="{ids[fr]}"]')
+    lines.append("")
+    lines.append("[resource]")
+    blocks: list[str] = []
+    for name, frames, loop, speed in _ANIMATIONS:
+        entries = ", ".join(
+            '{\n"duration": 1.0,\n"texture": ExtResource("%s")\n}' % ids[fr] for fr in frames
+        )
+        blocks.append(
+            '{\n"frames": [%s],\n"loop": %s,\n"name": &"%s",\n"speed": %s\n}'
+            % (entries, "true" if loop else "false", name, f"{speed:.1f}")
+        )
+    lines.append("animations = [" + ", ".join(blocks) + "]")
+    with open(os.path.join(OUT, "mula_sprite_frames.tres"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def _frame_images() -> dict[str, Image.Image]:
+    """Render every animation frame keyed by its PNG stem (sans mula_)."""
+    frames: dict[str, Image.Image] = {}
+    for i, (breath, flame) in enumerate(_IDLE_KEYS):
+        key = "idle" if i == 0 else f"idle_{i:02d}"
+        frames[key] = _draw_mula("idle", breath=breath, flame=flame)
+    for i, (coil, flame) in enumerate(_WINDUP_KEYS):
+        key = "windup" if i == len(_WINDUP_KEYS) - 1 else f"windup_{i + 1}"
+        frames[key] = _draw_mula("windup", coil=coil, flame=flame)
+    return frames
+
+
 def _caipora_ref() -> Image.Image:
     """Load the canonical Caipora idle at game scale for the sheet."""
     path = os.path.join(OUT, "player_idle.png")
@@ -429,38 +504,42 @@ def _caipora_ref() -> Image.Image:
     return Image.open(path).convert("RGBA")
 
 
-def _contact_sheet() -> None:
-    """Contact sheet with idle, windup, and a Caipora reference for scale."""
-    idle = _draw_mula("idle")
-    windup = _draw_mula("windup")
-
-    cell = SIZE + 32
+def _contact_sheet(frames: dict[str, Image.Image]) -> None:
+    """Contact sheet: one row per animation, plus the Caipora for scale/traço."""
+    rows: list[tuple[str, list[str]]] = [(name, keys) for name, keys, _l, _s in _ANIMATIONS]
+    cell = SIZE + 16
+    label_h = 22
+    cols = max(len(keys) for _n, keys in rows)
     ref = _caipora_ref()
-    ref_size = ref.size[0]
-    sheet_w = cell * 2 + ref_size + 48
-    sheet_h = max(cell, ref_size) + 40
+    sheet_w = cell * cols + ref.size[0] + 48
+    sheet_h = (cell + label_h) * len(rows)
     sheet = Image.new("RGBA", (sheet_w, sheet_h), (18, 14, 15, 255))
     draw = ImageDraw.Draw(sheet)
 
-    sheet.alpha_composite(idle, (16, 28))
-    draw.text((16, 6), "mula idle", fill=(230, 210, 180, 255))
+    for r, (name, keys) in enumerate(rows):
+        y = r * (cell + label_h)
+        draw.text((16, y + 4), f"mula {name} ({len(keys)}f)", fill=(230, 210, 180, 255))
+        for c, key in enumerate(keys):
+            sheet.alpha_composite(frames[key], (16 + c * cell, y + label_h))
 
-    sheet.alpha_composite(windup, (16 + cell, 28))
-    draw.text((16 + cell, 6), "mula windup", fill=(230, 210, 180, 255))
-
-    ref_x = 16 + cell * 2
-    sheet.alpha_composite(ref, (ref_x, 28))
-    draw.text((ref_x, 6), "caipora ref (96px)", fill=(230, 210, 180, 255))
+    ref_x = cell * cols + 24
+    draw.text((ref_x, 4), "caipora ref (96px)", fill=(230, 210, 180, 255))
+    sheet.alpha_composite(ref, (ref_x, label_h))
 
     sheet.save(os.path.join(OUT, "mula_contact_sheet.png"))
 
 
 def generate_all() -> None:
     os.makedirs(OUT, exist_ok=True)
-    _draw_mula("idle").save(os.path.join(OUT, "mula_idle.png"))
-    _draw_mula("windup").save(os.path.join(OUT, "mula_windup.png"))
-    _contact_sheet()
-    print("[gen_mula] Mula sem Cabeça v3 generated: idle + windup (192x192) + contact sheet")
+    frames = _frame_images()
+    for key, img in frames.items():
+        img.save(os.path.join(OUT, f"mula_{key}.png"))
+    _write_sprite_frames()
+    _contact_sheet(frames)
+    print(
+        "[gen_mula] Mula sem Cabeça v3: %d frames (192x192) + sprite_frames.tres + contact sheet"
+        % len(frames)
+    )
 
 
 if __name__ == "__main__":
