@@ -44,6 +44,7 @@ func _build_scene() -> void:
 	add_child(ground)
 
 	var walker := TitleWalker.new()
+	walker.companions_enabled = false  # no ending a Caipora atravessa sozinha
 	add_child(walker)
 
 	var atmo := Atmosphere.new()
