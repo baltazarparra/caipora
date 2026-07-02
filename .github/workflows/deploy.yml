@@ -108,24 +108,38 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      # A fila do Pages engasga de vez em quando (deployment_queued sem progresso)
-      # e matou 2 deploys seguidos em 2026-07-02. O actions/deploy-pages CLAMPA o
-      # timeout em 600000 ms (10 min) — valores maiores viram warning + 10 min.
-      # A proteção real é a RETRY: 2 tentativas × 10 min = 20 min de janela.
+      # A fila do Pages engasga de vez em quando (deployment_queued/processing
+      # lento) e matou deploys em série em 2026-07-02. O actions/deploy-pages
+      # CLAMPA o timeout em 600000 ms (10 min). NÃO tente retry como 2º step no
+      # MESMO job: o ID do deployment do Pages é o SHA do commit, e o cleanup de
+      # falha da 1ª tentativa cancela por SHA — matando o deployment da retry em
+      # segundos ("Deployment cancelled."). A retry vive no JOB seguinte.
       - name: Deploy to GitHub Pages
         id: deploy
-        continue-on-error: true
         uses: actions/deploy-pages@v4
         with:
           timeout: 600000
+
+  # Retry em JOB separado: quando este job começa, o cancel-por-SHA da falha
+  # anterior já terminou — o deployment novo (mesmo SHA, ciclo de vida novo)
+  # não é atropelado. Guard preciso: só quando o DEPLOY em si falhou (gate/build
+  # quebrados pulam o deploy e não devem acionar retry sem artefato).
+  deploy_retry:
+    needs: deploy
+    if: ${{ always() && needs.deploy.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - name: Retry deploy (fila do Pages engasgada)
-        id: deploy_retry
-        if: steps.deploy.outcome == 'failure'
+        id: deploy
         uses: actions/deploy-pages@v4
         with:
           timeout: 600000
