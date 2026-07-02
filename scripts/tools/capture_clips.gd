@@ -12,6 +12,7 @@ extends SceneTree
 ##
 ## Args (-- depois do nome do script):
 ##   --clip=combat|furia|boss     o que capturar (default combat)
+##   --boss=<id>                  boss do clip `boss` (mula|boitata|curupira|saci|jesuita; default mula)
 ##   --out=<png>                  tira de saída (default p/ combat)
 ##   --frames=N                   nº de células amostradas (default 30)
 ##   --sample=S                   captura 1 a cada S frames de render (default 5 ~12fps)
@@ -26,6 +27,10 @@ extends SceneTree
 ## (autoloads só rodam _ready depois do _initialize — gotcha #14).
 
 var _clip: String = "combat"
+## Boss do clip `boss` (--boss=): qualquer chefe redesenhado. Default preserva
+## o comportamento histórico (Mula). Fase certa por id para stats/backdrop.
+var _boss_id: String = "mula"
+const _BOSS_PHASE := {"mula": 1, "boitata": 2, "curupira": 3, "saci": 4, "jesuita": 5}
 var _out: String = "site/assets/clips/combat_strip.png"
 var _target_frames: int = 30
 var _sample: int = 5
@@ -61,6 +66,8 @@ func _initialize() -> void:
 			_warmup = int(arg.substr("--warmup=".length()))
 		elif arg.begins_with("--gain="):
 			_gain = maxf(1.0, arg.substr("--gain=".length()).to_float())
+		elif arg.begins_with("--boss="):
+			_boss_id = arg.substr("--boss=".length())
 
 
 func _process(_delta: float) -> bool:
@@ -154,9 +161,11 @@ func _setup() -> void:
 			gs.active_combat_is_boss = false
 			_scene = _instantiate("res://scenes/arena/arena.tscn")
 		"boss":
-			_override_enemy("mula", 1)
+			var phase: int = _BOSS_PHASE.get(_boss_id, 1)
+			gs.active_phase = phase
+			_override_enemy(_boss_id, phase)
 			gs.active_combat_is_boss = true
-			gs.next_enemy_scene = (load("res://scenes/arena/mula.tscn") as PackedScene)
+			gs.next_enemy_scene = (load("res://scenes/arena/%s.tscn" % _boss_id) as PackedScene)
 			_scene = _instantiate("res://scenes/arena/arena.tscn")
 		"finisher":
 			# Inimigo com POUCO HP: morre no golpe perfeito e dispara o FINISHER — a
