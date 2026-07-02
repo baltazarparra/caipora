@@ -122,6 +122,36 @@ static func attach_caipora(sprite: AnimatedSprite2D) -> void:
 		rim._enable_combat_flare()
 		rim._add_foot_embers()
 
+## Coroa de brasas ORBITANDO um set piece (chefes do mapa, espíritos do
+## santuário). local_coords = TRUE — com coords globais o centro da órbita
+## congela no transform do spawn e a coroa fica para trás quando o dono se
+## move/teleporta. Fade no fim da volta = cauda de cometa. No-op sem HD.
+static func attach_crown(parent: Node2D, color: Color, radius: float,
+		offset: Vector2 = Vector2.ZERO) -> void:
+	if parent == null or not Quality.hd_enabled():
+		return
+	var crown := CPUParticles2D.new()
+	crown.name = "AuraRing"
+	crown.amount = 14
+	crown.lifetime = 1.8
+	crown.local_coords = true
+	crown.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	crown.emission_sphere_radius = radius
+	crown.orbit_velocity_min = 0.3
+	crown.orbit_velocity_max = 0.5
+	crown.gravity = Vector2.ZERO
+	crown.initial_velocity_min = 0.0
+	crown.initial_velocity_max = 0.0
+	crown.scale_amount_min = 1.0
+	crown.scale_amount_max = 1.8
+	var glow := _overbright(color)
+	crown.color = glow
+	crown.color_ramp = _fade_ramp(glow)
+	crown.material = Constants.ADDITIVE_MATERIAL
+	crown.z_index = 1
+	crown.position = offset
+	parent.add_child(crown)
+
 # ─── Momentos (flare / passada) ──────────────────────────────────────────────
 
 ## Liga o pico de PERFEITO/crítico: monta o RimBurst + anel de choque e conecta

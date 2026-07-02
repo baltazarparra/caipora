@@ -225,10 +225,12 @@ func _random_clearing_point(bounds: Rect2) -> Vector2:
 # densidades mínimas respeitando particle_amount_scale (mobile).
 const PYRE_FIRE_SCALE: float = 1.35
 const PYRE_LIGHT_ENERGY: float = 1.4
+const PYRE_LIGHT_ENERGY_HD: float = 1.9   # modo HD: a pira domina a clareira
 const PYRE_LIGHT_SCALE: float = 3.2
 const PYRE_EMBER_AMOUNT: int = 18
 const WISP_SPACING: int = 4            # tiles entre fogos-fátuos no perímetro
 const WISP_ENERGY: float = 1.0
+const WISP_ENERGY_HD: float = 1.4      # modo HD: o aro de proteção queima mais vivo
 const WISP_TEXTURE_SCALE: float = 0.8
 const FLORA_COUNT: int = 12
 const FLORA_SEED: int = 0xCA1B0        # determinístico: o santuário não re-sorteia por visita
@@ -256,7 +258,8 @@ func _layer_mula_pyre() -> void:
 	layer.name = "LayerMulaPyre"
 	_objects.add_child(layer)
 	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
-	var light := ForestLight.make(Constants.COLOR_AMBER, PYRE_LIGHT_ENERGY, PYRE_LIGHT_SCALE)
+	var light := ForestLight.make(Constants.COLOR_AMBER,
+		Quality.pick(PYRE_LIGHT_ENERGY, PYRE_LIGHT_ENERGY_HD), PYRE_LIGHT_SCALE)
 	light.position = Vector2(_fire_pos) * Constants.TILE_SIZE + half
 	layer.add_child(light)
 	var embers := CPUParticles2D.new()
@@ -281,15 +284,17 @@ func _layer_boitata_wisps() -> void:
 	var wisp_color := Constants.COLOR_AURA_BOITATA.lerp(Color.WHITE, 0.45)
 	var half := Vector2(Constants.TILE_SIZE, Constants.TILE_SIZE) * 0.5
 	var i := 0
+	var energy := Quality.pick(WISP_ENERGY, WISP_ENERGY_HD)
+	var peak := Quality.pick(1.7, 2.0)  # HD: amplitude maior — o aro respira fundo
 	for tile: Vector2i in _perimeter_tiles(WISP_SPACING):
-		var wisp := ForestLight.make(wisp_color, WISP_ENERGY, WISP_TEXTURE_SCALE)
+		var wisp := ForestLight.make(wisp_color, energy, WISP_TEXTURE_SCALE)
 		wisp.position = Vector2(tile) * Constants.TILE_SIZE + half
 		layer.add_child(wisp)
 		# Pulso dessincronizado: período levemente diferente por fátuo (nunca em fase).
 		var period := 1.4 + 0.17 * float(i % 5)
 		var tween := wisp.create_tween().set_loops()
-		tween.tween_property(wisp, "energy", WISP_ENERGY * 1.7, period).set_trans(Tween.TRANS_SINE)
-		tween.tween_property(wisp, "energy", WISP_ENERGY * 0.6, period).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(wisp, "energy", energy * peak, period).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(wisp, "energy", energy * 0.6, period).set_trans(Tween.TRANS_SINE)
 		i += 1
 
 ## Curupira — A Mata Volta a Crescer: vida verde brota na clareira (flora da paleta
@@ -360,7 +365,8 @@ func _perimeter_tiles(spacing: int) -> Array[Vector2i]:
 
 func _scaled_amount(base: int) -> int:
 	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2.ZERO
-	return maxi(4, int(base * Constants.particle_amount_scale(vp)))
+	# ambient: as camadas do santuário dobram no modo HD (Quality.heavy).
+	return maxi(4, int(base * Constants.ambient_amount_scale(vp)))
 
 # ─── O rito de chegada (reveal único por encantado) ─────────
 # Primeira visita ao acampamento após cada libertação: a clareira escurece um

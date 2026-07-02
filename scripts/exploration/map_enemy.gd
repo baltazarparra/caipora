@@ -211,37 +211,11 @@ func _aura_color(aura_type: String) -> Color:
 		"jesuita":  return Constants.COLOR_AURA_JESUITA
 		_:          return Constants.COLOR_AURA_BOSS
 
-## Coroa de brasas ORBITANDO o chefe (modo HD): leitura de set piece à
-## distância. local_coords = TRUE — com coords globais o centro da órbita
-## congela no transform do spawn e a coroa fica para trás no teleporte por tile.
+## Coroa de brasas orbitando o chefe (modo HD): leitura de set piece à
+## distância. Receita centralizada no ParticleRim (compartilhada com o
+## santuário); o offset -8 é o centro do corpo dos sprites de chefe do mapa.
 func _spawn_hd_crown(color: Color) -> void:
-	if not Quality.hd_enabled():
-		return
-	var crown := CPUParticles2D.new()
-	crown.name = "AuraRing"
-	crown.amount = 14
-	crown.lifetime = 1.8
-	crown.local_coords = true
-	crown.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
-	crown.emission_sphere_radius = 15.0
-	crown.orbit_velocity_min = 0.3
-	crown.orbit_velocity_max = 0.5
-	crown.gravity = Vector2.ZERO
-	crown.initial_velocity_min = 0.0
-	crown.initial_velocity_max = 0.0
-	crown.scale_amount_min = 1.0
-	crown.scale_amount_max = 1.8
-	var glow := ParticleRim._overbright(color)
-	crown.color = glow
-	var ramp := Gradient.new()
-	ramp.set_offset(0, 0.0)
-	ramp.set_color(0, glow)
-	ramp.add_point(1.0, Color(glow.r, glow.g, glow.b, 0.0))
-	crown.color_ramp = ramp  # fade no fim da volta = cauda de cometa
-	crown.material = Constants.ADDITIVE_MATERIAL
-	crown.z_index = 1
-	crown.position = Vector2(0.0, -8.0)  # centro do corpo (offset dos sprites de chefe)
-	add_child(crown)
+	ParticleRim.attach_crown(self, color, 15.0, Vector2(0.0, -8.0))
 
 ## Brasas do Boitatá em escala de mapa (tile 32px). Gated por HD.
 func _spawn_ember_trail() -> void:

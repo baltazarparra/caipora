@@ -48,6 +48,53 @@ func test_setup_alone_keeps_spirit_still() -> void:
 	assert_eq(spirit.position, Vector2(100, 100),
 		"sem enable_wander o espírito fica parado (contrato preservado)")
 
+# ─── Modo HD: o encantado vira set piece (rim + coroa), leve fica intocado ───
+func test_hd_spirit_gets_rim_and_crown() -> void:
+	Quality._set_for_test(true)
+	var spirit := CampSpirit.new()
+	add_child_autofree(spirit)
+	spirit.setup(2)  # Boitatá
+	var rim := spirit._sprite.get_node_or_null("ParticleRim")
+	assert_not_null(rim, "espírito tem contorno de brasas em HD")
+	assert_not_null(rim.get_node_or_null("RimHalo"), "espírito tem halo (set piece)")
+	assert_null(rim.get_node_or_null("RimLight"),
+		"SEM segunda luz: o glow próprio do espírito já ilumina")
+	var crown := spirit.get_node_or_null("AuraRing") as CPUParticles2D
+	assert_not_null(crown, "espírito tem coroa orbital")
+	assert_gt(crown.orbit_velocity_max, 0.0, "a coroa orbita")
+	Quality._reset_for_test()
+
+func test_lite_spirit_has_no_hd_layers() -> void:
+	Quality._set_for_test(false)
+	var spirit := CampSpirit.new()
+	add_child_autofree(spirit)
+	spirit.setup(1)  # Mula
+	assert_null(spirit._sprite.get_node_or_null("ParticleRim"), "leve: sem rim")
+	assert_null(spirit.get_node_or_null("AuraRing"), "leve: sem coroa")
+	Quality._reset_for_test()
+
+func test_hd_calm_aura_doubles_density() -> void:
+	Quality._set_for_test(false)
+	var lite := CampSpirit.new()
+	add_child_autofree(lite)
+	lite.setup(3)
+	Quality._set_for_test(true)
+	var hd := CampSpirit.new()
+	add_child_autofree(hd)
+	hd.setup(3)
+	var lite_aura := _find_calm_aura(lite)
+	var hd_aura := _find_calm_aura(hd)
+	assert_eq(hd_aura.amount, lite_aura.amount * int(Quality.HD_HEAVY_FACTOR),
+		"HD dobra a densidade da aura calma")
+	Quality._reset_for_test()
+
+## A aura calma é o CPUParticles2D filho direto que não é a coroa.
+func _find_calm_aura(spirit: CampSpirit) -> CPUParticles2D:
+	for child: Node in spirit.get_children():
+		if child is CPUParticles2D and String(child.name) != "AuraRing":
+			return child as CPUParticles2D
+	return null
+
 func test_enable_wander_moves_within_bounds() -> void:
 	var spirit := CampSpirit.new()
 	add_child_autofree(spirit)
