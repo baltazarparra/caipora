@@ -17,6 +17,7 @@ concurrency:
 jobs:
   gate:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -48,8 +49,13 @@ jobs:
   build:
     needs: gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
+      # Histórico COMPLETO: make export carimba Z = git rev-list --count HEAD
+      # (Makefile). Checkout raso conta 1 e todo build publicado sairia alpha-X.Y.1.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Cache Godot binary
         id: cache-godot
@@ -102,10 +108,23 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
+      # A fila do Pages engasga de vez em quando (deployment_queued sem progresso):
+      # o timeout interno default de 10 min matou 2 deploys seguidos em 2026-07-02.
+      # Damos 20 min por tentativa e UMA retry antes de declarar derrota.
       - name: Deploy to GitHub Pages
         id: deploy
+        continue-on-error: true
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1200000
+      - name: Retry deploy (fila do Pages engasgada)
+        id: deploy_retry
+        if: steps.deploy.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 1200000
