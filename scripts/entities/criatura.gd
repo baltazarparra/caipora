@@ -126,10 +126,19 @@ func _apply_outline_shader() -> void:
 func _spawn_particle_rim() -> void:
 	if animated_sprite == null:
 		return
-	ParticleRim.attach_to(animated_sprite, _rim_color())
+	ParticleRim.attach_to(animated_sprite, _rim_color(), 1.0, Color.TRANSPARENT,
+		_rim_with_light(), _rim_with_halo())
 
 ## Cor do rim HD. Lei da marca: inimigo comum fica FORA da paleta da
 ## protagonista (sem laranja-juba, sem verde-cristal); bosses sobrescrevem
 ## com seus COLOR_AURA_* canônicos.
 func _rim_color() -> Color:
 	return Constants.COLOR_RIM_ENEMY
+
+## Luz de rim HD: a arena tem UM inimigo por vez — cabe no orçamento de luzes.
+func _rim_with_light() -> bool:
+	return true
+
+## Halo volumétrico: só chefes — comum fica nas brasas nítidas.
+func _rim_with_halo() -> bool:
+	return false

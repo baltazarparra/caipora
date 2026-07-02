@@ -94,13 +94,17 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 	add_child(sprite)
 	ActorContrast.apply_outline(sprite)
 	# Contorno de brasas HD (no-op sem HD): comuns em sangue frio, chefes e
-	# convertidos na cor da própria aura.
+	# convertidos na cor da própria aura. Luz + halo SÓ em set piece (boss/
+	# miniboss) — 8 comuns com luz estourariam o orçamento do Compatibility;
+	# o raio da luz é o de MAPA (tile 32px).
+	var set_piece := boss or miniboss
 	var rim_color := Constants.COLOR_RIM_ENEMY
 	if boss:
 		rim_color = _aura_color(boss_type)
 	elif miniboss:
 		rim_color = _aura_color(p_enemy_type)
-	ParticleRim.attach_to(sprite, rim_color)
+	ParticleRim.attach_to(sprite, rim_color, 1.0, Color.TRANSPARENT,
+		set_piece, set_piece, Constants.RIM_LIGHT_SCALE_MAP)
 
 	# Sombra + luz frontal: ancora visual contra o chão escuro (mesmo sistema da arena).
 	_spawn_shadow(not boss and not miniboss)

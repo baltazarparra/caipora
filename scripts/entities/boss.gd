@@ -74,3 +74,7 @@ func _spawn_shadow_aura() -> void:
 ## Rim HD na cor da aura canônica do chefe.
 func _rim_color() -> Color:
 	return Constants.COLOR_AURA_BOSS
+
+## Halo volumétrico HD: chefe é set piece — ganha o bloom da silhueta.
+func _rim_with_halo() -> bool:
+	return true

@@ -78,6 +78,64 @@ func test_attach_is_idempotent() -> void:
 			count += 1
 	assert_eq(count, 1, "re-attach substitui, não acumula")
 
+# ── v2: halo e luz seguem os flags de orçamento ──
+func test_default_attach_has_no_halo_or_light() -> void:
+	ParticleRim.attach_to(_sprite, Constants.COLOR_RIM_ENEMY)
+	var rim := _sprite.get_node("ParticleRim")
+	assert_null(rim.get_node_or_null("RimHalo"), "sem flag = sem halo (comum do mapa)")
+	assert_null(rim.get_node_or_null("RimLight"), "sem flag = sem luz")
+
+func test_halo_and_light_follow_flags() -> void:
+	ParticleRim.attach_to(_sprite, Constants.COLOR_AURA_BOSS, 1.0, Color.TRANSPARENT,
+		true, true, Constants.RIM_LIGHT_SCALE_MAP)
+	var rim := _sprite.get_node("ParticleRim")
+	var halo := rim.get_node_or_null("RimHalo") as CPUParticles2D
+	assert_not_null(halo, "halo volumétrico presente com flag")
+	assert_eq(halo.texture, ForestLight.LIGHT_TEXTURE,
+		"halo reusa a textura radial do ForestLight (batching)")
+	assert_eq(halo.material, Constants.ADDITIVE_MATERIAL, "halo aditivo compartilhado")
+	var light := rim.get_node_or_null("RimLight") as PointLight2D
+	assert_not_null(light, "luz de ator presente com flag")
+	assert_almost_eq(light.texture_scale, Constants.RIM_LIGHT_SCALE_MAP, 0.001,
+		"raio de MAPA respeitado (tile 32px)")
+	assert_eq(light.color,
+		Constants.COLOR_AURA_BOSS.lerp(Color.WHITE, Constants.RIM_LIGHT_WHITEN),
+		"cor da luz deriva do rim")
+
+# ── v2: pilha completa da Caipora + flare de momento ──
+func test_attach_caipora_full_stack_and_flare() -> void:
+	ParticleRim.attach_caipora(_sprite)
+	var rim := _sprite.get_node("ParticleRim") as ParticleRim
+	assert_not_null(rim.get_node_or_null("RimHalo"), "Caipora tem halo")
+	var light := rim.get_node_or_null("RimLight") as PointLight2D
+	assert_not_null(light, "Caipora tem luz")
+	assert_not_null(rim.get_node_or_null("FootEmbers"), "Caipora tem brasas de passada")
+	var burst := rim.get_node_or_null("RimBurst") as CPUParticles2D
+	assert_not_null(burst, "Caipora tem o burst do flare")
+	assert_true(burst.one_shot, "burst é one-shot")
+	assert_false(burst.emitting, "burst dorme até o flare")
+	var ring := rim.get_node_or_null("ShockRing") as Sprite2D
+	assert_not_null(ring, "Caipora tem o anel de choque")
+	assert_eq(ring.modulate.a, 0.0, "anel nasce invisível")
+
+	rim.flare()
+	assert_eq(light.energy, Constants.RIM_LIGHT_ENERGY * 2.5,
+		"flare estoura a luz para decair depois")
+	assert_true(burst.emitting, "flare dispara o burst da silhueta")
+	assert_gt(ring.modulate.a, 0.0, "flare acende o anel de choque")
+
+func test_caipora_flare_wired_to_perfect_signals() -> void:
+	ParticleRim.attach_caipora(_sprite)
+	var rim := _sprite.get_node("ParticleRim") as ParticleRim
+	assert_true(SignalBus.attack_result_perfect.is_connected(rim.flare),
+		"crítico PERFEITO dispara o flare")
+	assert_true(SignalBus.defense_result_perfect.is_connected(rim.flare),
+		"esquiva PERFEITA dispara o flare")
+	rim.free()
+	assert_false(SignalBus.attack_result_perfect.get_connections().any(
+		func(c: Dictionary) -> bool: return not is_instance_valid(c["callable"].get_object())),
+		"free do rim não deixa conexão morta pendurada")
+
 # ── Protagonista: laranja domina, esquenta com o tier, faísca verde é rara ──
 func test_caipora_rim_heats_with_furia_tier() -> void:
 	for key in MetaProgression.FURIA_KEYS:
