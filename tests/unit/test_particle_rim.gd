@@ -107,3 +107,37 @@ func test_caipora_rim_chama_overrides_ramp() -> void:
 	assert_eq(dust.color,
 		ParticleRim._overbright(Constants.COLOR_CHAMA_HOT.lerp(Constants.COLOR_CHAMA_CORE, 0.35)),
 		"CHAMA clareia o rim para brasa viva")
+
+# ── Inimigos: arena e mapa herdam o rim na cor certa ──
+func test_arena_boss_rim_uses_aura_color() -> void:
+	var boitata := preload("res://scenes/arena/boitata.tscn").instantiate() as Criatura
+	add_child_autofree(boitata)
+	var rim := boitata.animated_sprite.get_node_or_null("ParticleRim")
+	assert_not_null(rim, "Boitatá da arena tem rim com HD ligado")
+	var dust := rim.get_node("RimDust") as CPUParticles2D
+	assert_eq(dust.color, ParticleRim._overbright(Constants.COLOR_AURA_BOITATA),
+		"rim do chefe na cor da aura canônica")
+
+func test_map_enemy_rim_follows_hd() -> void:
+	var enemy := MapEnemy.new()
+	add_child_autofree(enemy)
+	enemy.setup("e1", Vector2i(2, 2), true, "boitata")
+	var rim := enemy._sprite.get_node_or_null("ParticleRim")
+	assert_not_null(rim, "boss do mapa tem rim com HD ligado")
+	var dust := rim.get_node("RimDust") as CPUParticles2D
+	assert_eq(dust.color, ParticleRim._overbright(Constants.COLOR_AURA_BOITATA),
+		"rim do mapa na cor da aura do chefe")
+
+	Quality._set_for_test(false)
+	var plain := MapEnemy.new()
+	add_child_autofree(plain)
+	plain.setup("e2", Vector2i(1, 1))
+	assert_null(plain._sprite.get_node_or_null("ParticleRim"),
+		"HD desligado: mapa sem rim")
+
+# ── Lei da marca: o rim de inimigo comum não veste a protagonista ──
+func test_enemy_rim_color_is_off_brand() -> void:
+	var rim := Constants.COLOR_RIM_ENEMY
+	assert_ne(rim, Constants.COLOR_JUBA, "sem laranja-juba em inimigo")
+	assert_ne(rim, Constants.COLOR_CRYSTAL, "sem verde-cristal em inimigo")
+	assert_lt(rim.g, rim.r, "sangue frio: verde nunca domina o canal vermelho")

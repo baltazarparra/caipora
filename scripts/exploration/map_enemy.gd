@@ -93,6 +93,14 @@ func setup(id: String, pos: Vector2i, boss: bool = false, boss_type: String = ""
 		sprite.offset.y = 16.0 / clamp_scale - sprite.texture.get_height() * 0.5
 	add_child(sprite)
 	ActorContrast.apply_outline(sprite)
+	# Contorno de brasas HD (no-op sem HD): comuns em sangue frio, chefes e
+	# convertidos na cor da própria aura.
+	var rim_color := Constants.COLOR_RIM_ENEMY
+	if boss:
+		rim_color = _aura_color(boss_type)
+	elif miniboss:
+		rim_color = _aura_color(p_enemy_type)
+	ParticleRim.attach_to(sprite, rim_color)
 
 	# Sombra + luz frontal: ancora visual contra o chão escuro (mesmo sistema da arena).
 	_spawn_shadow(not boss and not miniboss)
@@ -177,14 +185,18 @@ func _spawn_aura(aura_type: String) -> void:
 	aura.initial_velocity_max = 8.0
 	aura.scale_amount_min = 1.5
 	aura.scale_amount_max = 3.5
-	match aura_type:
-		"mula":     aura.color = Constants.COLOR_AURA_MULA
-		"boitata":  aura.color = Constants.COLOR_AURA_BOITATA
-		"curupira": aura.color = Constants.COLOR_AURA_CURUPIRA
-		"saci":     aura.color = Constants.COLOR_AURA_SACI
-		"jesuita":  aura.color = Constants.COLOR_AURA_JESUITA
-		_:          aura.color = Constants.COLOR_AURA_BOSS
+	aura.color = _aura_color(aura_type)
 	add_child(aura)
+
+## Cor canônica da aura por tipo de chefe (compartilhada com o rim HD).
+func _aura_color(aura_type: String) -> Color:
+	match aura_type:
+		"mula":     return Constants.COLOR_AURA_MULA
+		"boitata":  return Constants.COLOR_AURA_BOITATA
+		"curupira": return Constants.COLOR_AURA_CURUPIRA
+		"saci":     return Constants.COLOR_AURA_SACI
+		"jesuita":  return Constants.COLOR_AURA_JESUITA
+		_:          return Constants.COLOR_AURA_BOSS
 
 func _spawn_baptism_drip() -> void:
 	var drip := CPUParticles2D.new()

@@ -78,3 +78,7 @@ func _spawn_shadow_aura() -> void:
 	aura.color = Constants.COLOR_AURA_SACI
 	aura.z_index = -1
 	add_child(aura)
+
+## Rim HD na cor da aura canônica do chefe.
+func _rim_color() -> Color:
+	return Constants.COLOR_AURA_SACI
