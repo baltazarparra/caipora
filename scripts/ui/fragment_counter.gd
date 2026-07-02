@@ -3,12 +3,14 @@ extends Control
 
 # Contador de TERRA RARA compacto: o ícone de minério cristalino (sprite premium) + o número.
 # Substitui o antigo `"+".repeat(n)` (que transbordava a tela) e o losango desenhado à mão.
-# Largura praticamente constante: cresce só com a contagem de dígitos.
+# Largura PADRÃO: reserva espaço para RESERVE_DIGITS dígitos, então a placa do
+# header não muda de tamanho conforme a contagem sobe (só além de 999).
 
 # ─── Constants ─────────────────────────────────────
 const ICON_TEX: Texture2D = preload("res://assets/sprites/terra_rara_icon.png")
 const ICON_BOX: float = 22.0  # lado do ícone (proporcional ao tamanho da fonte)
 const GAP: float = 8.0        # respiro entre ícone e número
+const RESERVE_DIGITS: int = 3 # largura mínima do número (padrão de largura do header)
 
 # ─── State ─────────────────────────────────────────
 var _count: int = 0
@@ -59,10 +61,19 @@ func _relayout() -> void:
 		return
 	var box: float = _icon_box()
 	var h: float = maxf(box, _label.get_minimum_size().y)
+	# Largura padrão: nunca menor que RESERVE_DIGITS dígitos na fonte atual.
+	var label_w: float = maxf(_label.get_minimum_size().x, _digit_reserve_width())
 	_label.position = Vector2(box + GAP, 0.0)
-	_label.size = Vector2(_label.get_minimum_size().x, h)
-	custom_minimum_size = Vector2(box + GAP + _label.get_minimum_size().x, h)
+	_label.size = Vector2(label_w, h)
+	custom_minimum_size = Vector2(box + GAP + label_w, h)
 	size = custom_minimum_size
+
+func _digit_reserve_width() -> float:
+	var font: Font = _label.get_theme_font(&"font")
+	if font == null:
+		return 0.0
+	return font.get_string_size("0".repeat(RESERVE_DIGITS),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
 
 func _pop() -> void:
 	if _pop_tween != null and _pop_tween.is_valid():

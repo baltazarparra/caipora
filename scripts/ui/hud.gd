@@ -49,8 +49,7 @@ func _ready() -> void:
 		GameState.caipora_max_hp,
 		Constants.COLOR_BLOOD,
 		Constants.COLOR_ARENA_BG,
-		Constants.COLOR_BLOOD.lightened(0.2),
-		Lang.t(&"hud.player")
+		Constants.COLOR_BLOOD.lightened(0.2)
 	)
 	_player_bar.set_value(GameState.caipora_current_hp)
 
@@ -104,8 +103,9 @@ func _layout() -> void:
 ## Exploração: barra do jogador à esquerda; Terra Rara + mudo à direita. No telefone
 ## retrato, esses dois dobram de tamanho (alvo tátil e leitura de "moeda").
 func _layout_exploration(vp: Vector2, side: float, top: float, fs: int) -> void:
-	var pw: float = clampf(vp.x * 0.24, 220.0, 420.0)
-	_player_bar.configure_size(pw, fs)
+	# Largura padrão única das barras (mesma do combate — HudHeader._std_bar_width).
+	var pw: float = clampf(vp.x * 0.30, 240.0, 460.0)
+	_player_bar.configure_size(pw)
 	_player_bar.position = Vector2(side, top)
 
 	# Em retrato a arte contém-na-largura (canvas ~750px reduzido para a largura física do
@@ -129,35 +129,29 @@ func _layout_exploration(vp: Vector2, side: float, top: float, fs: int) -> void:
 
 ## Combate: header estilo fighting game — jogador (esq.) e adversário (dir.) na mesma fileira
 ## do topo, larguras simétricas, fills espelhados encontrando-se no centro.
-func _layout_combat_header(vp: Vector2, side: float, top: float, fs: int) -> void:
-	var hw: float = (clampf(vp.x * 0.40, 300.0, 620.0) if _enemy_is_boss
-		else clampf(vp.x * 0.34, 240.0, 460.0))
+func _layout_combat_header(vp: Vector2, side: float, top: float, _fs: int) -> void:
+	# Largura padrão única (boss NÃO ganha barra maior — padrão de altura/largura).
+	var hw: float = clampf(vp.x * 0.30, 240.0, 460.0)
 	# Nunca colidir no centro: cada barra ≤ metade do espaço útil menos o respiro central.
 	var max_hw: float = (vp.x - side * 2.0 - HEADER_CENTER_GAP) * 0.5
 	hw = minf(hw, maxf(max_hw, 1.0))
 
-	_player_bar.configure_size(hw, fs)
+	_player_bar.configure_size(hw)
 	_player_bar.position = Vector2(side, top)
 	if _enemy_bar != null:
-		_enemy_bar.configure_size(hw, fs)
+		_enemy_bar.configure_size(hw)
 		_enemy_bar.position = Vector2(vp.x - side - hw, top)
 
 func _setup_enemy_bar(max_health: float, is_boss: bool) -> void:
 	_enemy_max = max_health
 	_enemy_is_boss = is_boss
+	# Barra sem texto (decisão do dono): a identidade é a cor âmbar + espelhamento.
 	_enemy_bar.setup(
 		max_health,
 		Constants.COLOR_AMBER,
 		Constants.COLOR_ARENA_BG,
-		Constants.COLOR_AMBER.darkened(0.15),
-		_enemy_label(),
-		is_boss
+		Constants.COLOR_AMBER.darkened(0.15)
 	)
-
-## Nome da barra do inimigo: nome real da criatura/boss (via GameState), com fallback.
-func _enemy_label() -> String:
-	var n := GameState.active_combat_name
-	return n if not n.is_empty() else Lang.t(&"hud.enemy")
 
 ## Resolve o nome por id (boss.<id>.name → enemy.<id>.name → hud.enemy). Lang.t devolve a
 ## própria chave quando ausente — usamos isso p/ detectar o miss e cair no fallback.

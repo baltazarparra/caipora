@@ -78,3 +78,38 @@ func test_combat_builds_four_plates_with_enemy() -> void:
 	_h.setup_enemy(8.0, false, "Caçador")
 	assert_eq(_h._plates.size(), 4, "combate: placas de moeda, mudo, HP jogador e HP inimigo")
 
+func test_bars_share_standard_size_even_for_boss() -> void:
+	# Padrão de altura e largura: jogador e inimigo têm a MESMA barra, e boss
+	# não ganha barra maior que a de um inimigo comum.
+	_h.set_mode(HudHeader.Mode.COMBAT)
+	_h.setup_enemy(8.0, false, "Caçador")
+	var common_size: Vector2 = _h._enemy_bar.size
+	assert_eq(_h._player_bar.size, common_size, "jogador e inimigo: mesmo tamanho de barra")
+	_h.setup_enemy(36.0, true, "Mula sem Cabeça")
+	assert_eq(_h._enemy_bar.size, common_size, "boss usa o mesmo tamanho padrão")
+	assert_almost_eq(_h._enemy_bar.size.y, HealthBar.BAR_H, 0.01, "altura padrão única")
+
+func test_player_bar_same_width_in_exploration_and_combat() -> void:
+	_h.set_mode(HudHeader.Mode.EXPLORATION)
+	var exploration_w: float = _h._player_bar.size.x
+	_h.set_mode(HudHeader.Mode.COMBAT)
+	_h.setup_enemy(8.0, false, "Caçador")
+	assert_almost_eq(_h._player_bar.size.x, exploration_w, 0.01,
+		"a barra do jogador não muda de largura entre exploração e combate")
+
+func test_bars_have_no_text() -> void:
+	# Decisão do dono: a barra de HP é só a barra — nenhum Label dentro dela.
+	_h.set_mode(HudHeader.Mode.COMBAT)
+	_h.setup_enemy(8.0, false, "Caçador")
+	for bar: Control in [_h._player_bar, _h._enemy_bar]:
+		for child in bar.get_children():
+			assert_false(child is Label, "barra de HP sem texto")
+	assert_eq(_h.enemy_name(), "Caçador", "o nome real segue guardado no header")
+
+func test_top_row_plates_share_standard_height() -> void:
+	# Padrão de altura da linha 1: as placas de moeda e mudo têm a mesma altura.
+	_h.set_mode(HudHeader.Mode.CAMP)
+	assert_eq(_h._plates.size(), 2)
+	assert_almost_eq(_h._plates[0].size.y, _h._plates[1].size.y, 0.01,
+		"placas de moeda e mudo com altura padrão igual")
+

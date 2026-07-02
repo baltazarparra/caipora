@@ -5,17 +5,18 @@ extends Control
 # dano/vida — apenas troca a camada visual. Largura FIXA: a barra preenche por proporção,
 # então nunca sai da tela por mais HP que haja (jogador cresce, bosses chegam a 36 HP).
 #
+# SÓ A BARRA, sem texto (decisão do dono, 2026-07-01): a identidade vem da cor
+# (sangue = jogador, âmbar = inimigo) e do espelhamento; a altura é PADRÃO
+# (BAR_H) para todo ator — boss não ganha barra mais alta nem mais larga.
+#
 # Recursos AAA:
 #  - fill que drena com tween suave;
 #  - rastro de dano (ghost) que desce devagar atrás do fill, marcando o golpe;
 #  - ticks de 1 HP (preserva a leitura discreta que os ícones davam, mas com largura fixa);
-#  - valor numérico (cur/máx) + nome;
 #  - pulso quando a vida está baixa.
 
 # ─── Constants ─────────────────────────────────────
-const HEADER_H: float = 22.0          # faixa do nome/valor acima da barra
-const GAP: float = 4.0                 # respiro entre cabeçalho e barra
-const BAR_H: float = 20.0
+const BAR_H: float = 20.0              # altura padrão única (todo ator, todo modo)
 const MAX_TICKS: int = 48              # acima disso os ticks viram ruído: omitimos
 const FILL_TWEEN: float = 0.18         # drena/enche o fill
 const TRAIL_TWEEN: float = 0.45        # o rastro persegue o fill, mais lento
@@ -28,16 +29,12 @@ var _max: float = 1.0
 var _value: float = 1.0
 var _display_value: float = 1.0        # fill animado
 var _trail_value: float = 1.0          # ghost de dano animado
-var _is_boss: bool = false
 
 var _fill_color: Color = Constants.COLOR_BLOOD
 var _track_color: Color = Constants.COLOR_ARENA_BG
 var _border_color: Color = Constants.COLOR_BLOOD
 var _trail_color: Color = Constants.COLOR_BONE
 
-var _font_size: int = Constants.FONT_MD
-
-var _name_label: Label
 var _mirrored: bool = false
 var _fill_tween: Tween
 var _trail_tween: Tween
@@ -45,15 +42,10 @@ var _trail_tween: Tween
 # ─── Lifecycle ─────────────────────────────────────
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_name_label = Label.new()
-	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	add_child(_name_label)
-	_relayout()
 
 # ─── Public API ────────────────────────────────────
 ## Configura cores/identidade. `max` define a escala; o valor começa cheio.
-func setup(max_value: float, fill: Color, track: Color, border: Color, label_text: String, is_boss: bool = false) -> void:
+func setup(max_value: float, fill: Color, track: Color, border: Color) -> void:
 	_max = maxf(max_value, 1.0)
 	_value = _max
 	_display_value = _max
@@ -62,10 +54,6 @@ func setup(max_value: float, fill: Color, track: Color, border: Color, label_tex
 	_track_color = track
 	_border_color = border
 	_trail_color = fill.lightened(0.55)
-	_is_boss = is_boss
-	if _name_label != null:
-		_name_label.text = label_text
-	_refresh_text_styles()
 	queue_redraw()
 
 ## Atualiza só o teto (jogador cresce; spawn de inimigo redefine a escala).
@@ -108,25 +96,21 @@ func set_value(new_value: float) -> void:
 	set_process(_value > 0.0 and _ratio() <= LOW_RATIO)
 	queue_redraw()
 
-## Aplica dimensões responsivas calculadas pela HUD.
-func configure_size(bar_width: float, font_size: int) -> void:
-	_font_size = font_size
-	custom_minimum_size = Vector2(bar_width, _total_height())
+## Aplica a largura responsiva calculada pela HUD; a altura é o padrão BAR_H.
+func configure_size(bar_width: float) -> void:
+	custom_minimum_size = Vector2(bar_width, BAR_H)
 	size = custom_minimum_size
-	_refresh_text_styles()
-	_relayout()
 	queue_redraw()
 
 func total_height() -> float:
-	return _total_height()
+	return BAR_H
 
-## Espelha a barra: fill/rastro ancoram na direita e o nome vai para a direita.
+## Espelha a barra: fill/rastro ancoram na direita e drenam em direção ao centro.
 ## Usado pela barra do inimigo no header de combate (jogador × adversário).
 func set_mirrored(value: bool) -> void:
 	if _mirrored == value:
 		return
 	_mirrored = value
-	_relayout()
 	queue_redraw()
 
 # ─── Internals ─────────────────────────────────────
@@ -141,33 +125,8 @@ func _set_trail_value(v: float) -> void:
 func _ratio() -> float:
 	return clampf(_value / _max, 0.0, 1.0) if _max > 0.0 else 0.0
 
-func _total_height() -> float:
-	var h: float = HEADER_H
-	if _is_boss:
-		h += 4.0
-	return h + GAP + (BAR_H + 6.0 if _is_boss else BAR_H)
-
 func _bar_rect() -> Rect2:
-	var top: float = HEADER_H + GAP + (4.0 if _is_boss else 0.0)
-	var bh: float = BAR_H + 6.0 if _is_boss else BAR_H
-	return Rect2(0.0, top, size.x, bh)
-
-func _relayout() -> void:
-	if _name_label == null:
-		return
-	var header_h: float = HEADER_H + (4.0 if _is_boss else 0.0)
-	# Sem o número, o nome ocupa a largura útil do cabeçalho. Espelhado (inimigo no
-	# header de combate), o nome vai para fora — alinhado à direita.
-	_name_label.position = Vector2.ZERO
-	_name_label.size = Vector2(size.x, header_h)
-	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if _mirrored \
-		else HORIZONTAL_ALIGNMENT_LEFT
-
-func _refresh_text_styles() -> void:
-	if _name_label == null:
-		return
-	_name_label.add_theme_font_size_override("font_size", _font_size)
-	_name_label.add_theme_color_override("font_color", Constants.COLOR_TEXT)
+	return Rect2(0.0, 0.0, size.x, BAR_H)
 
 # ─── Drawing ───────────────────────────────────────
 func _draw() -> void:

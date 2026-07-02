@@ -40,8 +40,7 @@ func _ready() -> void:
 		GameState.caipora_max_hp,
 		Constants.COLOR_BLOOD,
 		Constants.COLOR_ARENA_BG,
-		Constants.COLOR_BLOOD.lightened(0.2),
-		Lang.t(&"hud.player")
+		Constants.COLOR_BLOOD.lightened(0.2)
 	)
 	_player_bar.set_value(GameState.caipora_current_hp)
 
@@ -72,7 +71,9 @@ func set_player_health(current: float, max_health: float) -> void:
 	_player_bar.set_max(max_health)
 	_player_bar.set_value(current)
 
-## Define escala/identidade da barra do inimigo (com o NOME REAL da criatura/boss).
+## Define escala/identidade da barra do inimigo. O nome real fica guardado
+## (acessor/testes/telas futuras), mas a barra é SÓ a barra — sem texto; e o
+## boss usa o MESMO tamanho padrão dos demais (padrão de altura/largura).
 func setup_enemy(max_health: float, is_boss: bool, enemy_name: String) -> void:
 	_enemy_max = max_health
 	_enemy_is_boss = is_boss
@@ -81,9 +82,7 @@ func setup_enemy(max_health: float, is_boss: bool, enemy_name: String) -> void:
 		max_health,
 		Constants.COLOR_AMBER,
 		Constants.COLOR_ARENA_BG,
-		Constants.COLOR_AMBER.darkened(0.15),
-		enemy_name,
-		is_boss
+		Constants.COLOR_AMBER.darkened(0.15)
 	)
 	relayout()
 
@@ -152,9 +151,16 @@ func relayout() -> void:
 	_rebuild_plates()
 	queue_redraw()
 
-func _layout_player(vp: Vector2, side: float, top: float, fs: int) -> void:
-	var pw := clampf(vp.x * 0.24, 220.0, 420.0)
-	_player_bar.configure_size(pw, fs)
+## Largura PADRÃO das barras de HP — a mesma para jogador e inimigo, em toda
+## tela e para todo porte de inimigo (boss não ganha barra maior). No combate
+## ela ainda clampa para caber duas lado a lado com o vão central.
+func _std_bar_width(vp: Vector2, side: float) -> float:
+	var w := clampf(vp.x * 0.30, 240.0, 460.0)
+	var max_hw := (vp.x - side * 2.0 - HEADER_CENTER_GAP) * 0.5
+	return minf(w, maxf(max_hw, 1.0))
+
+func _layout_player(vp: Vector2, side: float, top: float, _fs: int) -> void:
+	_player_bar.configure_size(_std_bar_width(vp, side))
 	_player_bar.position = Vector2(side, top)
 
 ## Altura canônica da linha 1 (moeda|mudo) — o mudo é o item mais alto da linha.
@@ -175,15 +181,13 @@ func _layout_top_row(vp: Vector2, side: float, top: float, fs: int) -> void:
 	_frag.position = Vector2(side, top + (row_h - _frag.size.y) * 0.5)
 	_mute.position = Vector2(vp.x - side - _mute.size.x, top + (row_h - _mute.size.y) * 0.5)
 
-## Barras de luta (linha 2): jogador (esq.) × inimigo (dir. espelhado), larguras simétricas.
-func _layout_combat(vp: Vector2, side: float, top: float, fs: int) -> void:
-	var hw := (clampf(vp.x * 0.40, 300.0, 620.0) if _enemy_is_boss
-		else clampf(vp.x * 0.34, 240.0, 460.0))
-	var max_hw := (vp.x - side * 2.0 - HEADER_CENTER_GAP) * 0.5
-	hw = minf(hw, maxf(max_hw, 1.0))
-	_player_bar.configure_size(hw, fs)
+## Barras de luta (linha 2): jogador (esq.) × inimigo (dir. espelhado), no
+## MESMO tamanho padrão da exploração (uma largura, uma altura — sem exceções).
+func _layout_combat(vp: Vector2, side: float, top: float, _fs: int) -> void:
+	var hw := _std_bar_width(vp, side)
+	_player_bar.configure_size(hw)
 	_player_bar.position = Vector2(side, top)
-	_enemy_bar.configure_size(hw, fs)
+	_enemy_bar.configure_size(hw)
 	_enemy_bar.position = Vector2(vp.x - side - hw, top)
 
 # ─── Placas serrilhadas por grupo (chrome "casca flutuante") ───
@@ -196,24 +200,27 @@ func _rebuild_plates() -> void:
 	_plates.clear()
 	var padx := float(Constants.SPACE_SM)
 	var pady := plate_pady()
+	# Altura PADRÃO das placas da linha 1: a linha inteira (o mudo é o item mais
+	# alto) — moeda e mudo ficam em placas da MESMA altura, conteúdo centrado.
+	var row_h := top_row_height(_viewport_size()) + pady * 2.0
 	match _mode:
 		Mode.COMBAT:
-			_append_plate([_frag], padx, pady)
-			_append_plate([_mute], padx, pady)
+			_append_plate([_frag], padx, pady, row_h)
+			_append_plate([_mute], padx, pady, row_h)
 			_append_plate([_player_bar], padx, pady)
 			if _enemy_max > 0.0:
 				_append_plate([_enemy_bar], padx, pady)
 		Mode.EXPLORATION:
-			_append_plate([_frag], padx, pady)
-			_append_plate([_mute], padx, pady)
+			_append_plate([_frag], padx, pady, row_h)
+			_append_plate([_mute], padx, pady, row_h)
 			_append_plate([_player_bar], padx, pady)
 		Mode.CAMP:
-			_append_plate([_frag], padx, pady)
-			_append_plate([_mute], padx, pady)
+			_append_plate([_frag], padx, pady, row_h)
+			_append_plate([_mute], padx, pady, row_h)
 		_:
 			pass
 
-func _append_plate(nodes: Array, padx: float, pady: float) -> void:
+func _append_plate(nodes: Array, padx: float, pady: float, min_h: float = 0.0) -> void:
 	var min_p := Vector2(INF, INF)
 	var max_p := Vector2(-INF, -INF)
 	for node: Control in nodes:
@@ -223,7 +230,13 @@ func _append_plate(nodes: Array, padx: float, pady: float) -> void:
 		max_p = max_p.max(node.position + node.size)
 	if min_p.x == INF:
 		return
-	_plates.append(Rect2(min_p - Vector2(padx, pady), (max_p - min_p) + Vector2(padx * 2.0, pady * 2.0)))
+	var rect := Rect2(min_p - Vector2(padx, pady), (max_p - min_p) + Vector2(padx * 2.0, pady * 2.0))
+	if rect.size.y < min_h:
+		# Expande verticalmente centrado — padrão de altura sem deslocar o conteúdo.
+		var grow := (min_h - rect.size.y) * 0.5
+		rect.position.y -= grow
+		rect.size.y = min_h
+	_plates.append(rect)
 
 func _draw() -> void:
 	var bg := Constants.COLOR_NIGHT
