@@ -128,7 +128,7 @@ When modifying input, arena, exploration, or timing — run `/validate-controls`
 
 ## Common Gotchas
 
-1. **Display required.** Godot needs a display for `run_project` and `launch_editor`. WSLg provides `:0`. If unavailable, use `Xvfb` or accept that only headless operations work.
+1. **Display required.** Godot needs a display for `run_project` and `launch_editor`. WSLg provides `:0`. If unavailable, use `Xvfb` or accept that only headless operations work. **Capturas (`capture_clips.gd`/`screenshot.gd`/`preview_*.gd`): `DISPLAY=:0` pode crashar (signal 11) no driver NVIDIA da WSLg (dlopen em `libnvwgf2umx.so`/d3d12), e sob `xvfb-run` o Godot cai para Wayland e crasha igual.** Receita que funciona: `XDG_DATA_HOME=/tmp/caipora-godot-data LIBGL_ALWAYS_SOFTWARE=1 WAYLAND_DISPLAY= xvfb-run -a godot --display-driver x11 --rendering-driver opengl3 --rendering-method gl_compatibility --path . ... < /dev/null` (X11 forçado + GL por software + user:// isolado + stdin fechado, KI-020).
 2. **Headless for MCP.** Scene creation via MCP uses `--headless`. Do not confuse this with running the game.
 3. **UID files (Godot 4.4+).** Godot generates `.uid` files for resources. They should be committed to git.
 4. **`.import` files.** Godot creates `.import` files and `.godot/` cache. These are in `.gitignore` and must stay ignored.
