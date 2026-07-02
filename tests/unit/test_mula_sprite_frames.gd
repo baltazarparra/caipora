@@ -11,6 +11,8 @@ const FRAME_SIZE := Vector2(192, 192)
 const CONTRACT: Dictionary = {
 	&"idle": [5, true, 5.0],
 	&"windup": [3, false, 12.0],
+	&"strike": [2, false, 12.0],
+	&"recover": [2, false, 14.0],
 }
 
 func _frames() -> SpriteFrames:
@@ -60,6 +62,10 @@ func test_anchor_frames_point_to_canonical_pngs() -> void:
 	var windup_held := frames.get_frame_texture(&"windup", last)
 	assert_true(windup_held.resource_path.ends_with("mula_windup.png"),
 		"windup segura mula_windup.png no último frame (leu %s)" % windup_held.resource_path)
+	var strike_last := frames.get_frame_count(&"strike") - 1
+	var strike_held := frames.get_frame_texture(&"strike", strike_last)
+	assert_true(strike_held.resource_path.ends_with("mula_strike.png"),
+		"strike segura o impacto mula_strike.png no último frame (leu %s)" % strike_held.resource_path)
 
 func test_windup_cabe_no_windup_mais_curto() -> void:
 	# O wind_up mais curto da Mula (COICE via criatura_pattern) dura 0.25s:

@@ -54,17 +54,35 @@ MULA_PALETTE = [
 ]
 
 
+# Pivô do warp de pitch: as ancas — empinar ergue o peito, desabar afunda-o.
+_PIVOT_X = 46.0
+
+
 class Painter:
     def __init__(self, size: int = SIZE) -> None:
         self.size = size
         self.k = size / GRID * SS
         self.im = Image.new("RGBA", (size * SS, size * SS), TRANSPARENT)
         self.d = ImageDraw.Draw(self.im)
+        # (pitch, lunge): cisalhamento do torso em torno das ancas + avanço à
+        # esquerda. Aplicado a TODO desenho enquanto setado; as pernas zeram o
+        # warp e usam coordenadas explícitas por frame.
+        self.warp = (0.0, 0.0)
+
+    def _w(self, x: float, y: float) -> tuple[float, float]:
+        pitch, lunge = self.warp
+        if pitch == 0.0 and lunge == 0.0:
+            return (x, y)
+        return (x - lunge * 3.0, y + pitch * 0.125 * (_PIVOT_X - x))
 
     def poly(self, pts: list[tuple[float, float]], col: tuple[int, int, int]) -> None:
-        self.d.polygon([(x * self.k, y * self.k) for x, y in pts], fill=col)
+        self.d.polygon(
+            [(wx * self.k, wy * self.k) for wx, wy in (self._w(x, y) for x, y in pts)],
+            fill=col,
+        )
 
     def ellipse(self, cx: float, cy: float, rx: float, ry: float, col: tuple[int, int, int]) -> None:
+        cx, cy = self._w(cx, cy)
         self.d.ellipse(
             [(cx - rx) * self.k, (cy - ry) * self.k,
              (cx + rx) * self.k, (cy + ry) * self.k],
@@ -200,8 +218,33 @@ def _leg(
     _hoof_and_shoe(p, foot, glint)
 
 
-def _legs(p: Painter, coil: float) -> None:
-    """Four legs braced to gallop; far pair darker, no glint. Feet planted."""
+def _legs(p: Painter, coil: float, mode: str = "stand") -> None:
+    """Four legs; far pair darker, no glint. Coordenadas explícitas por modo:
+    stand (idle/windup, pés plantados), rear (empinada — frentes dobradas no
+    ar), impact (ferraduras desabam à frente) e settle (assentando de volta)."""
+    if mode == "rear":
+        # Traseiras aguentam o peso; frentes dobradas junto ao peito erguido.
+        _leg(p, (22.0, 36.5), (19.0, 41.0), (21.5, 45.5), VOID_DK, False)
+        _leg(p, (48.5, 43.0), (52.5, 51.0), (50.0, _GROUND_Y), VOID_DK, False)
+        _leg(p, (16.5, 35.0), (11.0, 39.0), (14.0, 43.5), VOID, True)
+        _leg(p, (44.0, 43.5), (49.5, 50.5), (46.0, _GROUND_Y), VOID, True)
+        return
+    if mode == "impact":
+        # Ferraduras da frente esmagam adiante do peito; traseiras esticadas.
+        _leg(p, (20.0, 43.0), (14.5, 50.0), (10.5, 57.5), VOID_DK, False)
+        _leg(p, (49.0, 41.0), (54.0, 48.5), (52.0, _GROUND_Y), VOID_DK, False)
+        _leg(p, (15.5, 43.5), (9.5, 50.5), (5.5, 56.5), VOID, True)
+        _leg(p, (45.0, 41.5), (51.5, 47.5), (48.5, _GROUND_Y), VOID, True)
+        # Arco do golpe: o flash prateado risca colado às ferraduras da frente.
+        p.ellipse(7.6, 52.8, 0.7, 1.9, IRON_LT)
+        p.ellipse(12.4, 54.0, 0.6, 1.6, IRON_LT)
+        return
+    if mode == "settle":
+        _leg(p, (21.5, 42.5), (18.5, 50.5), (16.5, _GROUND_Y), VOID_DK, False)
+        _leg(p, (48.5, 42.0), (52.5, 50.0), (50.5, _GROUND_Y), VOID_DK, False)
+        _leg(p, (16.0, 42.5), (11.5, 50.5), (10.0, _GROUND_Y), VOID, True)
+        _leg(p, (44.0, 42.0), (49.5, 49.5), (46.5, _GROUND_Y), VOID, True)
+        return
     s = _sink(coil)
     gather = coil * 2.0   # hind feet slide toward the body when coiling
     bend = coil * 1.8     # knees push outward as the body drops
@@ -356,16 +399,28 @@ def _flame_pts(
     return pts
 
 
-def _fire_column(p: Painter, coil: float, flame: float) -> None:
-    """The Mula's juba: a serrated column of fire with flat 4-tone selout."""
+def _fire_column(
+    p: Painter,
+    coil: float,
+    flame: float,
+    stretch: float = 0.0,
+    h_mult: float = 1.0,
+) -> None:
+    """The Mula's juba: a serrated column of fire with flat 4-tone selout.
+
+    stretch arrasta os dentes para trás (smear do impacto); h_mult comprime a
+    coluna quando o corpo empina (o fogo fica para trás — drag)."""
     s = _sink(coil)
     base = (12.5, 11.2 + s)
-    height = 10.4 + coil * 2.4          # windup tips reach ~y 0.8 (px ~2.4)
+    height = (10.4 + coil * 2.4) * h_mult   # windup tips reach ~y 0.8 (px ~2.4)
     width = 1.1 + coil * 0.55
 
     crown = list(_FIRE_CROWN)
     if coil > 0.5:
         crown = crown[:3] + _FIRE_SURGE_TOOTH + crown[3:]
+    if stretch > 0.0:
+        # Dentes arrastam para trás (direita): a coroa vira rastro de galope.
+        crown = [(dx * (1.0 + stretch * 0.5) if dx > 0 else dx, h) for dx, h in crown]
 
     # Deep silhouette → mid → hot: same crown, inset by scale. Flat layers.
     p.poly(_flame_pts(base, height, width, crown, flame), FIRE_DEEP)
@@ -387,6 +442,11 @@ def _fire_column(p: Painter, coil: float, flame: float) -> None:
         drift = math.sin(math.tau * (flame + ex)) * 0.4 if flame > 0.0 else 0.0
         p.ellipse(ex + drift * 0.3, ey + s * 0.4 - drift, r, r, col)
 
+    if stretch > 0.0:
+        # Riscos horizontais do smear — o fogo rasgado pela arrancada.
+        p.ellipse(31.0, 7.5, 2.6 * stretch, 0.7, FIRE_MID)
+        p.ellipse(34.5, 10.5, 2.2 * stretch, 0.6, FIRE_DEEP)
+
 
 def _harness(p: Painter, coil: float) -> None:
     """Cursed saddle + blood trim + girth. The last ride never ended."""
@@ -406,6 +466,19 @@ def _harness(p: Painter, coil: float) -> None:
     p.ellipse(13.8, 34.4 + s, 0.55, 0.9, SADDLE_BLOOD)
 
 
+# Presets por pose: warp do torso (pitch/lunge), modo das pernas e canais do
+# fogo. O strike é o coice-atropelo da lore: EMPINA (rear, fogo comprimido pelo
+# drag) e DESABA as ferraduras à frente (impact, fogo esticado em smear).
+_POSE_PRESETS: dict[str, dict[str, float | str]] = {
+    "idle":      {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0},
+    "windup":    {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0},
+    "strike_1":  {"pitch": -1.15, "lunge": 0.0, "legs": "rear", "stretch": 0.0, "h_mult": 0.55},
+    "strike":    {"pitch": 0.4, "lunge": 1.0, "legs": "impact", "stretch": 1.0, "h_mult": 0.9},
+    "recover_1": {"pitch": 0.15, "lunge": 0.3, "legs": "settle", "stretch": 0.0, "h_mult": 0.95},
+    "recover":   {"pitch": 0.0, "lunge": 0.0, "legs": "stand", "stretch": 0.0, "h_mult": 1.0},
+}
+
+
 def _draw_mula(
     pose: str = "idle",
     *,
@@ -413,16 +486,24 @@ def _draw_mula(
     breath: float = 0.0,
     flame: float = 0.0,
 ) -> Image.Image:
-    """Compose one frame. Pose presets set the coil channel; keyframes override."""
+    """Compose one frame. Pose presets set warp/legs/fire; keyframes override coil."""
+    preset = _POSE_PRESETS[pose]
     if coil is None:
         coil = 1.0 if pose == "windup" else 0.0
     p = Painter()
+    torso_warp = (float(preset["pitch"]), float(preset["lunge"]))
+    # Ordem de desenho estável (cauda → pernas → corpo → arreio → pescoço →
+    # fogo). Pernas em coordenadas explícitas (sem warp); torso/fogo sob o warp.
+    p.warp = torso_warp
     _tail(p, coil)
-    _legs(p, coil)
+    p.warp = (0.0, 0.0)
+    _legs(p, coil, str(preset["legs"]))
+    p.warp = torso_warp
     _body(p, coil, breath)
     _harness(p, coil)
     _neck_and_stump(p, coil)
-    _fire_column(p, coil, flame)
+    _fire_column(p, coil, flame, float(preset["stretch"]), float(preset["h_mult"]))
+    p.warp = (0.0, 0.0)
     img = p.render(MULA_PALETTE)
     _outline(img, MULA_PALETTE)
     return img
@@ -449,9 +530,14 @@ _WINDUP_KEYS = [
     (1.0, 0.0),                        # pose canônica, segurada pelo loop=false
 ]
 
+# strike/recover: nomes IGUAIS ao contrato da Caipora — ActorAnimator.strike()
+# (strike → recover → idle por timers) funciona sem adaptação. Canônico = último
+# frame (impact/assentada), segurado pelo loop=false, como no windup.
 _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
     ("windup", [f"windup_{i}" for i in range(1, len(_WINDUP_KEYS))] + ["windup"], False, 12.0),
+    ("strike", ["strike_1", "strike"], False, 12.0),
+    ("recover", ["recover_1", "recover"], False, 14.0),
 ]
 
 
@@ -493,6 +579,10 @@ def _frame_images() -> dict[str, Image.Image]:
     for i, (coil, flame) in enumerate(_WINDUP_KEYS):
         key = "windup" if i == len(_WINDUP_KEYS) - 1 else f"windup_{i + 1}"
         frames[key] = _draw_mula("windup", coil=coil, flame=flame)
+    # strike_1 sem flicker: o pitch da empinada já leva o dente A ao topo do
+    # canvas — wobble ali arriscaria clipar a coroa.
+    for key, flame in [("strike_1", 0.0), ("strike", 0.0), ("recover_1", 0.5), ("recover", 0.25)]:
+        frames[key] = _draw_mula(key, coil=0.0, flame=flame)
     return frames
 
 

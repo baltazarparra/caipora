@@ -876,7 +876,7 @@ func _on_defense_timing_result(result: TimingSystem.TimingResult) -> void:
 	else:
 		SignalBus.defense_result_miss.emit()
 
-	_animator.play_pose(_enemy, &"idle")
+	_animator.strike_or_idle(_enemy)
 	if result == TimingSystem.TimingResult.PERFECT:
 		_timing_bubble.burst_success()
 		_feedback.track_perfect(true)

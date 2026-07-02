@@ -63,6 +63,17 @@ func strike(actor: CombatActor) -> void:
 	play_pose(actor, &"strike")
 	get_tree().create_timer(STRIKE_HOLD_S).timeout.connect(_settle.bind(actor, &"strike"))
 
+## Golpe do INIMIGO na resolução da janela de defesa: quem tem frames de strike
+## (Mula v3+) toca a cadeia completa; os demais voltam ao idle como antes.
+func strike_or_idle(actor: CombatActor) -> void:
+	if not _usable(actor):
+		return
+	var frames := actor.animated_sprite.sprite_frames
+	if frames != null and frames.has_animation(&"strike"):
+		strike(actor)
+	else:
+		play_pose(actor, &"idle")
+
 ## Erro/fim de janela sem golpe: o cipó assenta direto (recover → idle).
 func settle(actor: CombatActor) -> void:
 	play_pose(actor, &"recover")

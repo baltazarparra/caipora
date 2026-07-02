@@ -8,6 +8,10 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/mula_windup_1.png" id="6_windup_1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/mula_windup_2.png" id="7_windup_2"]
 [ext_resource type="Texture2D" path="res://assets/sprites/mula_windup.png" id="8_windup"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_strike_1.png" id="9_strike_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_strike.png" id="10_strike"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_recover_1.png" id="11_recover_1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mula_recover.png" id="12_recover"]
 
 [resource]
 animations = [{
@@ -44,4 +48,26 @@ animations = [{
 "loop": false,
 "name": &"windup",
 "speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_strike_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_strike")
+}],
+"loop": false,
+"name": &"strike",
+"speed": 12.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_recover_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_recover")
+}],
+"loop": false,
+"name": &"recover",
+"speed": 14.0
 }]
