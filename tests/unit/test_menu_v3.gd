@@ -33,3 +33,17 @@ func test_start_button_label_updates_with_language() -> void:
 	Lang.set_language(Lang.LANG_EN)
 	assert_eq(_menu._start_button.label, "AWAKEN")
 	assert_eq(_menu._options_button.text, "OPTIONS")
+
+func test_top_bar_has_flags_and_master_mute_speaker() -> void:
+	await _instantiate_menu()
+	assert_true(_menu._speaker_btn is SpeakerButton, "speaker de mute geral no topo")
+	assert_eq(_menu._speaker_btn.muted, AudioDirector.is_master_muted(),
+		"ícone reflete o estado persistido do mute")
+	assert_ne(_menu._lang_row.get_parent(), _menu._footer_row, "bandeiras saíram do rodapé")
+	assert_eq(_menu._lang_row.get_parent(), _menu.get_node("Ui"), "bandeiras vivem no topo do Ui")
+
+func test_options_font_matches_hero_label() -> void:
+	await _instantiate_menu()
+	var expected: int = BrandButton.hero_label_font_size(_menu._start_button.size.y)
+	assert_eq(_menu._options_button.get_theme_font_size("font_size"), expected,
+		"Opções casa a fonte com o rótulo do hero")

@@ -24,6 +24,11 @@ func test_label_assignment() -> void:
 	_btn.label = "DESPERTAR"
 	assert_eq(_btn.label, "DESPERTAR")
 
+func test_hero_label_font_size_scales_with_height() -> void:
+	assert_eq(BrandButton.hero_label_font_size(208.0), 26, "hero 2x atinge o teto LABEL_FONT_MAX")
+	assert_eq(BrandButton.hero_label_font_size(104.0), 16, "altura histórica do retrato")
+	assert_eq(BrandButton.hero_label_font_size(0.0), Constants.FONT_SM, "piso é FONT_SM")
+
 func test_press_lunges_and_release_returns() -> void:
 	_btn.button_down.emit()
 	assert_eq(_btn.scale, Vector2(Constants.CHROME_PRESS_SCALE, Constants.CHROME_PRESS_SCALE),

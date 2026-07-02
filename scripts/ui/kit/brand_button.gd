@@ -14,6 +14,7 @@ extends BaseButton
 enum Variant { HERO, PRIMARY, GHOST, FLAG, LINK }
 
 const HERO_MIN := Vector2(280.0, 96.0)
+const LABEL_FONT_MAX := 26.0
 
 @export var variant: Variant = Variant.PRIMARY:
 	set(value):
@@ -110,7 +111,7 @@ func _draw_label(inner: Rect2, color: Color) -> void:
 	if label.is_empty():
 		return
 	var font := get_theme_default_font()
-	var fs := int(clampf(inner.size.y * 0.27, float(Constants.FONT_SM), 26.0))
+	var fs := label_font_for_inner(inner.size.y)
 	# HERO divide o espaço com as garras >>/<< — orçamento de largura mais apertado.
 	var budget := 0.58 if variant == Variant.HERO else 0.9
 	var width := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs).x
@@ -120,3 +121,15 @@ func _draw_label(inner: Rect2, color: Color) -> void:
 	var pos := Vector2(inner.position.x + (inner.size.x - width) * 0.5,
 		inner.position.y + inner.size.y * 0.62)
 	draw_string(font, pos, label, HORIZONTAL_ALIGNMENT_LEFT, inner.size.x, fs, color)
+
+## Fonte do rótulo para uma altura interna disponível (fórmula única do chrome).
+static func label_font_for_inner(inner_h: float) -> int:
+	return int(clampf(inner_h * 0.27, float(Constants.FONT_SM), LABEL_FONT_MAX))
+
+## Fonte nominal do rótulo de um BrandButton de placa (HERO/PRIMARY/GHOST/FLAG) com
+## `control_height` de altura total — espelha a geometria de _draw (crista 2×,
+## borda 2×, respiro SPACE_XS 2×). Permite a outros controles (ex.: "Opções" no
+## menu) casarem a fonte com o hero sem duplicar a fórmula.
+static func hero_label_font_size(control_height: float) -> int:
+	return label_font_for_inner(control_height - 2.0 * BrandFrame.crest_clearance()
+		- 2.0 * float(Constants.UI_BORDER_WIDTH) - 2.0 * float(Constants.SPACE_XS))

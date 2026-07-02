@@ -12,10 +12,15 @@ const LOGO_BLINK_PATH: String = "res://assets/sprites/logo_title_blink.png"
 const LOGO_BASE_SIZE := Vector2(256.0, 96.0)
 const LOGO_FIT_FRACTION_PORTRAIT := 0.85
 const MENU_MAX_WIDTH_FRACTION := 0.30
+# Alturas históricas do hero viram PISO; o alvo é o dobro, capado pelo espaço da tela.
 const HERO_HEIGHT_PORTRAIT := 104.0
 const HERO_HEIGHT_LANDSCAPE := 92.0
+const HERO_HEIGHT_SCALE := 2.0
 const OPTIONS_HEIGHT := 52.0
 const FOOTER_HEIGHT := 48.0
+const FLAG_SIZE := Vector2(66.0, 44.0)
+const SPEAKER_ICON_PX := 40.0
+const UPDATE_BANNER_HEIGHT := 42.0
 const GITHUB_URL := "https://github.com/baltazarparra/caipora"
 
 # ─── State ─────────────────────────────────────────
@@ -33,6 +38,7 @@ var _github_link: LinkButton
 var _lang_row: HBoxContainer
 var _btn_pt: Button
 var _btn_en: Button
+var _speaker_btn: SpeakerButton
 var _update_banner: Button
 
 func _ready() -> void:
@@ -42,8 +48,10 @@ func _ready() -> void:
 	_setup_logo()
 	_setup_start_button()
 	_setup_options()
+	_setup_top_bar()
 	_setup_footer()
 	_setup_update_banner()
+	Lang.language_changed.connect(_on_language_changed)
 	_relayout_menu()
 	get_viewport().size_changed.connect(_relayout_menu)
 	_start_button.grab_focus()
@@ -74,6 +82,8 @@ func _show_update_banner() -> void:
 		RemotePatterns.apply_pending()
 		RemoteConfig.apply_pending())
 	add_child(_update_banner)
+	# O banner é TOP_WIDE: o topo (bandeiras + speaker) precisa descer para não ficar sob ele.
+	_relayout_menu()
 
 ## Versão a exibir: carimbo automático do build quando presente; senão config/version.
 func _resolve_version() -> String:
@@ -135,6 +145,36 @@ func _setup_options() -> void:
 	_options_button.mouse_exited.connect(_apply_options_style.bind(false))
 	$Ui.add_child(_options_button)
 
+## Topo da tela: bandeiras de idioma à esquerda, alto-falante (mute geral) à direita.
+## O seletor de idioma morava escondido no rodapé — aqui ele é a primeira coisa que
+## um jogador de fora enxerga.
+func _setup_top_bar() -> void:
+	_lang_row = HBoxContainer.new()
+	_lang_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_lang_row.add_theme_constant_override("separation", 8)
+	$Ui.add_child(_lang_row)
+	_btn_pt = _make_flag_btn("res://assets/sprites/flag_br.png")
+	_btn_en = _make_flag_btn("res://assets/sprites/flag_us.png")
+	_lang_row.add_child(_btn_pt)
+	_lang_row.add_child(_btn_en)
+	_btn_pt.pressed.connect(_on_select_pt)
+	_btn_en.pressed.connect(_on_select_en)
+	_refresh_lang_flags()
+
+	_speaker_btn = SpeakerButton.new()
+	_speaker_btn.icon_color = Constants.COLOR_AMBER
+	_speaker_btn.configure_size(SPEAKER_ICON_PX)
+	_speaker_btn.set_muted(AudioDirector.is_master_muted())
+	_speaker_btn.pressed.connect(_on_speaker_pressed)
+	$Ui.add_child(_speaker_btn)
+
+## Mute GERAL (bus Master): silencia música, ambiência E sfx — difere do speaker
+## do HUD in-game, que alterna só música+ambiência.
+func _on_speaker_pressed() -> void:
+	AudioDirector.play_ui_hover()
+	AudioDirector.toggle_master_mute()
+	_speaker_btn.set_muted(AudioDirector.is_master_muted())
+
 func _setup_footer() -> void:
 	_footer = MarginContainer.new()
 	_footer.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -146,17 +186,6 @@ func _setup_footer() -> void:
 	_footer_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_footer_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_footer.add_child(_footer_row)
-
-	_lang_row = HBoxContainer.new()
-	_lang_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_lang_row.add_theme_constant_override("separation", 8)
-	_footer_row.add_child(_lang_row)
-	_btn_pt = _make_flag_btn("res://assets/sprites/flag_br.png")
-	_btn_en = _make_flag_btn("res://assets/sprites/flag_us.png")
-	_lang_row.add_child(_btn_pt)
-	_lang_row.add_child(_btn_en)
-	_btn_pt.pressed.connect(_on_select_pt)
-	_btn_en.pressed.connect(_on_select_en)
 
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -178,9 +207,6 @@ func _setup_footer() -> void:
 	_version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_footer_row.add_child(_version_label)
 
-	_refresh_lang_flags()
-	Lang.language_changed.connect(_on_language_changed)
-
 func _relayout_menu() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	var portrait := Constants.is_portrait(vp)
@@ -190,19 +216,48 @@ func _relayout_menu() -> void:
 	var logo_size := _logo_size(vp)
 	var hero_w := clampf(vp.x - side * 2.0, 280.0, 560.0) if portrait \
 		else clampf(vp.x * MENU_MAX_WIDTH_FRACTION, 260.0, 420.0)
-	var hero_h := HERO_HEIGHT_PORTRAIT if portrait else HERO_HEIGHT_LANDSCAPE
 	var logo_y := top + (18.0 if portrait else 0.0)
+	var hero_h := _hero_height(vp, portrait, logo_y, logo_size, bottom)
 	var hero_y := clampf(vp.y * 0.63, logo_y + logo_size.y + 36.0,
 		vp.y - bottom - FOOTER_HEIGHT - OPTIONS_HEIGHT - hero_h - 12.0) if portrait \
 		else (vp.y - (logo_size.y + 28.0 + hero_h + 10.0 + OPTIONS_HEIGHT)) * 0.5
+	if is_instance_valid(_options_button):
+		_options_button.add_theme_font_size_override("font_size",
+			BrandButton.hero_label_font_size(hero_h))
 	_layout_logo(vp, logo_size, logo_y)
 	_layout_control(_start_button, Vector2((vp.x - hero_w) * 0.5, hero_y), Vector2(hero_w, hero_h))
 	_layout_control(_options_button, Vector2((vp.x - hero_w) * 0.5, hero_y + hero_h + 10.0),
 		Vector2(hero_w, OPTIONS_HEIGHT))
+	_layout_top_bar(vp)
 	_layout_scrim(vp, logo_y, hero_y, hero_h)
 	_layout_footer(side, bottom)
 	if is_instance_valid(_update_banner):
-		_update_banner.custom_minimum_size.y = 42.0
+		_update_banner.custom_minimum_size.y = UPDATE_BANNER_HEIGHT
+
+## Altura do hero: o dobro do piso histórico onde o espaço permitir. O clamp evita
+## que em telas curtas (phone paisagem, retrato compacto) o bloco invada o logo ou
+## o rodapé — sem ele, o clamp do hero_y inverte e o layout colapsa.
+func _hero_height(vp: Vector2, portrait: bool, logo_y: float, logo_size: Vector2,
+		bottom: float) -> float:
+	if portrait:
+		var hero_top_min := logo_y + logo_size.y + 36.0
+		var hero_bottom_max := vp.y - bottom - FOOTER_HEIGHT - OPTIONS_HEIGHT - 12.0
+		return clampf(hero_bottom_max - hero_top_min,
+			HERO_HEIGHT_PORTRAIT, HERO_HEIGHT_PORTRAIT * HERO_HEIGHT_SCALE)
+	var stack_rest := logo_size.y + 28.0 + 10.0 + OPTIONS_HEIGHT + 24.0
+	return clampf(vp.y - stack_rest,
+		HERO_HEIGHT_LANDSCAPE, HERO_HEIGHT_LANDSCAPE * HERO_HEIGHT_SCALE)
+
+## Bandeiras à esquerda, speaker à direita, centros alinhados; o banner "Atualizar"
+## (TOP_WIDE) empurra os dois para baixo quando presente.
+func _layout_top_bar(vp: Vector2) -> void:
+	if _speaker_btn == null or _lang_row == null:
+		return
+	var insets := Constants.safe_insets(vp)
+	var top_push := (UPDATE_BANNER_HEIGHT + 8.0) if is_instance_valid(_update_banner) else 0.0
+	_speaker_btn.position = Vector2(vp.x - insets.x - _speaker_btn.size.x, insets.y + top_push)
+	_lang_row.position = Vector2(insets.x,
+		insets.y + top_push + (_speaker_btn.size.y - FLAG_SIZE.y) * 0.5)
 
 func _logo_size(vp: Vector2) -> Vector2:
 	var fit: float = LOGO_FIT_FRACTION_PORTRAIT if Constants.is_portrait(vp) \
@@ -281,7 +336,7 @@ func _make_flag_btn(texture_path: String) -> Button:
 		btn.icon = tex
 		btn.expand_icon = true
 	btn.text = ""
-	btn.custom_minimum_size = Vector2(48, 32)
+	btn.custom_minimum_size = FLAG_SIZE
 	btn.focus_entered.connect(AudioDirector.play_ui_hover)
 	btn.mouse_entered.connect(AudioDirector.play_ui_hover)
 	return btn

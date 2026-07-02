@@ -132,26 +132,6 @@ body {
 	border-radius: 0;
 }
 
-#status-text {
-	display: none;
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 90.5%;
-	text-align: center;
-	font-family: 'Courier New', monospace;
-	font-size: clamp(10px, 1.6vmin, 16px);
-	letter-spacing: 0.35em;
-	color: #c9d1d9;
-	opacity: 0.75;
-	animation: respira 2.6s ease-in-out infinite;
-}
-
-@keyframes respira {
-	0%, 100% { opacity: 0.45; }
-	50% { opacity: 0.85; }
-}
-
 /* erro: a mata rejeitou o carregamento — sem enfeite, sem canto redondo */
 #status-notice {
 	display: none;
@@ -198,7 +178,6 @@ body {
 				<img id="brand-mark-blink" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADE0lEQVR4nO2aQW7jMAxF6cGsssxqEN+g256hByqQnqIBeqCeIdu5gY2uvPTWXaRsCNWWSOnTHg/0gABtYCviF0mRsokqlUoFyOl4mLaeg4VfW09ga6AC7G314exRAJgHeBrvOfbmOeB0PEwaA71EgAjAk+uHsbHe1z2Oyeus41qAeUA/jN+rqV1RjfHhPdkTXAAaAv0wUvd4+8QmGxqful6OjxYBIkA/jM3peCAiokt3+27JKOvKs0c9/7F5ixZ4Enz5e/87FMFiPBvOHuUFNLmcjoepH0Z6fSA6t/fv2+vNO1KG8HVz1zbv378BTYouAhARTU+4cS/d3bPQAphCwJKAOBcgkGGF5rf1hlCEpdXgSctQyCEm5NKCWDykuHAJ45ZjlSkNBTke55ZYTmmvthAxx1Iqk8t4JaIfCdFCOFZKTKvxRA7bYGhsSfyGQnpgFqAfxka6/RzhZHMSIjKJxsjaTjQFTWkusN6f4/5EK7bDlhUNr/VyfyKDALLT05SmnpNGEnUZuc/m1OOcxXN2gpx7c8IgKQC6EZHuzVleektp4SQTtEaM5AUoEcI9PUZJ7SBhMWJCqNylRASL4SEIIVJhoY6XHBFKjGdyRdCsPlFGM6QFYTxRXlNlSYYup7hEPwuZUiyFlEUAl0LIo4z1Ko1dcgB69RkPL1B5gEc94I32qD0pwB6NZzQiRAXYs/FaogJw75/q//9VNHkgGQL9MDaaQxCJRydoHVObBM11AJGuM1yjDrh08wWSpQ4wVYI8aHtN54bXB9x5Pq++phawtsTmQkgmxtiEzi0mFDyNJwJUgp4irHGqZH40Jl2f4y8lwvRkN0ZzPeLMQJ0DUgXFUkJizu3tM3cixGxxjpj1ZEj+H764YFmV0gZHPiZjoGeCGube3lhLhLeP8kflm78mlwvCeCKAAP0wNm8fdzdEJKY1gXkAJ7mc+7YE9pbYXhsm6KHonAiIdlqGGBq3V1AZbQMV7gbSaM9XZd2OxZmwgQq9JBSG93ZPoyXuAjBfeWIKDWuvZQ9g/yu0L1pXKpVKpVKB8AkVf7jAl1QecAAAAABJRU5ErkJggg==" alt="">
 				<img id="brand-wordmark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAABgCAYAAADy8ayIAAAEJUlEQVR4nO3dO27jOBgAYHqxlUtXQXKDbXOGucFeJMDsKTKAL7I32H6BLdLuDRKkcqnWU8zIUTS29aJIWvq+KglA/uJDv0SJdkIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAi2OQ+gKb73fZY//x2qJIcm5hp4t5aO1MfdzNmyrjFNO5+tz2+Plan3x9etlE64dpAzhEzVjtjToYcMdtxb6mdfY57zLH1jRkzbpff5w5QN7zVuOPFAq2yU7N4YyB7x2z+PiT+mUEcFTOEy/3VdTzn6poSM+YkHNLOWsyE3DdmTGPm/8PL9lR27iQwa+XtE2KMKZkwdfwY8aYczxzx197/t9T+MWa/A4Cpcj2/WAMJoAcTcLiYV+P27XPKMXh9rJLHTCl6Aui7Bh1b55A18BImYAnG9v+S9H0rkHv+DxW1sj5Zv37AcUmf8lPWwHPGr49hav3XdMUuuf83/1yt+uT4ZZ74dflrbn3+DZVlCXCtA289/pTk0KeOGHL3f2652587ftNvKYOlercJ9JM0Abw+Vqu5ysAtKOotwNuh2nRtknAHAfEUlQBCcIJDSkmXAEBZirsDSGHtzyG0P2/7c8dvWl0CmHuvfumGtr/93nrqEu14/Jj7m83m4t/mkrv9pc2/1SUAhlv7c5klt98zAFgxdwAkde4Wf+7b/tq3xlbkr1e2G6eU+5iSJoASdgI+vGx/WYc113mlrdFi69qLHsJy++Drlx8nXM6T/5f+34XwdKjCfrcN+5f0fZ80AZTy0cpLD3ZKejo7p67+H/INRLcod8I/06fHt0O1yTH/VrkEWOKkjmnp/bO2hH9NcQmga1CWPjkpz5K/EKaoBNDz89TZlxAsy7UlwZnnRdHn338xKxvIa0BWpXmy/fzwWXg7VJu1XlQkAFathBP/74z/oCfLEmDJD19itO1SHSVM1lv3724bwmGZrznHiJ4Avr2GsH//WFM93X3u7Pbv58o3NesKofskaJcfakr5+932OLR9bdfK70P3+nNq+6e6Nv7Pf/Svo3ZL419C+aGiJoC3Q7VpTtJYV3pXvh+e7qpeSSCX2OO/f8+/cWzpoj8DMGDrFnP8n+58hdzcinoNWJT/Gz/3vHUlkmbf77IdxSrMfrXuk8Gf7qpPg77ffaz7hl5Rpm4kapav92iPLX+qp14H/2xju84uzXV0123xuecQzXV06ju03uPfsH/fnvo+5/jHKj90/KaUH6qI2/W60WMHfS7PIRz/itBH7aQytM6hO9Gm/IfjHM4db6y+L8HUnYRL3on4yXMIRa33/pzheEprY6n0UxpFbQTKuSUS1qioBFCaOXZoSXKUpKgEkHNLJKxRUQlgDSQ5SiIBwIpJABTJs5I0JAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGOk75iXlSsjzFukAAAAASUVORK5CYII=" alt="CAIPORA">
 				<progress id="status-progress"></progress>
-				<div id="status-text">a mata desperta</div>
 			</div>
 			<div id="status-notice"></div>
 		</div>
@@ -212,7 +191,6 @@ const engine = new Engine(GODOT_CONFIG);
 (function () {
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
-	const statusText = document.getElementById('status-text');
 	const statusNotice = document.getElementById('status-notice');
 
 	let initializing = true;
@@ -229,7 +207,6 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 		statusOverlay.style.visibility = 'visible';
 		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusText.style.display = mode === 'progress' ? 'block' : 'none';
 		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
 		statusMode = mode;
 	}
