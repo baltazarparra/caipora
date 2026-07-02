@@ -44,6 +44,8 @@ var _update_banner: Button
 func _ready() -> void:
 	_title = $Ui/Title as RichTextLabel
 	_scrim = $Scrim as ColorRect
+	# Só o menu ergue a chama a ~90% do viewport; as arenas ficam no fogo baixo.
+	($DoomFire as DoomFire).tall_flames = true
 	_setup_fade()
 	_setup_logo()
 	_setup_start_button()

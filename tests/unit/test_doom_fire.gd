@@ -32,6 +32,38 @@ func test_fire_propagates_upward() -> void:
 		max_val = maxi(max_val, fire._grid[row_base + col])
 	assert_gte(max_val, DoomFire.PALETTE.size() - DoomFire.DECAY_RANGE)
 
+# ~2× ROWS updates: além do tempo de subida (1 linha por update), o suficiente
+# para o regime estacionário em ambos os modos.
+func _settle(fire: DoomFire) -> void:
+	for i in DoomFire.ROWS * 2:
+		fire._update_fire()
+
+func _row_has_flame(fire: DoomFire, row: int) -> bool:
+	var base: int = row * fire._cols
+	for col in fire._cols:
+		if fire._grid[base + col] > 0:
+			return true
+	return false
+
+func test_tall_flames_reach_near_top() -> void:
+	var fire := _make_fire()
+	fire.tall_flames = true
+	_settle(fire)
+	# ~90% do viewport: há chama viva já perto do topo da grade (linha 12%).
+	# No modo baixo (arena) tudo acima de ~60% é sempre zero — falharia direto.
+	assert_true(_row_has_flame(fire, int(DoomFire.ROWS * 0.12)),
+		"chama alta do menu alcança ~90% do viewport")
+
+func test_default_flames_stay_low() -> void:
+	var fire := _make_fire()
+	_settle(fire)
+	# Trava a regressão das ARENAS na MESMA linha do teste tall (12% do topo).
+	# Linhas mais baixas (35–50%) ficam flaky: a cauda do random walk do decay
+	# uniforme {0..4} acende uma célula lá em ~10% dos snapshots. Aqui a chance
+	# é < 1e-4 — determinístico na prática dos dois lados.
+	assert_false(_row_has_flame(fire, int(DoomFire.ROWS * 0.12)),
+		"modo arena preserva o fogo baixo (~40%)")
+
 func test_blit_writes_full_rgba_buffer() -> void:
 	var fire := _make_fire()
 	fire._update_fire()

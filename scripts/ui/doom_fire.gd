@@ -10,8 +10,15 @@ const SCALE: int = 16
 const ROWS: int = 45
 # Decay médio por linha dobra com a grade pela metade (randi() % 5 → média 2):
 # a chama nasce no índice 36 e morre após ~18 linhas ≈ 40% do viewport — a
-# MESMA altura proporcional do fogo original (36 de 90 linhas).
+# MESMA altura proporcional do fogo original (36 de 90 linhas). É o modo das
+# arenas (fundo discreto atrás do combate).
 const DECAY_RANGE: int = 5
+
+# ─── Exports ───────────────────────────────────────
+## Chama alta do menu: decay {0,1} com P(1) = 7/8 → a chama vive ~41 das 45
+## linhas ≈ 90% do viewport. Mesma grade, mesmo custo por célula (AND bitwise no
+## lugar do %); só o menu liga (main_menu._ready) — as arenas ficam nos ~40%.
+@export var tall_flames := false
 
 # Dark doom fire: preto transparente → roxo escuro → carmesim → vermelho sangue
 const PALETTE: Array[Color] = [
@@ -118,6 +125,7 @@ func set_combat_mode(active: bool) -> void:
 
 # ─── Private helpers ───────────────────────────────
 func _update_fire() -> void:
+	var tall := tall_flames  # hoist: acesso a membro por célula pesa no inner loop
 	for row in range(ROWS - 1):
 		var dst_base: int = row * _cols
 		var src_base: int = (row + 1) * _cols
@@ -130,7 +138,11 @@ func _update_fire() -> void:
 			# decay (bits altos) — eram 3 chamadas de RNG por célula.
 			var r: int = randi()
 			var target: int = clampi(col - (r & 1) + ((r >> 1) & 1), 0, _cols - 1)
-			_grid[dst_base + target] = maxi(0, val - ((r >> 2) % DECAY_RANGE))
+			if tall:
+				# decay ≤ 1 e val ≥ 1 (continue acima) — dispensa o maxi
+				_grid[dst_base + target] = val - (1 if ((r >> 2) & 7) != 0 else 0)
+			else:
+				_grid[dst_base + target] = maxi(0, val - ((r >> 2) % DECAY_RANGE))
 
 func _blit_image() -> void:
 	# Bytes RGBA direto da paleta pré-cozida + um set_data único: sem o
