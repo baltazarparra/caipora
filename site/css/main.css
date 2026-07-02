@@ -495,10 +495,18 @@ a {
   /* entrada + flutuar definidos no grupo de entrada do hero (mais abaixo). */
 }
 
-.hero-caipora-img {
+/* Idle vivo: tira de 7 quadros de 96px (5 do idle + 2 do piscar) espelhando a
+   animação do jogo. O JS (main.js) avança background-position-x; sem JS (ou com
+   reduced-motion) fica parado no 1º quadro — a mesma pose canônica de antes. */
+.hero-caipora-sprite {
   width: clamp(132px, 26vw, 248px);
-  height: auto;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
   image-rendering: pixelated;
+  background-image: url('../assets/sprites/caipora_idle_strip.png');
+  background-size: 700% 100%;
+  background-position: 0% 0;
+  background-repeat: no-repeat;
   filter:
     drop-shadow(0 0 2px rgba(0, 0, 0, 0.9))
     drop-shadow(0 0 38px rgba(255, 69, 0, 0.5))
@@ -1053,13 +1061,6 @@ a {
   width: 100%;
 }
 
-/* Selo estático (não é "ao vivo"): sem o ponto piscando. */
-.clip-badge--static::before {
-  animation: none;
-  background: var(--accent-blood);
-  box-shadow: 0 0 8px var(--accent-blood);
-}
-
 .moment-kicker {
   display: inline-block;
   font-family: var(--font-display);
@@ -1517,40 +1518,6 @@ a {
   }
 }
 
-/* Selo "AO VIVO" — reforça que é o jogo de verdade rodando. */
-.clip-badge {
-  position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.55rem;
-  font-family: var(--font-display);
-  font-size: 0.42rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  background: rgba(5, 5, 5, 0.7);
-  border: 1px solid rgba(255, 69, 0, 0.4);
-}
-
-.clip-badge::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent-flame);
-  box-shadow: 0 0 8px var(--accent-flame);
-  animation: clipBlink 1.4s steps(2, jump-none) infinite;
-}
-
-@keyframes clipBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
-
 .clip-caption {
   margin-top: 0.85rem;
   font-size: 0.9rem;
@@ -1719,5 +1686,4 @@ a {
   /* Clip parado mostra o 1º quadro (== poster). hero-clip visível sem entrada. */
   .clip { animation: none !important; background-position-x: 0% !important; }
   .hero-clip { opacity: 1 !important; transform: none !important; }
-  .clip-badge::before { animation: none !important; }
 }

@@ -40,6 +40,58 @@
   }
 
   // ----------------------------------------------------------
+  // Hero — Caipora idle viva (espelha caipora.gd): 5 quadros a
+  // 5fps em loop eterno; a cada 3–6,5s os olhos apagam (2 quadros
+  // "dim" a 12fps) e reacendem. A tira tem 7 células; sem JS ou
+  // com reduced-motion fica o 1º quadro (pose canônica).
+  // ----------------------------------------------------------
+  const heroSprite = document.querySelector('.hero-caipora-sprite');
+
+  if (heroSprite && !prefersReducedMotion) {
+    const IDLE_FRAMES = 5;
+    const LAST_FRAME = 6; // índice da última célula da tira
+    const IDLE_MS = 1000 / 5;
+    const BLINK_MS = 1000 / 12;
+    const BLINK_MIN_MS = 3000;
+    const BLINK_MAX_MS = 6500;
+
+    let idleFrame = 0;
+    let blinkAt = 0;
+
+    function showFrame(idx) {
+      heroSprite.style.backgroundPositionX = (idx / LAST_FRAME) * 100 + '%';
+    }
+
+    function scheduleBlink() {
+      blinkAt = Date.now() + BLINK_MIN_MS + Math.random() * (BLINK_MAX_MS - BLINK_MIN_MS);
+    }
+
+    function playIdle() {
+      if (Date.now() >= blinkAt) {
+        playBlink();
+        return;
+      }
+      showFrame(idleFrame);
+      idleFrame = (idleFrame + 1) % IDLE_FRAMES;
+      setTimeout(playIdle, IDLE_MS);
+    }
+
+    function playBlink() {
+      showFrame(5);
+      setTimeout(function () {
+        showFrame(6);
+        setTimeout(function () {
+          scheduleBlink();
+          playIdle();
+        }, BLINK_MS);
+      }, BLINK_MS);
+    }
+
+    scheduleBlink();
+    playIdle();
+  }
+
+  // ----------------------------------------------------------
   // Nav glassmorphism on scroll
   // ----------------------------------------------------------
   const nav = document.getElementById('nav');
