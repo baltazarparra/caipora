@@ -42,7 +42,7 @@ assets/
    | Bosses/minibosses legados | 48×48 (até a sessão de redesign de cada um — KI-012) |
    | Curupira (boss redesenhado) | 128×128 arena (corpo ~82px ≈ a Caipora, escala de nó 1.2) + mapa 48×48 |
    | Jesuíta (boss final redesenhado) | 128×128 arena (corpo ~103px, escala de nó 1.2) + mapa 48×48 |
-   | Boitatá premium | 160×128 arena (`gen_boitata.py`; escala 1.2) |
+   | Boitatá premium | 160×128 arena (`gen_boitata.py`; escala 1.2) + mapa 60×48 |
    | Saci premium | 128×128 arena (`gen_saci.py`; escala 1.2) |
    | Mula premium | 192×192 arena (`gen_mula.py`; escala 0.9 — altura da lore) |
    | Caipora | 96×96 (corpo ~75px; a imponência é da silhueta, não do tamanho) |
@@ -97,6 +97,15 @@ assets/
    por código; variante de mapa `mula_map.png` 48×48 re-renderizada dos mesmos
    vetores). Contratos cobrados por `tests/unit/test_mula_sprite_assets.gd` e
    `test_mula_sprite_frames.gd`. O design é lei: `docs/CONCEITO-mula.md`.
+2h. **Boitatá idem (v2 — traço da protagonista):** `boitata_*.png` E o
+   `boitata_sprite_frames.tres` saem SOMENTE de `scripts/tools/gen_boitata.py`
+   (160×128 arena a escala 1.2 — massa HORIZONTAL é assinatura; muralha
+   preta-carbonizada + crista de fogo serrilhada, encarando a ESQUERDA; set
+   completo de vida: idle 5f, windup 3f@15, strike/recover/hurt 2f, death 3f —
+   o `.tres` é emitido por código; variante de mapa `boitata_map.png` 60×48
+   re-renderizada dos mesmos vetores). Contratos cobrados por
+   `tests/unit/test_boitata_sprite_assets.gd` e `test_boitata_sprite_frames.gd`.
+   O design é lei: `docs/CONCEITO-boitata.md`.
 3. **Audio:** Generate with [jsfxr](https://sfxr.me/) or [sfxr](https://www.drpetter.se/project_sfxr.html). Export as `.wav`. Short, punchy, under 100KB each.
 4. **No music in MVP.** SFX only. Music adds complexity and file size we don't need for the first Web build.
 5. **UI:** Use Godot's native UI nodes (`Button`, `Panel`, `Label`, `ProgressBar`). Do not create custom UI sprite sheets.

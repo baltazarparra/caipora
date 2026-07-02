@@ -30,6 +30,13 @@ Bosses derivam desta identidade (um por sessao de redesign):
 - `scripts/tools/gen_mula.py`
 - `tests/unit/test_mula_sprite_assets.gd` + `tests/unit/test_mula_sprite_frames.gd`
 
+Boitatá (boss P2, a serpente de fogo-cadáver) deriva desta identidade:
+- `docs/CONCEITO-boitata.md` (v2 = leitura-espelho: muralha preta-carbonizada +
+  crista de fogo serrilhada na espinha, set completo de vida)
+- `assets/sprites/boitata_contact_sheet.png`
+- `scripts/tools/gen_boitata.py`
+- `tests/unit/test_boitata_sprite_assets.gd` + `tests/unit/test_boitata_sprite_frames.gd`
+
 Curupira (boss P3, o parente mais antigo) deriva desta identidade:
 - `docs/CONCEITO-curupira.md` (lei visual do chefe)
 - `assets/sprites/curupira_contact_sheet.png`
