@@ -41,6 +41,21 @@ func test_seam_controls_cache() -> void:
 	Quality._set_for_test(false)
 	assert_false(Quality.hd_enabled(), "seam desliga")
 
+# ── Fator HD central: efeitos ambientes dobram, one-shots de combate não ──
+func test_heavy_and_pick_follow_hd() -> void:
+	Quality._set_for_test(false)
+	assert_eq(Quality.heavy(), 1.0, "modo leve: fator neutro")
+	assert_eq(Quality.pick(0.7, 1.3), 0.7, "pick devolve o valor leve")
+	assert_eq(Constants.ambient_amount_scale(Vector2(1920, 1080)), 1.0,
+		"ambiente leve em desktop = 1.0")
+	Quality._set_for_test(true)
+	assert_eq(Quality.heavy(), Quality.HD_HEAVY_FACTOR, "HD: fator pesado")
+	assert_eq(Quality.pick(0.7, 1.3), 1.3, "pick devolve o valor HD")
+	assert_eq(Constants.ambient_amount_scale(Vector2(393, 852)),
+		Quality.HD_HEAVY_FACTOR, "HD: ambiente dobra mesmo em telefone")
+	assert_eq(Constants.particle_amount_scale(Vector2(393, 852)), 1.0,
+		"one-shot de combate NÃO dobra: só perde o corte de telefone")
+
 # ── Escolha explícita persiste no settings.cfg e vence o default do device ──
 func test_set_hd_enabled_round_trips_through_cfg() -> void:
 	Quality.set_hd_enabled(false)

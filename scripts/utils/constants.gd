@@ -28,6 +28,13 @@ static func particle_amount_scale(vp: Vector2) -> float:
 		return 1.0
 	return PHONE_PARTICLE_SCALE if minf(vp.x, vp.y) < PHONE_SHORT_SIDE_MAX else 1.0
 
+## Densidade de emissores AMBIENTES/persistentes (rim, auras, névoa, brasas de
+## cena, santuário): dobra no modo HD via Quality.heavy(). One-shots de combate
+## (FeedbackSystem) ficam em particle_amount_scale — legibilidade do timing não
+## é decoração e não engorda com o HD.
+static func ambient_amount_scale(vp: Vector2) -> float:
+	return particle_amount_scale(vp) * Quality.heavy()
+
 # ─── Color grading (gradient map) ──────────────────
 # Lê SCREEN_TEXTURE (custo real em gl_compatibility) — por isso a chave dupla:
 # GRADING_ENABLED liga o sistema; GRADING_ON_WEB libera o grade no export web.

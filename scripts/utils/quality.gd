@@ -85,6 +85,19 @@ static func _default_hd_for(features: PackedStringArray, has_touch: bool) -> boo
 			return true
 	return not has_touch
 
+# ─── Fator HD (v2 "Impressionante") ────────────────
+## Multiplicador central dos efeitos AMBIENTES pesados do HD. HD off mira 60fps
+## (jogo atual); HD on aceita ~30fps por CARGA (sem cap de Engine.max_fps —
+## decisão do dono). Consumido por Constants.ambient_amount_scale e pelos picks.
+const HD_HEAVY_FACTOR := 2.0
+
+static func heavy() -> float:
+	return HD_HEAVY_FACTOR if hd_enabled() else 1.0
+
+## Açúcar para energias/escalas com valor próprio por modo.
+static func pick(light_value: float, hd_value: float) -> float:
+	return hd_value if hd_enabled() else light_value
+
 ## Seams de teste: só o cache, sem tocar o disco (padrão RemoteConfig).
 static func _set_for_test(enabled: bool) -> void:
 	_hd_cache = 1 if enabled else 0
