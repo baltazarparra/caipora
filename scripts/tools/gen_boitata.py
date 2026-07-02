@@ -292,15 +292,37 @@ def _draw_crest(p: Painter, rise: float, flame: float) -> None:
         _flame_tooth(p, x - t, y - t * 0.8 + 1.0, h * grow, 2.5, flame, white_heart=(i == 0))
 
 
-def _draw_neck_head(p: Painter, rise: float, flame: float) -> None:
-    """Pescoço-S de vigia erguendo no windup; cabeça em cunha apontada à esquerda."""
-    base = _lerp((86.0, 76.0), (88.0, 72.0), rise)
-    mid = _lerp((72.0, 60.0), (80.0, 42.0), rise)
-    head = _lerp((54.0, 46.0), (68.0, 26.0), rise)
+# Poses explícitas do pescoço fora do eixo idle↔windup:
+# pose → (base, mid, head, jaw_open, maw, neck_w) — o BOTE dispara a cabeça à
+# esquerda (nunca clipar: focinho = head.x − 27 ⇒ head.x ≥ 29).
+_NECK_POSES: dict[str, tuple] = {
+    "strike_1":  ((88.0, 74.0), (78.0, 56.0), (64.0, 44.0), 2.0, False, 16.0),
+    "strike":    ((84.0, 78.0), (56.0, 64.0), (30.0, 56.0), 9.0, True, 14.0),
+    "recover_1": ((86.0, 77.0), (64.0, 60.0), (42.0, 50.0), 3.0, False, 15.0),
+    "recover":   ((86.0, 76.0), (71.0, 59.0), (52.0, 47.0), 0.5, False, 16.0),
+}
+
+
+def _draw_neck_head(p: Painter, rise: float, flame: float, pose: str = "idle") -> None:
+    """Pescoço-S de vigia erguendo no windup; cabeça em cunha apontada à
+    esquerda. Poses de golpe usam a tabela explícita (bote/recuo)."""
+    if pose in _NECK_POSES:
+        base, mid, head, jaw, maw, neck_w = _NECK_POSES[pose]
+    else:
+        base = _lerp((86.0, 76.0), (88.0, 72.0), rise)
+        mid = _lerp((72.0, 60.0), (80.0, 42.0), rise)
+        head = _lerp((54.0, 46.0), (68.0, 26.0), rise)
+        jaw = rise * 8.0
+        maw = rise > 0.5
+        neck_w = 16.0
     hx, hy = head
 
-    p.limb(base, mid, 16.0, 13.0, CHAR)
-    p.limb(mid, (hx + 8.0, hy + 8.0), 13.0, 11.0, CHAR)
+    p.limb(base, mid, neck_w, neck_w - 3.0, CHAR)
+    p.limb(mid, (hx + 8.0, hy + 8.0), neck_w - 3.0, neck_w - 5.0, CHAR)
+    if pose == "strike":
+        # Smear do bote: a crista rasgada atrás da cabeça — riscos horizontais.
+        p.ellipse(hx + 22.0, hy - 4.0, 3.4, 0.9, FIRE)
+        p.ellipse(hx + 31.0, hy + 1.0, 2.7, 0.7, FIRE_DEEP)
     # Dentes da nuca — a crista nasce atrás da cabeça e acompanha o pescoço.
     _flame_tooth(p, mid[0] + 6.0, mid[1] - 3.0, 12.0 * (1.0 + rise * 0.3), 2.0, flame, white_heart=True)
     _flame_tooth(p, mid[0] + 12.0, mid[1] + 5.0, 9.0 * (1.0 + rise * 0.3), 2.0, flame)
@@ -334,8 +356,8 @@ def _draw_neck_head(p: Painter, rise: float, flame: float) -> None:
     p.ellipse(hx - 7.0, hy + 1.0, 3.4, 1.0, EYE)
     p.ellipse(hx + 5.0, hy + 0.5, 3.0, 0.9, EYE)
 
-    if rise > 0.5:
-        # Boca acesa de fogo-fátuo — o coração espectral do especial.
+    if maw:
+        # Boca acesa de fogo-fátuo — o coração espectral do especial/bote.
         p.ellipse(hx - 8.0, hy + 13.0 + jaw * 0.5, 7.5, 5.5, FIRE_WHITE)
         p.ellipse(hx - 8.0, hy + 13.0 + jaw * 0.5, 4.5, 3.2, FIRE_HOT)
     else:
@@ -364,11 +386,22 @@ def _draw_sparks(p: Painter, rise: float, flame: float) -> None:
         p.ellipse(x + drift * 0.4, y - rise * 4.0 - drift + r * 1.2, r * 0.55, r * 0.55, FIRE)
 
 
+# Preset do canal rise por pose (espirais/crista tensionam junto do pescoço).
+_POSE_RISE: dict[str, float] = {
+    "idle": 0.0,
+    "windup": 1.0,
+    "strike_1": 0.3,
+    "strike": 0.15,
+    "recover_1": 0.1,
+    "recover": 0.0,
+}
+
+
 def boitata(pose: str = "idle", *, rise: float | None = None,
         breath: float = 0.0, flame: float = 0.0) -> Image.Image:
     """Compose one frame. Pose presets set the rise channel; keyframes override."""
     if rise is None:
-        rise = 1.0 if pose == "windup" else 0.0
+        rise = _POSE_RISE.get(pose, 0.0)
     p = Painter()
     _draw_ground_fire(p, rise, flame)
     _draw_sparks(p, rise, flame)
@@ -376,7 +409,7 @@ def boitata(pose: str = "idle", *, rise: float | None = None,
     _draw_coils(p, rise, breath)
     _draw_crest(p, rise, flame)
     _draw_belly_plates(p)
-    _draw_neck_head(p, rise, flame)
+    _draw_neck_head(p, rise, flame, pose)
     img = p.render()
     _outline(img)
     return img
@@ -403,9 +436,14 @@ _WINDUP_KEYS = [
     (1.0, 0.0),                        # pose canônica, segurada pelo loop=false
 ]
 
+# strike/recover: nomes IGUAIS ao contrato da Caipora/Mula — os hooks
+# genéricos (ActorAnimator.strike_or_idle → strike→recover→idle) pegam sem
+# adaptação. Canônico = último frame (impacto/assentada), segurado.
 _ANIMATIONS: list[tuple[str, list[str], bool, float]] = [
     ("idle", ["idle"] + [f"idle_{i:02d}" for i in range(1, IDLE_FRAMES)], True, 5.0),
     ("windup", [f"windup_{i}" for i in range(1, len(_WINDUP_KEYS))] + ["windup"], False, 15.0),
+    ("strike", ["strike_1", "strike"], False, 12.0),
+    ("recover", ["recover_1", "recover"], False, 14.0),
 ]
 
 
@@ -447,6 +485,8 @@ def _frame_images() -> dict[str, Image.Image]:
     for i, (rise, flame) in enumerate(_WINDUP_KEYS):
         key = "windup" if i == len(_WINDUP_KEYS) - 1 else f"windup_{i + 1}"
         frames[key] = boitata("windup", rise=rise, flame=flame)
+    for key, flame in [("strike_1", 0.0), ("strike", 0.0), ("recover_1", 0.5), ("recover", 0.25)]:
+        frames[key] = boitata(key, flame=flame)
     return frames
 
 

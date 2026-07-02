@@ -5,6 +5,7 @@ extends GutTest
 # atores SEM esses frames preservam o contrato antigo por construção.
 
 const MULA_SCENE := "res://scenes/arena/mula.tscn"
+const BOITATA_SCENE := "res://scenes/arena/boitata.tscn"
 const CURUPIRA_SCENE := "res://scenes/arena/curupira.tscn"
 
 var _animator: ActorAnimator
@@ -24,6 +25,13 @@ func test_mula_plays_strike_chain() -> void:
 	_animator.strike_or_idle(mula)
 	assert_eq(mula.animated_sprite.animation, &"strike",
 		"Mula tem frames de strike e toca o coice-atropelo")
+
+func test_boitata_plays_strike_chain() -> void:
+	# O hook genérico pega o 2º boss redesenhado sem NENHUMA mudança de runtime.
+	var boitata := _spawn(BOITATA_SCENE)
+	_animator.strike_or_idle(boitata)
+	assert_eq(boitata.animated_sprite.animation, &"strike",
+		"Boitatá tem frames de strike e toca o bote")
 
 func test_boss_sem_strike_volta_ao_idle() -> void:
 	var curupira := _spawn(CURUPIRA_SCENE)
