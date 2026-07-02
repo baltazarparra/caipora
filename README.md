@@ -1,4 +1,4 @@
-# caipora
+# Caipora
 
 > A Brazilian folk horror roguelike built with Godot 4.6.  
 > Play it in the browser on [itch.io](https://itch.io) (link coming soon).
