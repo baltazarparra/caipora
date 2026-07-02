@@ -1183,6 +1183,9 @@ func _do_screen_change(screen: SignalBus.Screen, caipora_won: bool) -> void:
 
 ## Pausa efeitos visuais de background imediatamente após o fade de entrada cobrir
 ## a tela — libera CPU/GPU antes da primeira janela de timing. Idempotente.
+## Em HD o ArenaBackdrop se recusa a pausar (palco aceso — mira 30fps); o
+## DoomFire continua pausado NOS DOIS modos: sim de fogo por pixel na CPU atrás
+## do céu — custo alto, payoff baixo, e protege o timing.
 func _cull_visual_backdrop() -> void:
 	if _backdrop != null and is_instance_valid(_backdrop):
 		_backdrop.set_combat_mode(true)

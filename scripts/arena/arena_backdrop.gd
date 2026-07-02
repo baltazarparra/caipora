@@ -277,7 +277,7 @@ func _spawn_horizon_mist() -> void:
 	var mist := CPUParticles2D.new()
 	mist.texture = ForestLight.LIGHT_TEXTURE
 	mist.position = Vector2(320.0, HORIZON_Y + 6.0)
-	mist.amount = 6
+	mist.amount = int(6.0 * Quality.heavy())
 	mist.lifetime = 9.0
 	mist.preprocess = 9.0
 	mist.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
@@ -299,29 +299,49 @@ func _mist_ramp() -> Gradient:
 	var grad := Gradient.new()
 	grad.set_offset(0, 0.0); grad.set_color(0, Color(c.r, c.g, c.b, 0.0))
 	grad.set_offset(1, 1.0); grad.set_color(1, Color(c.r, c.g, c.b, 0.0))
-	grad.add_point(0.5, Color(c.r, c.g, c.b, 0.14))
+	grad.add_point(0.5, Color(c.r, c.g, c.b, Quality.pick(0.14, 0.22)))
 	return grad
 
-## Uma fonte de luz motivada por fase (máx. 2 PointLight2D por arena — piso de
-## performance é o Safari/iPhone).
+## Uma fonte de luz motivada por fase. Orçamento de PointLight2D: modo leve máx
+## 2 por arena (piso de performance é o Safari/iPhone); HD ~6 (2 front-lights +
+## 2 RimLights dos atores + dressing) — a mira do HD é 30fps por carga.
 func _setup_phase_dressing() -> void:
 	match GameState.active_phase:
 		1:
 			_has_moon = true
-			_add_moon(Color(0.55, 0.65, 0.85), 0.7)
+			_add_moon(Color(0.55, 0.65, 0.85), Quality.pick(0.7, 1.0))
 		2:
 			_bonfire_pos = Vector2(46.0, 172.0)
 			var pre_count: int = get_child_count()
-			FireEffect.attach(self, Vector2(46.0, 166.0), 1.4)
+			FireEffect.attach(self, Vector2(46.0, 166.0), Quality.pick(1.4, 1.8))
 			for fi in range(pre_count, get_child_count()):
 				_fire_nodes.append(get_child(fi))
 		3:
 			_has_moon = true
-			_add_moon(Color(0.45, 0.70, 0.55), 0.6)
+			_add_moon(Color(0.45, 0.70, 0.55), Quality.pick(0.6, 0.9))
 		4:
-			_spawn_rising_embers()
+			_spawn_rising_embers(_ember_ramp())
 		5:
 			_add_vitral_light()
+	# Modo HD: TODA fase ganha motas/brasas ambientes subindo — o palco respira.
+	# (P4 já as tem no modo leve; as demais só instanciam com HD.)
+	if Quality.hd_enabled() and GameState.active_phase != 4:
+		_spawn_rising_embers(_phase_mote_ramp())
+
+## Ramp das motas ambientes por fase (derivado da paleta — nada de tom solto):
+## P1 luar frio, P2 fogo, P3 verde-mata do Curupira, P5 ouro de incenso.
+func _phase_mote_ramp() -> Gradient:
+	var tint: Color
+	match GameState.active_phase:
+		1: tint = Color(0.5, 0.65, 0.9)
+		2: tint = Constants.COLOR_FIRE_HOT
+		3: tint = Color(Constants.COLOR_TELEGRAPH_CURUPIRA, 0.4)
+		_: tint = Constants.COLOR_AURA_JESUITA.lerp(Color.WHITE, 0.4)
+	var grad := Gradient.new()
+	grad.set_offset(0, 0.0); grad.set_color(0, Color(tint, 0.0))
+	grad.add_point(0.4, Color(tint.r, tint.g, tint.b, 0.5))
+	grad.set_offset(1, 1.0); grad.set_color(1, Color(tint.r, tint.g, tint.b, 0.0))
+	return grad
 
 func _add_moon(color: Color, energy: float) -> void:
 	var light := ForestLight.make(color, energy, 2.6)
@@ -333,19 +353,25 @@ func _add_vitral_light() -> void:
 	var light := PointLight2D.new()
 	light.texture = load("res://assets/sprites/light_vitral.png")
 	light.color = Color(0.95, 0.80, 0.45)
-	light.energy = 0.9
+	light.energy = Quality.pick(0.9, 1.3)
 	light.texture_scale = 1.6
 	light.blend_mode = Light2D.BLEND_MODE_ADD
 	light.shadow_enabled = false
 	light.position = Vector2(396.0, 96.0)
 	light.rotation = 0.42
 	add_child(light)
+	if Quality.hd_enabled():
+		# O vitral respira: pulso lento do feixe (só HD — o modo leve é estático).
+		var tween := light.create_tween().set_loops()
+		tween.tween_property(light, "energy", 0.9, 2.4).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(light, "energy", 1.3, 2.4).set_trans(Tween.TRANS_SINE)
 
-func _spawn_rising_embers() -> void:
-	# P4: brasas da mata morta subindo do chão da arena (aditivas, sem luz).
+func _spawn_rising_embers(ramp: Gradient) -> void:
+	# Brasas/motas subindo do chão da arena (aditivas, sem luz). No modo leve só
+	# a P4 (mata morta) usa; em HD toda fase ganha a sua no ramp da paleta.
 	var embers := CPUParticles2D.new()
 	embers.position = Vector2(320.0, 330.0)
-	embers.amount = 12
+	embers.amount = int(12.0 * Quality.heavy())
 	embers.lifetime = 4.0
 	embers.preprocess = 4.0
 	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
@@ -357,15 +383,19 @@ func _spawn_rising_embers() -> void:
 	embers.initial_velocity_max = 36.0
 	embers.scale_amount_min = 1.0
 	embers.scale_amount_max = 2.2
-	embers.color_ramp = _ember_ramp()
+	embers.color_ramp = ramp
 	embers.material = Constants.ADDITIVE_MATERIAL
 	_embers = embers
 	add_child(embers)
 
 ## Pausa ou restaura todos os efeitos visuais de background durante o combate.
 ## Chamado pelo ArenaManager antes da primeira janela de timing para liberar
-## orçamento de CPU/GPU para a mecânica de reflexo.
+## orçamento de CPU/GPU para a mecânica de reflexo — NO MODO LEVE. Em HD o
+## palco fica ACESO durante o combate (treelines, névoa, brasas, fogo, parallax):
+## é exatamente o headroom que a mira de 30fps compra.
 func set_combat_mode(active: bool) -> void:
+	if active and Quality.hd_enabled():
+		return
 	if _far_line != null:
 		_far_line.visible = not active
 	if _mid_line != null:

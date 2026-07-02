@@ -193,7 +193,12 @@ func _spawn_afterimages(actor: CombatActor, dir: Vector2) -> void:
 	var parent := actor.get_parent()
 	if parent == null:
 		return
-	for i: int in AFTERIMAGE_COUNT:
+	# HD: rastro dobrado e, para a Caipora, tintado no fogo da juba (o azul frio
+	# fica no modo leve) — receita dos fire ghosts do Boitatá. Wow por linha.
+	var count := int(AFTERIMAGE_COUNT * Quality.heavy())
+	var fire_trail := Quality.hd_enabled() and not (actor is Criatura)
+	var alpha_step := 0.36 / float(count)
+	for i: int in count:
 		var ghost := Sprite2D.new()
 		ghost.texture = tex
 		ghost.offset = sprite.offset
@@ -201,7 +206,8 @@ func _spawn_afterimages(actor: CombatActor, dir: Vector2) -> void:
 		ghost.flip_h = sprite.flip_h
 		ghost.position = actor.position + dir * (14.0 * (i + 1))
 		ghost.z_index = -1
-		ghost.modulate = Color(0.9, 0.95, 1.0, 0.5 - i * 0.12)
+		ghost.modulate = Color(1.4, 0.63, 0.07, 0.5 - i * alpha_step) if fire_trail \
+			else Color(0.9, 0.95, 1.0, 0.5 - i * alpha_step)
 		ghost.material = Constants.ADDITIVE_MATERIAL
 		parent.add_child(ghost)
 		var tween := ghost.create_tween()

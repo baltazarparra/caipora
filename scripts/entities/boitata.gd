@@ -56,7 +56,9 @@ func _play_windup_telegraph() -> void:
 func _spawn_shadow_aura() -> void:
 	var aura := CPUParticles2D.new()
 	var vp := get_viewport()
-	var ps: float = Constants.particle_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
+	# ambient: o amount já escalava por device — o modo leve fica idêntico e o
+	# HD dobra (Quality.heavy) e clareia (overbright).
+	var ps: float = Constants.ambient_amount_scale(vp.get_visible_rect().size) if vp != null else 1.0
 	aura.amount = maxi(1, int(28.0 * ps))
 	aura.lifetime = 1.0 if ps < 1.0 else 1.4
 	aura.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
@@ -65,8 +67,9 @@ func _spawn_shadow_aura() -> void:
 	aura.initial_velocity_min = 6.0
 	aura.initial_velocity_max = 16.0
 	aura.scale_amount_min = 2.5
-	aura.scale_amount_max = 5.5
-	aura.color = Constants.COLOR_AURA_BOITATA
+	aura.scale_amount_max = Quality.pick(5.5, 6.5)
+	aura.color = ParticleRim._overbright(Constants.COLOR_AURA_BOITATA) \
+		if Quality.hd_enabled() else Constants.COLOR_AURA_BOITATA
 	aura.z_index = -1
 	add_child(aura)
 
