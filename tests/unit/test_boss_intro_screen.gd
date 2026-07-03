@@ -60,6 +60,20 @@ func test_short_name_one_line_long_name_two_lines() -> void:
 	assert_gt(long_screen._name_label.size.y, short_screen._name_label.size.y,
 		"nome longo deve reservar uma caixa mais alta (2 linhas)")
 
+func test_long_name_reserves_real_wrapped_height() -> void:
+	# "JESUÍTA BANDEIRANTE CATEQUIZADOR" quebra em 3 linhas no retrato: a caixa
+	# reserva a altura REAL medida (não um teto de 2 linhas) — a barra de baixo
+	# nunca atravessa a última linha do nome.
+	_screen.start("JESUÍTA BANDEIRANTE CATEQUIZADOR", FRAMES, ACCENT, NAME_COLOR)
+	var font: Font = _screen._name_label.get_theme_font(&"font")
+	var fs: int = _screen._name_label.get_theme_font_size(&"font_size")
+	var needed: float = font.get_multiline_string_size(_screen._boss_name,
+		HORIZONTAL_ALIGNMENT_CENTER, _screen._name_label.size.x, fs).y
+	assert_true(_screen._name_label.size.y >= needed - 0.5,
+		"caixa do nome reserva a altura real das linhas quebradas")
+	assert_true(_screen._bar_bot.position.y >= _screen._name_label.position.y + needed - 0.5,
+		"a barra de baixo fica abaixo da última linha do nome")
+
 func test_name_box_width_is_bounded() -> void:
 	# A caixa do nome é limitada (para forçar a quebra), nunca a viewport inteira.
 	_screen.start("MULA SEM CABEÇA", FRAMES, ACCENT, NAME_COLOR)

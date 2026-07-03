@@ -15,6 +15,8 @@ extends CanvasLayer
 const NAME_MARGIN_RATIO: float = 0.05    # respiro lateral até a borda do viewport
 const NAME_FONT_MAX: int = Constants.FONT_TITLE  # 48 — tamanho cheio quando cabe
 const NAME_FONT_MIN: int = 24                     # piso de legibilidade; só recua se precisar
+const BOX_SPLIT_LEFT: float = 0.48   # paisagem: caixa da Caipora ocupa até 48% da largura
+const BOX_SPLIT_RIGHT: float = 0.52  # paisagem: caixa do chefe começa em 52%
 
 var _lines: Array[Dictionary] = []
 var _current_index: int = 0
@@ -38,12 +40,34 @@ func start(boss_name: String, lines: Array[Dictionary],
 	# encolhe a fonte só o necessário para a maior palavra caber (ex. "JESUÍTA
 	# BANDEIRANTE CATEQUIZADOR" estourava já no iPad com a fonte fixa de 48px).
 	_boss_name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_fit_boss_name()
-	if not get_viewport().size_changed.is_connected(_fit_boss_name):
-		get_viewport().size_changed.connect(_fit_boss_name)
+	# O rótulo do falante idem: sem quebra, um nome longo infla a largura mínima do
+	# VBox além da caixa e ARRASTA a fala inteira para fora do viewport no retrato.
+	_left_speaker_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_right_speaker_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_relayout()
+	if not get_viewport().size_changed.is_connected(_relayout):
+		get_viewport().size_changed.connect(_relayout)
 	_left_speaker_label.add_theme_color_override("font_color", left_color)
 	_right_speaker_label.add_theme_color_override("font_color", right_color)
 	_show_line(0)
+
+# Reage à rotação: nome refeito + caixas de fala re-ancoradas.
+func _relayout() -> void:
+	_fit_boss_name()
+	_fit_boxes()
+
+# Caixas de fala: lado a lado na paisagem (Caipora esq., chefe dir.); no RETRATO
+# cada uma vira largura total — metade de um phone estreito espreme falas longas
+# ("converti todos eles...") em colunas ilegíveis que estouram a caixa.
+func _fit_boxes() -> void:
+	if _left_box == null or _right_box == null:
+		return
+	_apply_box_anchors(Constants.is_portrait(get_viewport().get_visible_rect().size))
+
+# Seam puro (headless de teste não tem viewport retrato): aplica as âncoras do modo.
+func _apply_box_anchors(portrait: bool) -> void:
+	_left_box.anchor_right = 1.0 if portrait else BOX_SPLIT_LEFT
+	_right_box.anchor_left = 0.0 if portrait else BOX_SPLIT_RIGHT
 
 # Ajusta margens e fonte do nome para caber no viewport (reage à rotação).
 func _fit_boss_name() -> void:

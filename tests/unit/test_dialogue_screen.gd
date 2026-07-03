@@ -41,6 +41,29 @@ func test_advance_ignored_when_not_ready() -> void:
 	_screen.advance()
 	assert_eq(_screen._left_speaker_label.text, "CAIPORA", "linha não deve avançar")
 
+# ─── Retrato: caixas de largura total; nomes longos não estouram o container ───
+
+func test_portrait_boxes_span_full_width() -> void:
+	# No retrato cada caixa de fala ocupa a largura toda — metade de um phone
+	# estreito espreme a fala para fora do viewport. O headless de teste não tem
+	# viewport retrato, então o ramo é forçado pelo seam puro.
+	_screen.start("JESUÍTA BANDEIRANTE CATEQUIZADOR", BOITATA_LINES)
+	_screen._apply_box_anchors(true)
+	assert_eq(_screen._left_box.anchor_right, 1.0, "caixa da Caipora em largura total no retrato")
+	assert_eq(_screen._right_box.anchor_left, 0.0, "caixa do chefe em largura total no retrato")
+	_screen._apply_box_anchors(false)
+	assert_almost_eq(_screen._left_box.anchor_right, 0.48, 0.001,
+		"paisagem volta ao lado a lado")
+	assert_almost_eq(_screen._right_box.anchor_left, 0.52, 0.001,
+		"paisagem volta ao lado a lado")
+
+func test_speaker_labels_wrap_by_word() -> void:
+	# Sem quebra, um nome longo no rótulo do falante infla a largura mínima do VBox
+	# além da caixa e arrasta a fala inteira para fora do viewport (bug do Jesuíta).
+	_screen.start("JESUÍTA BANDEIRANTE CATEQUIZADOR", BOITATA_LINES)
+	assert_eq(_screen._left_speaker_label.autowrap_mode, TextServer.AUTOWRAP_WORD)
+	assert_eq(_screen._right_speaker_label.autowrap_mode, TextServer.AUTOWRAP_WORD)
+
 # ─── Input: qualquer tecla / toque / clique avança (mobile sem barra de espaço) ───
 
 func test_touch_advances() -> void:

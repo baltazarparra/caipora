@@ -24,8 +24,9 @@ const MIN_SKIP_DELAY: float = 0.4           # carência antes de aceitar skip (e
 const BACKLIGHT_SIZE: int = 512
 const BAR_HEIGHT: float = 4.0
 const BAR_WIDTH_RATIO: float = 0.62
+const BAR_WIDTH_RATIO_PORTRAIT: float = 0.88   # retrato: tela estreita, barras quase totais
 const NAME_MAX_WIDTH_RATIO: float = 0.52   # largura máxima do nome; acima disso, quebra de linha (ex. "MULA SEM CABEÇA")
-const NAME_MAX_LINES: int = 2              # nomes longos quebram em até 2 linhas
+const NAME_MAX_WIDTH_RATIO_PORTRAIT: float = 0.78  # retrato: mais colunas p/ nomes longos (JESUÍTA...)
 const NAME_FONT_MIN: int = 28              # piso de fonte (legibilidade); só recua se a palavra não couber
 const BAR_GAP: float = 18.0                # folga entre o bloco do nome e as barras
 const SUBTITLE_GAP: float = 24.0           # folga entre a barra de cima e o subtítulo
@@ -121,9 +122,11 @@ func _build(frames: SpriteFrames, accent: Color, name_color: Color) -> void:
 	_model.play(&"idle")
 	add_child(_model)
 
-	var bar_width: float = vp.x * BAR_WIDTH_RATIO
+	var portrait: bool = Constants.is_portrait(vp)
+	var bar_width: float = vp.x * (BAR_WIDTH_RATIO_PORTRAIT if portrait else BAR_WIDTH_RATIO)
 	var name_y: float = vp.y * NAME_CENTER_Y_RATIO
-	var max_name_width: float = vp.x * NAME_MAX_WIDTH_RATIO
+	var max_name_width: float = vp.x \
+		* (NAME_MAX_WIDTH_RATIO_PORTRAIT if portrait else NAME_MAX_WIDTH_RATIO)
 
 	# O nome NUNCA encolhe nem corta: fonte grande consistente e quebra em PALAVRA —
 	# nomes longos (ex. "MULA SEM CABEÇA") quebram em duas linhas em vez de espremer.
@@ -138,11 +141,14 @@ func _build(frames: SpriteFrames, accent: Color, name_color: Color) -> void:
 	var font_size: int = _name_font_size(max_name_width)
 	_name_label.add_theme_font_size_override("font_size", font_size)
 
-	# Reserva a caixa do nome para a contagem de linhas do nome COMPLETO, para que a
-	# revelação letra a letra não empurre as barras nem mude a altura no meio.
+	# Reserva a caixa do nome pela altura REAL do nome COMPLETO quebrado (medida,
+	# não capada em N linhas): a revelação letra a letra não empurra as barras e a
+	# barra de baixo nunca atravessa a última linha (ex. "JESUÍTA BANDEIRANTE
+	# CATEQUIZADOR" ocupa 3 linhas num phone retrato).
 	var font: Font = _name_label.get_theme_font(&"font")
-	var line_count: int = _name_line_count(font, font_size, max_name_width)
-	var block_h: float = font.get_height(font_size) * line_count
+	var block_h: float = maxf(font.get_height(font_size),
+		font.get_multiline_string_size(_boss_name, HORIZONTAL_ALIGNMENT_CENTER,
+			max_name_width, font_size).y)
 	var box_top: float = name_y - block_h * 0.5
 
 	_name_label.size = Vector2(max_name_width, block_h)
@@ -230,7 +236,8 @@ func _scale_for(frames: SpriteFrames) -> Vector2:
 
 ## Tamanho de fonte do nome: grande e fixo (FONT_TITLE). Só recua — até NAME_FONT_MIN —
 ## se a MAIOR PALAVRA não couber numa linha em max_width (a palavra não pode quebrar).
-## O nome nunca encolhe para caber em uma linha: nomes largos quebram em duas linhas.
+## O nome nunca encolhe para caber em uma linha: nomes largos quebram em quantas
+## linhas precisarem (a caixa reserva a altura real medida).
 func _name_font_size(max_width: float) -> int:
 	if _boss_name.is_empty() or _name_label == null:
 		return Constants.FONT_TITLE
@@ -242,15 +249,6 @@ func _name_font_size(max_width: float) -> int:
 			break
 		size -= 2
 	return size
-
-## Quantas linhas o nome COMPLETO ocupa em max_width (limitado a NAME_MAX_LINES).
-func _name_line_count(font: Font, font_size: int, max_width: float) -> int:
-	if _boss_name.is_empty():
-		return 1
-	var full_w: float = font.get_string_size(_boss_name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	if full_w <= max_width:
-		return 1
-	return NAME_MAX_LINES
 
 ## Maior palavra do nome (a quebra de linha é por palavra; nenhuma palavra pode estourar a linha).
 func _longest_word(text: String) -> String:
