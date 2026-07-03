@@ -18,13 +18,18 @@ const HERO_HEIGHT_LANDSCAPE := 92.0
 const HERO_HEIGHT_SCALE := 2.0
 const OPTIONS_HEIGHT := 52.0
 const FOOTER_HEIGHT := 48.0
-const FLAG_SIZE := Vector2(66.0, 44.0)
-const SPEAKER_ICON_PX := 40.0
+# Respiros internos do bloco central (logo → hero → opções).
+const STACK_GAP_LOGO := 36.0
+const STACK_GAP_OPTIONS := 10.0
+# Topo 30% maior que o histórico (66×44 / 40px): alvo de toque em phone retrato.
+const FLAG_SIZE := Vector2(86.0, 57.0)
+const SPEAKER_ICON_PX := 52.0
 const UPDATE_BANNER_HEIGHT := 42.0
 const GITHUB_URL := "https://github.com/baltazarparra/caipora"
 
 # ─── State ─────────────────────────────────────────
 var _fade: ColorRect
+var _menu_stack: Control
 var _logo: TextureRect
 var _scrim: ColorRect
 var _title: RichTextLabel
@@ -47,6 +52,7 @@ func _ready() -> void:
 	# Só o menu ergue a chama a ~90% do viewport; as arenas ficam no fogo baixo.
 	($DoomFire as DoomFire).tall_flames = true
 	_setup_fade()
+	_setup_menu_stack()
 	_setup_logo()
 	_setup_start_button()
 	_setup_options()
@@ -107,6 +113,17 @@ func _setup_fade() -> void:
 	add_child(fade_layer)
 	create_tween().tween_property(_fade, "color:a", 0.0, FADE_IN_DURATION)
 
+## Bloco central único: logo, Despertar e Opções moram no mesmo container,
+## centralizado na altura do viewport pelo _relayout_menu. O Title da cena
+## (fallback sem logo) é reparentado para dentro dele.
+func _setup_menu_stack() -> void:
+	_menu_stack = Control.new()
+	_menu_stack.name = "MenuStack"
+	_menu_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Ui.add_child(_menu_stack)
+	$Ui.remove_child(_title)
+	_menu_stack.add_child(_title)
+
 func _setup_logo() -> void:
 	if not ResourceLoader.exists(LOGO_PATH):
 		var mat := ShaderMaterial.new()
@@ -119,7 +136,7 @@ func _setup_logo() -> void:
 	_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Ui.add_child(_logo)
+	_menu_stack.add_child(_logo)
 	_schedule_blink()
 
 func _setup_start_button() -> void:
@@ -129,7 +146,7 @@ func _setup_start_button() -> void:
 	_start_button.pressed.connect(_on_start_pressed)
 	_start_button.focus_entered.connect(AudioDirector.play_ui_hover)
 	_start_button.mouse_entered.connect(AudioDirector.play_ui_hover)
-	$Ui.add_child(_start_button)
+	_menu_stack.add_child(_start_button)
 
 func _setup_options() -> void:
 	_options_panel = OptionsPanel.new()
@@ -145,7 +162,7 @@ func _setup_options() -> void:
 	_options_button.focus_exited.connect(_apply_options_style.bind(false))
 	_options_button.mouse_entered.connect(_apply_options_style.bind(true))
 	_options_button.mouse_exited.connect(_apply_options_style.bind(false))
-	$Ui.add_child(_options_button)
+	_menu_stack.add_child(_options_button)
 
 ## Topo da tela: bandeiras de idioma à esquerda, alto-falante (mute geral) à direita.
 ## O seletor de idioma morava escondido no rodapé — aqui ele é a primeira coisa que
@@ -213,42 +230,45 @@ func _relayout_menu() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	var portrait := Constants.is_portrait(vp)
 	var side := clampf(minf(vp.x, vp.y) * 0.055, 24.0, 80.0)
-	var top := clampf(minf(vp.x, vp.y) * 0.05, 28.0, 64.0)
 	var bottom := clampf(minf(vp.x, vp.y) * 0.04, 18.0, 56.0)
 	var logo_size := _logo_size(vp)
 	var hero_w := clampf(vp.x - side * 2.0, 280.0, 560.0) if portrait \
 		else clampf(vp.x * MENU_MAX_WIDTH_FRACTION, 260.0, 420.0)
-	var logo_y := top + (18.0 if portrait else 0.0)
-	var hero_h := _hero_height(vp, portrait, logo_y, logo_size, bottom)
-	var hero_y := clampf(vp.y * 0.63, logo_y + logo_size.y + 36.0,
-		vp.y - bottom - FOOTER_HEIGHT - OPTIONS_HEIGHT - hero_h - 12.0) if portrait \
-		else (vp.y - (logo_size.y + 28.0 + hero_h + 10.0 + OPTIONS_HEIGHT)) * 0.5
+	var hero_h := _hero_height(vp, portrait, logo_size, bottom)
+	var stack_size := Vector2(maxf(logo_size.x, hero_w),
+		logo_size.y + STACK_GAP_LOGO + hero_h + STACK_GAP_OPTIONS + OPTIONS_HEIGHT)
+	var stack_pos := ((vp - stack_size) * 0.5).floor()
+	_layout_control(_menu_stack, stack_pos, stack_size)
+	var hero_y := logo_size.y + STACK_GAP_LOGO
 	if is_instance_valid(_options_button):
 		_options_button.add_theme_font_size_override("font_size",
 			BrandButton.hero_label_font_size(hero_h))
-	_layout_logo(vp, logo_size, logo_y)
-	_layout_control(_start_button, Vector2((vp.x - hero_w) * 0.5, hero_y), Vector2(hero_w, hero_h))
-	_layout_control(_options_button, Vector2((vp.x - hero_w) * 0.5, hero_y + hero_h + 10.0),
+	_layout_logo(stack_size.x, logo_size)
+	_layout_control(_start_button, Vector2((stack_size.x - hero_w) * 0.5, hero_y),
+		Vector2(hero_w, hero_h))
+	_layout_control(_options_button,
+		Vector2((stack_size.x - hero_w) * 0.5, hero_y + hero_h + STACK_GAP_OPTIONS),
 		Vector2(hero_w, OPTIONS_HEIGHT))
 	_layout_top_bar(vp)
-	_layout_scrim(vp, logo_y, hero_y, hero_h)
+	_layout_scrim(vp, stack_pos, stack_size)
 	_layout_footer(side, bottom)
 	if is_instance_valid(_update_banner):
 		_update_banner.custom_minimum_size.y = UPDATE_BANNER_HEIGHT
 
-## Altura do hero: o dobro do piso histórico onde o espaço permitir. O clamp evita
-## que em telas curtas (phone paisagem, retrato compacto) o bloco invada o logo ou
-## o rodapé — sem ele, o clamp do hero_y inverte e o layout colapsa.
-func _hero_height(vp: Vector2, portrait: bool, logo_y: float, logo_size: Vector2,
-		bottom: float) -> float:
-	if portrait:
-		var hero_top_min := logo_y + logo_size.y + 36.0
-		var hero_bottom_max := vp.y - bottom - FOOTER_HEIGHT - OPTIONS_HEIGHT - 12.0
-		return clampf(hero_bottom_max - hero_top_min,
-			HERO_HEIGHT_PORTRAIT, HERO_HEIGHT_PORTRAIT * HERO_HEIGHT_SCALE)
-	var stack_rest := logo_size.y + 28.0 + 10.0 + OPTIONS_HEIGHT + 24.0
-	return clampf(vp.y - stack_rest,
-		HERO_HEIGHT_LANDSCAPE, HERO_HEIGHT_LANDSCAPE * HERO_HEIGHT_SCALE)
+## Altura do hero: o dobro do piso histórico onde o espaço permitir. Com o bloco
+## central centralizado na altura do viewport, o espaço útil desconta dos DOIS
+## lados a maior zona reservada (topo: bandeiras/speaker/banner; base: rodapé) —
+## sem isso o bloco centrado invade o header em telas curtas (phone paisagem).
+func _hero_height(vp: Vector2, portrait: bool, logo_size: Vector2, bottom: float) -> float:
+	var floor_h := HERO_HEIGHT_PORTRAIT if portrait else HERO_HEIGHT_LANDSCAPE
+	var insets := Constants.safe_insets(vp)
+	var top_push := (UPDATE_BANNER_HEIGHT + 8.0) if is_instance_valid(_update_banner) else 0.0
+	var header_h := insets.y + top_push \
+		+ (_speaker_btn.size.y if _speaker_btn != null else FLAG_SIZE.y)
+	var reserved := maxf(header_h, bottom + FOOTER_HEIGHT) + 12.0
+	var avail := vp.y - reserved * 2.0 \
+		- (logo_size.y + STACK_GAP_LOGO + STACK_GAP_OPTIONS + OPTIONS_HEIGHT)
+	return floorf(clampf(avail, floor_h, floor_h * HERO_HEIGHT_SCALE))
 
 ## Bandeiras à esquerda, speaker à direita, centros alinhados; o banner "Atualizar"
 ## (TOP_WIDE) empurra os dois para baixo quando presente.
@@ -267,11 +287,10 @@ func _logo_size(vp: Vector2) -> Vector2:
 	var scale_i: float = maxf(1.0, floorf(vp.x * fit / LOGO_BASE_SIZE.x))
 	return LOGO_BASE_SIZE * scale_i
 
-func _layout_logo(vp: Vector2, logo_size: Vector2, y: float) -> void:
-	if _logo != null:
-		_layout_control(_logo, Vector2((vp.x - logo_size.x) * 0.5, y), logo_size)
-	else:
-		_layout_control(_title, Vector2((vp.x - logo_size.x) * 0.5, y), logo_size)
+## Posições locais ao bloco central: o logo (ou o Title fallback) abre o stack.
+func _layout_logo(stack_w: float, logo_size: Vector2) -> void:
+	var target: Control = _logo if _logo != null else _title
+	_layout_control(target, Vector2((stack_w - logo_size.x) * 0.5, 0.0), logo_size)
 
 func _layout_control(control: Control, pos: Vector2, new_size: Vector2) -> void:
 	if control == null:
@@ -280,14 +299,14 @@ func _layout_control(control: Control, pos: Vector2, new_size: Vector2) -> void:
 	control.size = new_size.floor()
 	control.custom_minimum_size = new_size.floor()
 
-func _layout_scrim(vp: Vector2, logo_y: float, hero_y: float, hero_h: float) -> void:
+func _layout_scrim(vp: Vector2, stack_pos: Vector2, stack_size: Vector2) -> void:
 	if _scrim == null:
 		return
 	_scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_scrim.offset_left = 0.0
 	_scrim.offset_right = 0.0
-	_scrim.offset_top = maxf(0.0, logo_y - 24.0)
-	_scrim.offset_bottom = -(vp.y - minf(vp.y, hero_y + hero_h + OPTIONS_HEIGHT + 48.0))
+	_scrim.offset_top = maxf(0.0, stack_pos.y - 24.0)
+	_scrim.offset_bottom = -(vp.y - minf(vp.y, stack_pos.y + stack_size.y + 38.0))
 	_scrim.color = Color(0.0, 0.0, 0.0, 0.34)
 
 func _layout_footer(side: float, bottom: float) -> void:
